@@ -105,7 +105,7 @@ function NavItem({ to, label, icon: Icon, isActive, collapsed }: NavItemProps) {
       className={cn(
         'relative flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200',
         isActive
-          ? 'font-semibold'
+          ? 'font-semibold text-[#6A39AD]'
           : 'font-medium text-text-secondary rounded-xl',
         collapsed && 'justify-center px-0 rounded-xl',
       )}
@@ -113,9 +113,8 @@ function NavItem({ to, label, icon: Icon, isActive, collapsed }: NavItemProps) {
         background: 'linear-gradient(135deg, rgba(142,95,207,0.1), rgba(185,135,255,0.06))',
         borderLeft: '3px solid #8E5FCF',
         borderRadius: '0 12px 12px 0',
-        color: '#6A39AD',
         paddingLeft: '10px',
-      } : (!isActive && !collapsed) ? undefined : undefined}
+      } : undefined}
       onMouseEnter={(e) => {
         if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(142,95,207,0.05)';
       }}
@@ -123,7 +122,7 @@ function NavItem({ to, label, icon: Icon, isActive, collapsed }: NavItemProps) {
         if (!isActive) (e.currentTarget as HTMLElement).style.background = '';
       }}
     >
-      <Icon className={cn('h-[18px] w-[18px] shrink-0', isActive && 'text-primary')} />
+      <Icon className="h-[18px] w-[18px] shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
     </Link>
   );
@@ -274,7 +273,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
               className={cn(
                 'relative flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full rounded-xl font-medium',
                 location.pathname.includes('/config')
-                  ? 'text-primary font-semibold'
+                  ? 'text-[#6A39AD] font-semibold'
                   : 'text-text-secondary hover:text-foreground',
               )}
               onMouseEnter={(e) => {
@@ -300,7 +299,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                     location.pathname === '/configuracoes-fiscais'
-                      ? 'text-primary font-semibold bg-primary/5'
+                      ? 'text-[#6A39AD] font-semibold bg-primary/5'
                       : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                   )}
                 >
@@ -312,7 +311,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                     location.pathname === '/configuracoes/etiquetas'
-                      ? 'text-primary font-semibold bg-primary/5'
+                      ? 'text-[#6A39AD] font-semibold bg-primary/5'
                       : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                   )}
                 >
@@ -324,7 +323,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                     location.pathname === '/configuracoes/notificacoes'
-                      ? 'text-primary font-semibold bg-primary/5'
+                      ? 'text-[#6A39AD] font-semibold bg-primary/5'
                       : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                   )}
                 >
@@ -336,7 +335,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                     location.pathname === '/configuracoes/taxas'
-                      ? 'text-primary font-semibold bg-primary/5'
+                      ? 'text-[#6A39AD] font-semibold bg-primary/5'
                       : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                   )}
                 >
@@ -348,7 +347,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                     location.pathname === '/configuracoes/impressora'
-                      ? 'text-primary font-semibold bg-primary/5'
+                      ? 'text-[#6A39AD] font-semibold bg-primary/5'
                       : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                   )}
                 >
@@ -361,7 +360,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                     className={cn(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                       location.pathname === '/usuarios'
-                        ? 'text-primary font-semibold bg-primary/5'
+                        ? 'text-[#6A39AD] font-semibold bg-primary/5'
                         : 'text-text-secondary hover:text-foreground hover:bg-primary/5',
                     )}
                   >
@@ -385,7 +384,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
                   className={cn(
                     'flex items-center justify-center px-0 py-2.5 rounded-xl transition-all duration-200',
                     location.pathname.includes('/config')
-                      ? 'text-primary'
+                      ? 'text-[#6A39AD]'
                       : 'text-text-secondary hover:text-foreground',
                   )}
                   onMouseEnter={(e) => {

@@ -59,7 +59,7 @@ export function AppSidebar() {
 
 
   return (
-    <Sidebar collapsible="icon" className="border-r bg-background">
+    <Sidebar collapsible="icon" className="bg-sidebar">
       <SidebarHeader className="bg-background border-b border-border p-4">
         <div className="flex items-center justify-center">
           <img

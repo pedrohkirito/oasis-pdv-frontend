@@ -173,7 +173,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
     <div className="flex h-full flex-col">
       {/* ── Logo + toggle ─────────────────────────────────────────── */}
       <div className={cn(
-        'flex items-center border-b border-border h-[64px] px-4',
+        'flex items-center h-[64px] px-4',
         collapsed ? 'justify-center' : 'justify-between',
       )}>
         {!collapsed && (
@@ -201,7 +201,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
 
       {/* ── Seletor de empresa (multi-tenant) ────────────────────── */}
       {!collapsed && empresas.length > 1 && (
-        <div className="px-3 py-2 border-b border-border">
+        <div className="px-3 py-2">
           <select
             value={empresaAtiva?.id || ''}
             onChange={(e) => {
@@ -408,7 +408,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
       </nav>
 
       {/* ── Rodapé: ThemeToggle + Avatar ──────────────────────────── */}
-      <div className="border-t border-border p-3 space-y-1">
+      <div className="p-3 space-y-1">
         {/* Theme toggle */}
         <div className={cn(
           'flex items-center px-2 py-1',
@@ -531,7 +531,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FFFFFF' }}>
+    <div className="min-h-screen flex bg-background text-foreground">
       {/* ── Orb decorativo global ───────────────────────────────────── */}
       <div
         aria-hidden="true"
@@ -554,7 +554,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
         className={cn(
           'fixed left-0 top-0 bottom-0 z-30 hidden md:flex flex-col',
           'transition-all duration-300 ease-in-out',
-          'bg-card/85 backdrop-blur-xl border-r border-border',
+          'bg-sidebar',
           collapsed ? 'w-[64px]' : 'w-[240px]',
         )}
       >
@@ -574,7 +574,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
         {/* ── Header ────────────────────────────────────────────── */}
         <header className={cn(
           'sticky top-0 z-20 h-[64px] flex items-center justify-between px-4 md:px-6',
-          'bg-card/80 backdrop-blur-md border-b border-border',
+          'bg-card/95 backdrop-blur-md',
         )}>
           {/* Esquerda: hamburger (mobile) + search */}
           <div className="flex items-center gap-3">
@@ -590,7 +590,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[240px] p-0 bg-card border-r border-border">
+              <SheetContent side="left" className="w-[240px] p-0 bg-sidebar border-0">
                 <SidebarContent
                   collapsed={false}
                   onNavClick={() => setMobileOpen(false)}
@@ -690,7 +690,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
         <CommandMenu open={commandOpen} onOpenChange={setCommandOpen} />
 
         {/* ── Page content ────────────────────────────────────────── */}
-        <main className="flex-1" key={empresaAtiva?.id} style={{ position: 'relative', zIndex: 1 }}>
+        <main className="app-content flex-1 bg-background text-foreground" key={empresaAtiva?.id} style={{ position: 'relative', zIndex: 1 }}>
           {children}
         </main>
       </div>

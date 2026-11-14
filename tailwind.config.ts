@@ -112,8 +112,8 @@ export default {
 				'accent-neutral':  '#B6B333', // despesas, atrasos
 
 				// ── Superfícies ───────────────────────────────────────────
-				'surface-bg':   '#FAFAFC',
-				'surface-card': '#FFFFFF',
+				'surface-bg':   'hsl(var(--background))',
+				'surface-card': 'hsl(var(--card))',
 
 				// ── Glass tokens ──────────────────────────────────────────
 				// Uso: className="bg-glass-light border-glass-border" etc.
@@ -127,11 +127,11 @@ export default {
 				},
 
 				// ── Texto ─────────────────────────────────────────────────
-				'text-primary':   '#1F2937',
-				'text-secondary': '#6B7280',
+				'text-primary':   'hsl(var(--foreground))',
+				'text-secondary': 'hsl(var(--muted-foreground))',
 
 				// ── Borda estática ────────────────────────────────────────
-				'border-base': '#E2E8F0',
+				'border-base': 'hsl(var(--border))',
 			},
 			borderRadius: {
 				none: '0',

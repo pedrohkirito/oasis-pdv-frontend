@@ -37,6 +37,11 @@
     font-weight: 800;
   }
   :root {
+    color-scheme: light;
+    --app-canvas: 240 20% 98%;
+    --app-surface: 0 0% 100%;
+    --app-surface-muted: 240 17% 96%;
+
     /* ── Superfícies ──────────────────────────────────────────────── */
     --background: 0 0% 100%;         /* #FFFFFF */
     --foreground: 220 26% 17%;       /* #1F2937 */
@@ -106,6 +111,11 @@
   }
 
   .dark {
+    color-scheme: dark;
+    --app-canvas: 240 14% 7%;
+    --app-surface: 240 17% 14%;
+    --app-surface-muted: 240 18% 18%;
+
     /* ── Backgrounds ──────────────────────────────────────────────── */
     --background: 240 14% 7%;          /* #0F0F14 — base principal */
     --foreground: 246 100% 97%;        /* #F1F0FF — texto primário */
@@ -753,13 +763,14 @@
 .dark .border-blue-200 { border-color: #1E3A5F; }
 
 /* ── Badges cinzas (Inativo) ───────────────────────────────────────────── */
-.dark .bg-gray-100  { background-color: #1E1E2A; }
+.dark .bg-gray-100  { background-color: hsl(var(--app-surface-muted)); }
 .dark .text-gray-800,
 .dark .text-gray-700 { color: #9B97B8; }
 .dark .border-gray-200 { border-color: #2A2A3A; }
 
 /* ── Whites / surfaces explícitos ─────────────────────────────────────── */
-.dark .bg-white { background-color: #1E1E2A; }
+.dark .bg-white,
+.dark .app-content [class*="bg-white/"] { background-color: hsl(var(--app-surface)); }
 .dark .text-white { color: #F1F0FF; }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -768,12 +779,12 @@
 
 /* Fix 1 + 4: body background e texto — evita o override hardcoded */
 .dark body {
-  background-color: #0F0F14;
-  color: #F1F0FF;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Fix 1: container raiz do AppLayout usa bg-surface-bg (cor estática) */
-.dark .bg-surface-bg { background-color: #0F0F14; }
+.dark .bg-surface-bg { background-color: hsl(var(--background)); }
 
 /* Fix 2: cores de texto estáticas que não respondem a CSS vars */
 .dark .text-text-secondary { color: #A09CC0; }
@@ -787,7 +798,7 @@
 .dark .border-warning\/30   { border-color: #4D4000; }
 
 /* Fix 4: botões outline do header — bg mais neutro e border visível */
-.dark .bg-background { background-color: #1E1E2A; }
+.dark .bg-background { background-color: hsl(var(--background)); }
 
 /* Fix 5: labels de seção da sidebar (COMERCIAL, FINANCEIRO, etc.) */
 .dark .text-text-secondary\/60 {
@@ -802,4 +813,51 @@
   background-color: #1A2E1A;
   color: #4ADE80;
   border: 1px solid #166534;
+}
+
+/* Keep legacy inline-styled module screens on the active theme. */
+.app-content {
+  min-width: 0;
+  background-color: hsl(var(--app-canvas));
+  color: hsl(var(--foreground));
+}
+
+.dark .app-content [style*="min-height: 100vh"],
+.dark .app-content [style*="min-height:100vh"],
+.dark [data-app-theme-surface] [style*="min-height: 100vh"],
+.dark [data-app-theme-surface] [style*="min-height:100vh"] {
+  background: hsl(var(--app-canvas)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .app-content [style*="background: rgba(255, 255, 255"],
+.dark .app-content [style*="background: rgb(255, 255, 255"],
+.dark .app-content [style*="background: #fff"],
+.dark .app-content [style*="background: #FFF"],
+.dark .app-content [style*="background-color: rgb(255, 255, 255"],
+.dark .app-content [style*="background-color: #fff"],
+.dark .app-content [style*="background-color: #FFF"],
+.dark [data-app-theme-surface] [style*="background: rgba(255, 255, 255"],
+.dark [data-app-theme-surface] [style*="background: rgb(255, 255, 255"],
+.dark [data-app-theme-surface] [style*="background: #fff"],
+.dark [data-app-theme-surface] [style*="background: #FFF"],
+.dark [data-app-theme-surface] [style*="background-color: rgb(255, 255, 255"],
+.dark [data-app-theme-surface] [style*="background-color: #fff"],
+.dark [data-app-theme-surface] [style*="background-color: #FFF"] {
+  background-color: hsl(var(--app-surface)) !important;
+  background-image: none !important;
+}
+
+.dark .app-content [style*="color: #1F2937"],
+.dark .app-content [style*="color: rgb(31, 41, 55)"],
+.dark [data-app-theme-surface] [style*="color: #1F2937"],
+.dark [data-app-theme-surface] [style*="color: rgb(31, 41, 55)"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .app-content [style*="color: #6B7280"],
+.dark .app-content [style*="color: rgb(107, 114, 128)"],
+.dark [data-app-theme-surface] [style*="color: #6B7280"],
+.dark [data-app-theme-surface] [style*="color: rgb(107, 114, 128)"] {
+  color: hsl(var(--muted-foreground)) !important;
 }

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oasis | Sistema PDV</title>
+    <meta name="description" content="Sistema de controle financeiro e contas a pagar da La Fiore Store. Gerencie despesas, receitas e extratos bancários.">
+    <meta name="author" content="La Fiore Store" />
+
+    
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/XhYeAY8KTfgujPpfytDq7gpqfPs1/social-images/social-1774558315226-Desktop_-_3.webp">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lafiorestore" />
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/XhYeAY8KTfgujPpfytDq7gpqfPs1/social-images/social-1774558315226-Desktop_-_3.webp">
+    <meta property="og:title" content="Oasis | Sistema PDV">
+  <meta name="twitter:title" content="Oasis | Sistema PDV">
+  <meta property="og:description" content="Sistema de controle financeiro e contas a pagar da La Fiore Store. Gerencie despesas, receitas e extratos bancários.">
+  <meta name="twitter:description" content="Sistema de controle financeiro e contas a pagar da La Fiore Store. Gerencie despesas, receitas e extratos bancários.">
+</head>
+
+  <body>
+    <!--
+      ═══════════════════════════════════════════════════════════════
+      Liquid Glass SVG Filters — renderizados uma única vez aqui,
+      referenciados por id em CSS (filter: url(#lgf) etc.)
+      ═══════════════════════════════════════════════════════════════
+      lgf     → aplicado via `filter: url(#lgf)` no pseudo-elemento
+                ::before dos cards — distorce o highlight de luz
+                (funciona em todos os browsers)
+      lgf-bd  → aplicado via `backdrop-filter: url(#lgf-bd)`
+                para distorcer o conteúdo atrás do card como "refração"
+                (Chrome/Edge apenas — Safari ignora silenciosamente)
+      ═══════════════════════════════════════════════════════════════
+    -->
+    <svg aria-hidden="true" focusable="false"
+         xmlns="http://www.w3.org/2000/svg"
+         style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+      <defs>
+
+        <!--
+          ── Princípios de calibração ──────────────────────────────────────
+          baseFrequency baixa  → ondas grandes e suaves (lente de vidro espesso)
+          numOctaves="1"       → ruído de uma camada só = limpo, sem textura caótica
+          stdDeviation alto    → blur forte no mapa → transições muito suaves
+          scale baixo          → deslocamento sutil — imperceptível de relance,
+                                 mas visível ao prestar atenção (exatamente como iOS)
+          ─────────────────────────────────────────────────────────────────── -->
+
+        <!-- lgf — estado de repouso (::before overlay) -->
+        <!-- Distorce o highlight de luz branca no topo do card.         -->
+        <!-- scale=14: max 14px de deslocamento → sutil, elegante.       -->
+        <filter id="lgf"
+                x="-5%" y="-5%" width="110%" height="110%"
+                color-interpolation-filters="sRGB">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.005 0.007"
+            numOctaves="1"
+            seed="4"
+            result="noise"/>
+          <feGaussianBlur
+            in="noise"
+            stdDeviation="4"
+            result="smoothNoise"/>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="smoothNoise"
+            scale="14"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="displaced"/>
+          <feComposite
+            in="displaced"
+            in2="SourceGraphic"
+            operator="in"/>
+        </filter>
+
+        <!-- lgf-hov — estado hover (::before overlay)                   -->
+        <!-- scale=20: um pouco mais expressivo ao passar o mouse,        -->
+        <!-- como se o vidro "acordasse". Mesma frequência = transição    -->
+        <!-- coerente (os "picos" de luz estão nos mesmos lugares).       -->
+        <filter id="lgf-hov"
+                x="-5%" y="-5%" width="110%" height="110%"
+                color-interpolation-filters="sRGB">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.005 0.007"
+            numOctaves="1"
+            seed="4"
+            result="noise"/>
+          <feGaussianBlur
+            in="noise"
+            stdDeviation="3"
+            result="smoothNoise"/>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="smoothNoise"
+            scale="20"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="displaced"/>
+          <feComposite
+            in="displaced"
+            in2="SourceGraphic"
+            operator="in"/>
+        </filter>
+
+        <!-- lgf-bd — backdrop distortion (Chrome/Edge via @supports)    -->
+        <!-- Distorce o conteúdo ATRÁS do card — refração real.          -->
+        <!-- scale=7: quase imperceptível mas perceptível quando há       -->
+        <!-- texto colorido ou gradiente atrás do card.                   -->
+        <filter id="lgf-bd"
+                x="-3%" y="-3%" width="106%" height="106%"
+                color-interpolation-filters="sRGB">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.004 0.006"
+            numOctaves="1"
+            seed="4"
+            result="noise"/>
+          <feGaussianBlur
+            in="noise"
+            stdDeviation="3.5"
+            result="smoothNoise"/>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="smoothNoise"
+            scale="7"
+            xChannelSelector="R"
+            yChannelSelector="G"/>
+        </filter>
+
+      </defs>
+    </svg>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
+  </body>
+</html>

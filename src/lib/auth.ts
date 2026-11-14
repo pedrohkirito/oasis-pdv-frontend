@@ -1,0 +1,181 @@
+/**
+ * Helpers de autenticação e autorização multi-tenant.
+ *
+ * empresa_id vem do JWT app_metadata (definido pelo custom_access_token_hook).
+ * app_metadata é server-side only — não pode ser editado pelo usuário.
+ *
+ * USO:
+ *   import { getEmpresaId, requireEmpresaId, getEmpresaRole } from '@/lib/auth';
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import type { Session, User } from '@supabase/supabase-js';
+
+// ---------------------------------------------------------------------------
+// Tipos
+// ---------------------------------------------------------------------------
+
+export type AppRole = 'admin' | 'gerente' | 'vendedor' | 'visualizador';
+
+export interface EmpresaContext {
+  empresaId: string;
+  role: AppRole;
+  userId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extrair empresa_id do JWT (sincrono — usa sessão em cache)
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna o empresa_id do JWT da sessão atual, ou null se não estiver presente.
+ * Não faz chamada ao banco — lê do token em memória.
+ */
+export function getEmpresaIdFromSession(session: Session | null): string | null {
+  return (session?.user?.app_metadata?.empresa_id as string | undefined) ?? null;
+}
+
+/**
+ * Retorna o role do usuário na empresa atual (do JWT), ou null.
+ */
+export function getEmpresaRoleFromSession(session: Session | null): AppRole | null {
+  return (session?.user?.app_metadata?.empresa_role as AppRole | undefined) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers assíncronos (aguardam a sessão do Supabase)
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna o empresa_id do usuário autenticado atual.
+ * Lê do JWT — sem query ao banco.
+ *
+ * @returns empresa_id (uuid string) ou null se não autenticado / sem empresa
+ */
+export async function getEmpresaId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return getEmpresaIdFromSession(data.session);
+}
+
+/**
+ * Retorna o empresa_id ou lança erro se não estiver disponível.
+ * Use em contextos onde empresa_id é obrigatório (ex: ao criar registros).
+ *
+ * @throws Error se o usuário não estiver autenticado ou sem empresa associada
+ */
+export async function requireEmpresaId(): Promise<string> {
+  const empresaId = await getEmpresaId();
+
+  if (!empresaId) {
+    throw new Error(
+      'empresa_id não encontrado no JWT. ' +
+        'Verifique se o Custom Access Token Hook está configurado e se o usuário ' +
+        'está associado a uma empresa em user_empresas.'
+    );
+  }
+
+  return empresaId;
+}
+
+/**
+ * Retorna o contexto completo da empresa: empresaId + role + userId.
+ * @throws Error se não autenticado ou sem empresa
+ */
+export async function getEmpresaContext(): Promise<EmpresaContext> {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error || !data.session) {
+    throw new Error('Usuário não autenticado.');
+  }
+
+  const empresaId = getEmpresaIdFromSession(data.session);
+  const role = getEmpresaRoleFromSession(data.session);
+
+  if (!empresaId) {
+    throw new Error(
+      'empresa_id não encontrado no JWT. Configure o Custom Access Token Hook.'
+    );
+  }
+
+  return {
+    empresaId,
+    role: role ?? 'visualizador',
+    userId: data.session.user.id,
+  };
+}
+
+/**
+ * Retorna o User do Supabase com tipagem para app_metadata.
+ */
+export async function getAuthUser(): Promise<User | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user;
+}
+
+// ---------------------------------------------------------------------------
+// Verificações de role
+// ---------------------------------------------------------------------------
+
+export function isAdmin(session: Session | null): boolean {
+  return getEmpresaRoleFromSession(session) === 'admin';
+}
+
+export function isAdminOrGerente(session: Session | null): boolean {
+  const role = getEmpresaRoleFromSession(session);
+  return role === 'admin' || role === 'gerente';
+}
+
+export function canWrite(session: Session | null): boolean {
+  const role = getEmpresaRoleFromSession(session);
+  return role === 'admin' || role === 'gerente' || role === 'vendedor';
+}
+
+// ---------------------------------------------------------------------------
+// Helper para garantir que inserts/updates incluam empresa_id
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna os campos obrigatórios de tenant para inserts.
+ * Uso: await supabase.from('vendas').insert({ ...dados, ...await tenantFields() })
+ */
+export async function tenantFields(): Promise<{ empresa_id: string; user_id: string }> {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error || !data.session) throw new Error('Usuário não autenticado.');
+
+  const empresaId = getEmpresaIdFromSession(data.session);
+  if (!empresaId) throw new Error('empresa_id não disponível no JWT.');
+
+  return {
+    empresa_id: empresaId,
+    user_id: data.session.user.id,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Diagnóstico
+// ---------------------------------------------------------------------------
+
+/**
+ * Exibe no console os claims relevantes do JWT atual.
+ * Use apenas em desenvolvimento para depuração.
+ */
+export async function debugJwtClaims(): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const meta = data.session?.user?.app_metadata;
+
+  console.group('[Auth Debug] JWT app_metadata');
+  console.log('empresa_id  :', meta?.empresa_id ?? '⚠️  NÃO ENCONTRADO');
+  console.log('empresa_role:', meta?.empresa_role ?? '⚠️  NÃO ENCONTRADO');
+  console.log('user_id     :', data.session?.user?.id ?? 'não autenticado');
+
+  if (!meta?.empresa_id) {
+    console.warn(
+      'empresa_id ausente. Verifique:\n' +
+        '  1. custom_access_token_hook está registrado no Dashboard?\n' +
+        '  2. O usuário está em user_empresas?\n' +
+        '  3. Faça logout + login para forçar novo JWT.'
+    );
+  }
+  console.groupEnd();
+}

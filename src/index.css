@@ -1,0 +1,805 @@
+/* ── Gilroy Font Family (all weights) ─────────────────────── */
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Thin.woff2') format('woff2'); font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-ThinItalic.woff2') format('woff2'); font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-UltraLight.woff2') format('woff2'); font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-UltraLightItalic.woff2') format('woff2'); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-LightItalic.woff2') format('woff2'); font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-RegularItalic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-MediumItalic.woff2') format('woff2'); font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Semibold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Extrabold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-ExtraboldItalic.woff2') format('woff2'); font-weight: 800; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-BlackItalic.woff2') format('woff2'); font-weight: 900; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-Heavy.woff2') format('woff2'); font-weight: 950; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gilroy'; src: url('/fonts/Gilroy-HeavyItalic.woff2') format('woff2'); font-weight: 950; font-style: italic; font-display: swap; }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-size: 16px;
+    line-height: 0.85;
+    letter-spacing: -0.011em;
+    font-weight: 400;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: 40px;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+  }
+  :root {
+    /* ── Superfícies ──────────────────────────────────────────────── */
+    --background: 0 0% 100%;         /* #FFFFFF */
+    --foreground: 220 26% 17%;       /* #1F2937 */
+
+    --card: 0 0% 100%;               /* #FFFFFF */
+    --card-foreground: 220 26% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 26% 17%;
+
+    /* ── Brand purple ─────────────────────────────────────────────── */
+    --primary: 265 54% 59%;          /* #8E5FCF */
+    --primary-foreground: 0 0% 100%;
+
+    /* ── Secondary = roxo bem claro ──────────────────────────────── */
+    --secondary: 264 100% 90%;       /* #E2CEFF */
+    --secondary-foreground: 266 79% 31%; /* #47118F */
+
+    /* ── Muted ────────────────────────────────────────────────────── */
+    --muted: 240 17% 96%;
+    --muted-foreground: 220 9% 46%;  /* #6B7280 */
+
+    /* ── Accent ───────────────────────────────────────────────────── */
+    --accent: 264 100% 96%;
+    --accent-foreground: 266 79% 31%;
+
+    /* ── Semânticos ──────────────────────────────────────────────── */
+    --destructive: 6 57% 49%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 155 54% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 40 89% 60%;
+    --warning-foreground: 220 26% 17%;
+
+    /* ── Bordas / inputs ─────────────────────────────────────────── */
+    --border: 214 32% 91%;           /* #E2E8F0 */
+    --input: 214 32% 91%;
+    --ring: 265 54% 59%;
+
+    /* ── Upload zone ─────────────────────────────────────────────── */
+    --upload-border: 265 54% 59%;
+    --upload-bg: 240 17% 99%;
+    --upload-hover: 266 79% 31%;
+
+    /* ── Raio global (generoso — FinSet vibes) ───────────────────── */
+    --radius: 0.75rem;
+
+    /* ── Sidebar ─────────────────────────────────────────────────── */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 26% 17%;
+    --sidebar-primary: 265 54% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 264 100% 97%;
+    --sidebar-accent-foreground: 266 79% 31%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 265 54% 59%;
+    --sidebar-muted: 220 9% 46%;
+
+    /* ── Charts ──────────────────────────────────────────────────── */
+    --chart-1: 265 54% 59%;   /* brand purple */
+    --chart-2: 155 54% 40%;   /* verde / receita */
+    --chart-3: 58 93% 70%;    /* amarelo / accentPositive */
+    --chart-4: 6 57% 49%;     /* vermelho / despesa */
+    --chart-5: 264 100% 80%;  /* lavanda */
+  }
+
+  .dark {
+    /* ── Backgrounds ──────────────────────────────────────────────── */
+    --background: 240 14% 7%;          /* #0F0F14 — base principal */
+    --foreground: 246 100% 97%;        /* #F1F0FF — texto primário */
+
+    --card: 240 17% 14%;               /* #1E1E2A — cards */
+    --card-foreground: 246 100% 97%;
+
+    --popover: 240 17% 14%;            /* #1E1E2A */
+    --popover-foreground: 246 100% 97%;
+
+    /* ── Brand ─────────────────────────────────────────────────────── */
+    --primary: 265 54% 59%;            /* #8E5FCF — mantido igual ao light */
+    --primary-foreground: 0 0% 100%;
+
+    /* ── Secondary / outline buttons ──────────────────────────────── */
+    --secondary: 240 17% 14%;          /* #1E1E2A */
+    --secondary-foreground: 265 100% 81%; /* #C59CFF */
+
+    /* ── Muted ─────────────────────────────────────────────────────── */
+    --muted: 240 18% 18%;              /* #252535 — hover / secundário */
+    --muted-foreground: 247 18% 66%;   /* #9B97B8 — texto secundário */
+
+    /* ── Accent (hover states) ─────────────────────────────────────── */
+    --accent: 240 18% 18%;             /* #252535 */
+    --accent-foreground: 265 100% 81%; /* #C59CFF */
+
+    /* ── Semânticos ────────────────────────────────────────────────── */
+    --destructive: 0 91% 71%;          /* #F87171 — legível no dark */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 69% 58%;            /* #4ADE80 */
+    --success-foreground: 146 54% 11%; /* #0D2B1A */
+
+    --warning: 46 97% 65%;             /* #FCD34D */
+    --warning-foreground: 44 100% 8%;  /* #2B2000 */
+
+    /* ── Bordas / inputs ───────────────────────────────────────────── */
+    --border: 240 16% 20%;             /* #2A2A3A */
+    --input: 240 16% 27%;              /* #3A3A50 — border visível p/ inputs e buttons */
+    --ring: 265 54% 59%;               /* #8E5FCF */
+
+    /* ── Upload zone ────────────────────────────────────────────────── */
+    --upload-border: 265 54% 59%;
+    --upload-bg: 240 14% 9%;
+    --upload-hover: 265 100% 81%;
+
+    /* ── Sidebar ────────────────────────────────────────────────────── */
+    --sidebar-background: 240 15% 10%; /* #16161E */
+    --sidebar-foreground: 246 100% 97%; /* #F1F0FF */
+    --sidebar-primary: 265 54% 59%;    /* #8E5FCF */
+    --sidebar-primary-foreground: 265 100% 81%; /* #C59CFF */
+    --sidebar-accent: 258 43% 21%;     /* #2D1F4E — item ativo bg */
+    --sidebar-accent-foreground: 265 100% 81%; /* #C59CFF — item ativo text */
+    --sidebar-border: 240 16% 20%;     /* #2A2A3A */
+    --sidebar-ring: 265 54% 59%;
+    --sidebar-muted: 247 15% 41%;      /* #5C5878 — labels de seção */
+
+    /* ── Charts ─────────────────────────────────────────────────────── */
+    --chart-1: 265 54% 59%;            /* #8E5FCF — entradas */
+    --chart-2: 258 47% 30%;            /* #3D2870 — saídas (roxo escuro) */
+    --chart-3: 58 90% 72%;             /* amarelo acento */
+    --chart-4: 0 91% 71%;              /* #F87171 — vermelho */
+    --chart-5: 265 100% 81%;           /* #C59CFF — lavanda */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  * {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-in-out;
+  }
+
+  html,
+  body {
+    font-family: 'Gilroy', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .skeleton-loading {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     Liquid Glass White — implementação simples, estável e visível
+     CSS puro: backdrop-filter + box-shadow + pseudo-elemento highlight
+     Sem SVG filter — funciona em todos os browsers modernos
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  .liquid-glass-white {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(32px) saturate(185%) contrast(110%);
+    -webkit-backdrop-filter: blur(32px) saturate(185%) contrast(110%);
+    border: 1.5px solid rgba(142, 95, 207, 0.28);
+    border-radius: 24px;
+    box-shadow:
+      0 12px 36px -12px rgba(142, 95, 207, 0.08),
+      inset 0  3px 12px rgba(255, 255, 255, 0.15),
+      inset 0 -6px 16px rgba(0,   0,   0,   0.03);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* Highlight diagonal — cobre o card inteiro com fade 145° */
+  .liquid-glass-white::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.05) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.30;
+    border-radius: inherit;
+    transition: opacity 0.4s ease;
+  }
+
+  .liquid-glass-white:hover:not([role="dialog"]):not([data-state]) {
+    backdrop-filter: blur(34px) saturate(190%) contrast(112%);
+    -webkit-backdrop-filter: blur(34px) saturate(190%) contrast(112%);
+    box-shadow:
+      0 14px 40px -12px rgba(142, 95, 207, 0.08),
+      inset 0  3px 10px rgba(255, 255, 255, 0.10),
+      inset 0 -4px 10px rgba(0,   0,   0,   0.02);
+  }
+
+  .liquid-glass-white:hover::before {
+    opacity: 0.35;
+  }
+
+  /* Conteúdo acima do ::before (z-index 2) → precisa de z-index 3 */
+  .liquid-glass-white > * {
+    position: relative;
+    z-index: 3;
+  }
+
+  /* Dark mode */
+  .dark .liquid-glass-white {
+    background: rgba(18, 18, 30, 0.78);
+    border-color: rgba(142, 95, 207, 0.25);
+    box-shadow:
+      0 15px 40px -12px rgba(0, 0, 0, 0.55),
+      inset 0  5px 18px rgba(255, 255, 255, 0.05),
+      inset 0 -10px 22px rgba(0, 0, 0, 0.45);
+  }
+
+  .dark .liquid-glass-white::before {
+    background: linear-gradient(
+      145deg,
+      rgba(142, 95, 207, 0.18) 0%,
+      rgba(255, 255, 255, 0.04) 40%,
+      transparent 70%
+    );
+  }
+
+  .dark .liquid-glass-white:hover {
+    box-shadow:
+      0 18px 44px -12px rgba(0, 0, 0, 0.55),
+      inset 0  4px 14px rgba(255, 255, 255, 0.04),
+      inset 0 -6px 14px rgba(0, 0, 0, 0.40);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     Liquid Glass — Glassmorphism fluido com refração e brilho dinâmico
+     Paleta: branco/off-white base + roxo accent (#8E5FCF) nos highlights
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Base: liquid-glass ──────────────────────────────────────────────── */
+  /*
+   * Efeito Liquid Glass com refração SVG
+   * Camadas (de baixo pra cima):
+   *   1. backdrop-filter blur/saturate  → conteúdo atrás desfocado/vibrante
+   *   2. backdrop-filter url(#lgf-bd)   → refração real no backdrop [Chrome/Edge]
+   *   3. ::before gradient + filter url(#lgf) → highlight de luz distorcido
+   *   4. ::after linha iridescente inferior
+   *   5. Conteúdo real (z-index 1)
+   *
+   * Paleta accent: #8E5FCF · #E2CEFF · #D5B7FF · #C7A1FC
+   */
+  .liquid-glass {
+    position: relative;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.88);
+    /* Fallback universal: blur + saturate apenas */
+    backdrop-filter: blur(22px) saturate(170%) brightness(1.05);
+    -webkit-backdrop-filter: blur(22px) saturate(170%) brightness(1.05);
+    border: 1px solid rgba(142, 95, 207, 0.22);
+    border-top-color: rgba(255, 255, 255, 0.25);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 10px 36px -10px rgba(0,   0,   0,   0.07),
+      0  2px  8px  -2px rgba(0,   0,   0,   0.04),
+      inset 0  3px 10px    rgba(255, 255, 255, 0.12),
+      inset 0 -4px 12px    rgba(0,   0,   0,   0.03),
+      inset 0  0   0  1px  rgba(142, 95,  207, 0.06);
+    transition:
+      transform         0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      backdrop-filter   0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow        0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      background        0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      border-color      0.30s cubic-bezier(0.23, 1, 0.32, 1);
+    overflow: hidden;
+    will-change: transform;
+  }
+
+  /*
+   * Progressive enhancement: Chrome/Edge suportam backdrop-filter: url()
+   * → o SVG #lgf-bd aplica feTurbulence + feDisplacementMap no conteúdo
+   *   que está atrás do card, criando refração real como vidro curvo.
+   * Safari ignora silenciosamente e cai para o blur clássico acima.
+   */
+  @supports (backdrop-filter: url('#x')) {
+    .liquid-glass {
+      backdrop-filter: url(#lgf-bd) blur(20px) saturate(170%) brightness(1.05);
+    }
+  }
+  @supports (-webkit-backdrop-filter: url('#x')) {
+    .liquid-glass {
+      -webkit-backdrop-filter: url(#lgf-bd) blur(20px) saturate(170%) brightness(1.05);
+    }
+  }
+
+  /*
+   * ::before — highlight de luz distorcido pelo SVG #lgf
+   *
+   * O gradiente radial representa as "poças de luz" que se formam
+   * na superfície do vidro. filter: url(#lgf) aplica o mapa de
+   * deslocamento feTurbulence sobre esse gradiente, curvando as
+   * bandas de luz como vidro real curvo ou líquido.
+   *
+   * Resultado: brilho orgânico e não uniforme que parece refração real.
+   * O conteúdo do card NÃO é afetado — fica nítido no z-index 1.
+   */
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    top: -20%; left: -8%;
+    width: 116%; height: 90%;
+    background: radial-gradient(
+      ellipse 100% 80% at 38% 18%,
+      rgba(255, 255, 255, 0.84) 0%,
+      rgba(255, 255, 255, 0.52) 18%,
+      rgba(255, 255, 255, 0.18) 42%,
+      rgba(214, 183, 255, 0.09) 64%,
+      transparent 86%
+    );
+    /* SVG displacement: distorce o highlight para parecer vidro curvado */
+    filter: url(#lgf);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+    transition:
+      transform 0.40s cubic-bezier(0.23, 1, 0.32, 1),
+      opacity   0.40s cubic-bezier(0.23, 1, 0.32, 1),
+      filter    0.40s cubic-bezier(0.23, 1, 0.32, 1); /* url() não interpola hoje, mas future-proof */
+  }
+
+  /* No hover: muda para #lgf-hov (scale 14→20) + desloca o pool de luz */
+  .liquid-glass:hover::before {
+    filter: url(#lgf-hov);
+    transform: translateX(6%) translateY(-4%) scale(1.04);
+    opacity: 0.88;
+  }
+
+  /*
+   * ::after — linha iridescente na borda inferior
+   * Simula o reflexo espectral do cristal/vidro real na borda de baixo
+   */
+  .liquid-glass::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent              0%,
+      rgba(142, 95,  207, 0.18) 18%,
+      rgba(199, 161, 252, 0.50) 38%,
+      rgba(185, 135, 255, 0.60) 50%,
+      rgba(199, 161, 252, 0.50) 62%,
+      rgba(142, 95,  207, 0.18) 82%,
+      transparent              100%
+    );
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.65;
+    transition:
+      opacity 0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      left    0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      right   0.30s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .liquid-glass:hover::after {
+    left: 4%; right: 4%;
+    opacity: 1;
+  }
+
+  /* ── Hover — escala suave, blur intensificado, brilho ampliado ────────── */
+  .liquid-glass:hover {
+    transform: scale(1.005);
+    background: rgba(255, 255, 255, 0.86);
+    border-color: rgba(142, 95, 207, 0.22);
+    border-top-color: rgba(255, 255, 255, 0.30);
+    box-shadow:
+      0 14px 40px -10px rgba(142, 95,  207, 0.08),
+      0  3px 10px  -2px rgba(0,   0,   0,   0.03),
+      inset 0  2px 10px    rgba(255, 255, 255, 0.10),
+      inset 0 -3px 10px    rgba(0,   0,   0,   0.02),
+      inset 0  0   0  1px  rgba(142, 95,  207, 0.06);
+  }
+
+  @supports (backdrop-filter: url('#x')) {
+    .liquid-glass:hover {
+      backdrop-filter: url(#lgf-bd) blur(24px) saturate(180%) brightness(1.06);
+    }
+  }
+  @supports (-webkit-backdrop-filter: url('#x')) {
+    .liquid-glass:hover {
+      -webkit-backdrop-filter: url(#lgf-bd) blur(24px) saturate(180%) brightness(1.06);
+    }
+  }
+
+  /* Conteúdo sempre acima dos pseudo-elementos */
+  .liquid-glass > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Variante estática — sem hover/scale (containers, seções) ─────────── */
+  .liquid-glass-static {
+    position: relative;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(24px) saturate(160%) brightness(1.05);
+    -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.05);
+    border: 1px solid rgba(142, 95, 207, 0.18);
+    border-top-color: rgba(255, 255, 255, 0.22);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 10px 36px -8px rgba(0, 0, 0, 0.06),
+      0  2px  8px -2px rgba(0, 0, 0, 0.03),
+      inset 0  3px 10px rgba(255, 255, 255, 0.12),
+      inset 0 -4px 12px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+  }
+
+  .liquid-glass-static::before {
+    content: '';
+    position: absolute;
+    top: -20%; left: -8%;
+    width: 116%; height: 90%;
+    background: radial-gradient(
+      ellipse 100% 80% at 38% 18%,
+      rgba(255, 255, 255, 0.80) 0%,
+      rgba(255, 255, 255, 0.45) 20%,
+      rgba(255, 255, 255, 0.14) 45%,
+      transparent 80%
+    );
+    filter: url(#lgf);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+  }
+
+  .liquid-glass-static > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Variante forte — blur máximo, opacidade alta (modais, overlays) ─── */
+  .liquid-glass-strong {
+    position: relative;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.93);
+    backdrop-filter: blur(36px) saturate(180%) brightness(1.04);
+    -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.04);
+    border: 1px solid rgba(142, 95, 207, 0.18);
+    border-top-color: rgba(255, 255, 255, 0.28);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 16px 50px -10px rgba(0,   0,   0,   0.08),
+      0  3px 12px  -2px rgba(0,   0,   0,   0.04),
+      inset 0  3px 12px    rgba(255, 255, 255, 0.15),
+      inset 0 -4px 14px    rgba(0,   0,   0,   0.03),
+      inset 0  0   0  1px  rgba(142, 95,  207, 0.06);
+    transition:
+      transform  0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 0.30s cubic-bezier(0.23, 1, 0.32, 1);
+    overflow: hidden;
+  }
+
+  .liquid-glass-strong::before {
+    content: '';
+    position: absolute;
+    top: -20%; left: -8%;
+    width: 116%; height: 90%;
+    background: radial-gradient(
+      ellipse 100% 80% at 38% 18%,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 255, 255, 0.55) 18%,
+      rgba(255, 255, 255, 0.20) 42%,
+      transparent 78%
+    );
+    filter: url(#lgf);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+  }
+
+  .liquid-glass-strong > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Variante roxa — fundo roxo translúcido (destaque, banners, CTAs) ── */
+  .liquid-glass-purple {
+    position: relative;
+    isolation: isolate;
+    background: rgba(142, 95, 207, 0.80);
+    backdrop-filter: blur(24px) saturate(160%) brightness(1.05);
+    -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.05);
+    border: 1px solid rgba(185, 135, 255, 0.40);
+    border-top-color: rgba(255, 255, 255, 0.28);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 12px 40px -8px rgba(142, 95, 207, 0.25),
+      0  2px  8px -2px rgba(71,  17, 143, 0.14),
+      inset 0  3px 10px rgba(255, 255, 255, 0.10),
+      inset 0 -4px 12px rgba(71,  17, 143, 0.16);
+    overflow: hidden;
+    transition:
+      transform  0.30s cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 0.30s cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: transform;
+  }
+
+  .liquid-glass-purple::before {
+    content: '';
+    position: absolute;
+    top: -18%; left: -8%;
+    width: 116%; height: 86%;
+    background: radial-gradient(
+      ellipse 95% 75% at 38% 16%,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.16) 32%,
+      rgba(255, 255, 255, 0.06) 58%,
+      transparent 82%
+    );
+    filter: url(#lgf);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+    transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .liquid-glass-purple::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.40) 50%,
+      transparent
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .liquid-glass-purple > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .liquid-glass-purple:hover {
+    transform: scale(1.015);
+    backdrop-filter: blur(28px) saturate(180%) brightness(1.06);
+    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.06);
+    box-shadow:
+      0 18px 50px -8px rgba(142, 95, 207, 0.32),
+      0  4px 14px -2px rgba(71,  17, 143, 0.18),
+      inset 0  3px 10px rgba(255, 255, 255, 0.12),
+      inset 0 -4px 12px rgba(71,  17, 143, 0.18);
+  }
+
+  .liquid-glass-purple:hover::before {
+    transform: translateX(8%) translateY(-6%) scale(1.06);
+  }
+
+  /* ── Dark mode ────────────────────────────────────────────────────────── */
+  .dark .liquid-glass,
+  .dark .liquid-glass-static {
+    background: rgba(18, 18, 30, 0.75);
+    border-color: rgba(142, 95, 207, 0.15);
+    border-top-color: rgba(255, 255, 255, 0.07);
+    box-shadow:
+      0 12px 40px -8px rgba(0, 0, 0, 0.45),
+      0  2px  8px -2px rgba(0, 0, 0, 0.30),
+      inset 0  4px 12px rgba(255, 255, 255, 0.04),
+      inset 0 -6px 16px rgba(0, 0, 0, 0.38),
+      inset 0  0   0  1px rgba(142, 95, 207, 0.10);
+  }
+
+  .dark .liquid-glass::before,
+  .dark .liquid-glass-static::before {
+    background: radial-gradient(
+      ellipse 100% 80% at 38% 18%,
+      rgba(142, 95, 207, 0.22) 0%,
+      rgba(185, 135, 255, 0.10) 30%,
+      rgba(255, 255, 255, 0.03) 55%,
+      transparent 80%
+    );
+    filter: url(#lgf);
+  }
+
+  .dark .liquid-glass::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(142, 95, 207, 0.35) 50%,
+      transparent
+    );
+  }
+
+  .dark .liquid-glass:hover {
+    background: rgba(22, 22, 36, 0.86);
+    border-color: rgba(142, 95, 207, 0.22);
+    border-top-color: rgba(255, 255, 255, 0.10);
+    box-shadow:
+      0 18px 50px -8px rgba(0, 0, 0, 0.55),
+      0  4px 14px -2px rgba(0, 0, 0, 0.35),
+      inset 0  4px 12px rgba(255, 255, 255, 0.06),
+      inset 0 -6px 16px rgba(0, 0, 0, 0.45),
+      inset 0  0   0  1px rgba(142, 95, 207, 0.15);
+  }
+
+  .dark .liquid-glass-strong {
+    background: rgba(20, 20, 34, 0.92);
+    border-color: rgba(142, 95, 207, 0.14);
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Performance — mobile: blur reduzido, SVG filter desativado ─────── */
+  @media (max-width: 768px) {
+    .liquid-glass,
+    .liquid-glass-static,
+    .liquid-glass-strong,
+    .liquid-glass-purple {
+      backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+      -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+    }
+
+    /* SVG filter desativado no mobile para preservar performance */
+    .liquid-glass::before,
+    .liquid-glass-static::before,
+    .liquid-glass-strong::before,
+    .liquid-glass-purple::before {
+      filter: none;
+    }
+
+    .liquid-glass:hover,
+    .liquid-glass-purple:hover {
+      transform: none;
+      backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+      -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.03);
+    }
+  }
+
+  /* ── Acessibilidade — sem animações, sem SVG filters ─────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .liquid-glass,
+    .liquid-glass::before,
+    .liquid-glass::after,
+    .liquid-glass-static,
+    .liquid-glass-static::before,
+    .liquid-glass-strong,
+    .liquid-glass-strong::before,
+    .liquid-glass-purple,
+    .liquid-glass-purple::before {
+      transition: none;
+      animation: none;
+      filter: none;
+    }
+
+    .liquid-glass:hover,
+    .liquid-glass-purple:hover {
+      transform: none;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Dark mode — overrides de utilitários Tailwind para badges de status e
+   alertas. Garante contraste WCAG AA em todos os fundos dark.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Badges verdes (Pago / Concluído / Ativo) ──────────────────────────── */
+.dark .bg-green-100  { background-color: #0D2B1A; }
+.dark .text-green-800,
+.dark .text-green-700 { color: #4ADE80; }
+.dark .border-green-200 { border-color: #166534; }
+
+/* ── Badges amarelas (Pendente / Em aberto) ────────────────────────────── */
+.dark .bg-yellow-100  { background-color: #2B2000; }
+.dark .text-yellow-800,
+.dark .text-yellow-700 { color: #FCD34D; }
+.dark .border-yellow-200 { border-color: #92400E; }
+
+/* ── Badges âmbar / alerta de contas a vencer ─────────────────────────── */
+.dark .bg-amber-50   { background-color: #1A1500; }
+.dark .bg-amber-100  { background-color: #2D2800; }
+.dark .text-amber-800 { color: #FAF66B; }
+.dark .text-amber-700 { color: #D4C84A; }
+.dark .text-amber-600 { color: #D4C84A; }
+.dark .border-amber-200 { border-color: #3D3200; }
+.dark .border-amber-300 { border-color: #3D3200; }
+
+/* ── Badges vermelhas (Vencido / Cancelado) ────────────────────────────── */
+.dark .bg-red-100  { background-color: #2B0D0D; }
+.dark .text-red-800,
+.dark .text-red-700 { color: #F87171; }
+.dark .border-red-200 { border-color: #991B1B; }
+
+/* ── Badges azuis (Em andamento / Homologação) ─────────────────────────── */
+.dark .bg-blue-100  { background-color: #0D1829; }
+.dark .text-blue-800,
+.dark .text-blue-700 { color: #60A5FA; }
+.dark .border-blue-200 { border-color: #1E3A5F; }
+
+/* ── Badges cinzas (Inativo) ───────────────────────────────────────────── */
+.dark .bg-gray-100  { background-color: #1E1E2A; }
+.dark .text-gray-800,
+.dark .text-gray-700 { color: #9B97B8; }
+.dark .border-gray-200 { border-color: #2A2A3A; }
+
+/* ── Whites / surfaces explícitos ─────────────────────────────────────── */
+.dark .bg-white { background-color: #1E1E2A; }
+.dark .text-white { color: #F1F0FF; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Dark mode — correções específicas de visibilidade (Round 2)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Fix 1 + 4: body background e texto — evita o override hardcoded */
+.dark body {
+  background-color: #0F0F14;
+  color: #F1F0FF;
+}
+
+/* Fix 1: container raiz do AppLayout usa bg-surface-bg (cor estática) */
+.dark .bg-surface-bg { background-color: #0F0F14; }
+
+/* Fix 2: cores de texto estáticas que não respondem a CSS vars */
+.dark .text-text-secondary { color: #A09CC0; }
+.dark .text-text-primary   { color: #F1F0FF; }
+
+/* Fix 3: alerta "Contas Próximas do Vencimento" */
+.dark .bg-warning\/10       { background-color: #1C1800; }
+.dark .border-warning\/50   { border-color: #4D4000; }
+.dark .text-warning         { color: #FAF66B; }
+.dark .bg-warning\/20       { background-color: #2D2400; }
+.dark .border-warning\/30   { border-color: #4D4000; }
+
+/* Fix 4: botões outline do header — bg mais neutro e border visível */
+.dark .bg-background { background-color: #1E1E2A; }
+
+/* Fix 5: labels de seção da sidebar (COMERCIAL, FINANCEIRO, etc.) */
+.dark .text-text-secondary\/60 {
+  color: #6B6890;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* Fix 7: badge de variação positiva (Lucro do Mês) */
+.dark .bg-accent-positive\/90 {
+  background-color: #1A2E1A;
+  color: #4ADE80;
+  border: 1px solid #166534;
+}

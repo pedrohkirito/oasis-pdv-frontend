@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" role="img" aria-label="Oasis">
+  <rect width="128" height="128" rx="28" fill="#6A39AD"/>
+  <rect x="68" y="36" width="52" height="54" rx="14" transform="rotate(-36 68 36)" fill="#E0DC41"/>
+  <rect x="34" y="44" width="52" height="54" rx="14" transform="rotate(-44 34 44)" fill="#E0DC41" fill-opacity="0.72"/>
+</svg>

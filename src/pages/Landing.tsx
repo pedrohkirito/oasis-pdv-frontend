@@ -662,16 +662,20 @@ function Hero() {
             Começar grátis por 14 dias
           </motion.button>
 
-          <motion.a
-            href="/demo/contas-a-pagar"
-            className="text-sm"
-            style={{ ...glass.light, borderRadius: '14px', padding: '14px 32px', color: '#1F2937', fontWeight: 600 }}
+          <motion.div
+            className="inline-block"
             whileHover={{ y: -2, boxShadow: '0 8px 32px rgba(142,95,207,0.12)' }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            Ver demonstração
-          </motion.a>
+            <Link
+              to="/demo/contas-a-pagar"
+              className="text-sm inline-block"
+              style={{ ...glass.light, borderRadius: '14px', padding: '14px 32px', color: '#1F2937', fontWeight: 600 }}
+            >
+              Ver demonstração
+            </Link>
+          </motion.div>
         </motion.div>
 
         {/* Social proof — pill com 3 stats */}

@@ -4,6 +4,7 @@
  * Rota: /demo/contas-a-pagar
  */
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -379,9 +380,9 @@ export default function DemoContasPagar() {
         {/* ── Rodapé demo ──────────────────────────────────────────────────── */}
         <p className="text-center text-xs text-muted-foreground pb-4">
           Esta é uma demonstração com dados fictícios.{' '}
-          <a href="/login" className="text-primary hover:underline font-medium">
+          <Link to="/login" className="text-primary hover:underline font-medium">
             Acesse o sistema real →
-          </a>
+          </Link>
         </p>
       </div>
     </div>

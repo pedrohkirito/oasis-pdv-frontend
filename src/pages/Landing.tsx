@@ -19,70 +19,6 @@ import {
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 
-// ─── CustomCursor ─────────────────────────────────────────────────────────────
-
-const CustomCursor = () => {
-  const [pos, setPos] = useState({ x: -100, y: -100 });
-  const [delayed, setDelayed] = useState({ x: -100, y: -100 });
-  const posRef = useRef({ x: -100, y: -100 });
-  const frameRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const move = (e: MouseEvent) => {
-      posRef.current = { x: e.clientX, y: e.clientY };
-      setPos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', move);
-
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const animate = () => {
-      setDelayed((prev) => ({
-        x: lerp(prev.x, posRef.current.x, 0.08),
-        y: lerp(prev.y, posRef.current.y, 0.08),
-      }));
-      frameRef.current = requestAnimationFrame(animate);
-    };
-    frameRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      window.removeEventListener('mousemove', move);
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    };
-  }, []);
-
-  return (
-    <>
-      {/* ponto central */}
-      <div style={{
-        position: 'fixed',
-        pointerEvents: 'none',
-        zIndex: 9999,
-        left: pos.x - 4,
-        top: pos.y - 4,
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        background: '#8E5FCF',
-        opacity: 0.9,
-        transition: 'opacity 0.2s',
-      }} />
-      {/* anel externo com delay */}
-      <div style={{
-        position: 'fixed',
-        pointerEvents: 'none',
-        zIndex: 9998,
-        left: delayed.x - 18,
-        top: delayed.y - 18,
-        width: 36,
-        height: 36,
-        borderRadius: '50%',
-        border: '1.5px solid rgba(142,95,207,0.5)',
-        background: 'rgba(142,95,207,0.05)',
-      }} />
-    </>
-  );
-};
-
 // ─── ParallaxImage — imagem com parallax ao scroll ───────────────────────────
 
 const ParallaxImage = ({ children }: { children: React.ReactNode }) => {
@@ -1736,12 +1672,6 @@ export default function Landing() {
     return () => { html.style.scrollBehavior = ''; };
   }, []);
 
-  // cursor customizado
-  useEffect(() => {
-    document.body.style.cursor = 'none';
-    return () => { document.body.style.cursor = 'auto'; };
-  }, []);
-
   const goToPlanos = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
@@ -1784,7 +1714,6 @@ export default function Landing() {
         filter: 'blur(55px)',
       }} />
 
-      <CustomCursor />
       <motion.div
         style={{ scaleX: scrollYProgress, transformOrigin: '0%', background: 'linear-gradient(90deg, #8E5FCF, #FAF66B)' }}
         className="fixed top-0 left-0 right-0 h-0.5 z-50"

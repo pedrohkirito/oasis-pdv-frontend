@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { resolveClienteId } from '@/lib/clienteResolver';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useImpressora } from '@/hooks/useImpressora';
@@ -282,7 +282,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const fetchVendedores = async () => {
     if (!empresaId) return;
     try {
-      const { data, error } = await supabase.functions.invoke('list-users', {
+      const { data, error } = await api.functions.invoke('list-users', {
         method: 'POST',
         body: { empresa_id: empresaId }
       });
@@ -298,7 +298,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   const fetchMesesFechados = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('fechamento_comissao')
       .select('mes_referencia')
       .eq('empresa_id', empresaId)
@@ -315,7 +315,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   const fetchNotasFiscais = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('notas_fiscais')
       .select('venda_id, status, numero, nuvem_fiscal_id, pdf_url, xml_url')
       .eq('empresa_id', empresaId)
@@ -338,7 +338,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   const fetchVendasComOperacao = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('operacoes')
       .select('id, venda_id')
       .eq('empresa_id', empresaId)
@@ -352,7 +352,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   const fetchVendasComPedido = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('pedidos_entrega')
       .select('venda_id')
       .eq('empresa_id', empresaId)
@@ -375,7 +375,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       'Montagem concluída',
     ];
 
-    const { data: opData, error: opError } = await supabase
+    const { data: opData, error: opError } = await api
       .from('operacoes')
       .insert({
         empresa_id: empresaId,
@@ -404,8 +404,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         titulo,
         ordem: i,
       }));
-      await supabase.from('operacao_tarefas').insert(tarefas as any);
-      await supabase.from('operacao_historico').insert({
+      await api.from('operacao_tarefas').insert(tarefas as any);
+      await api.from('operacao_historico').insert({
         operacao_id: opData.id,
         tipo: 'status_change',
         descricao: 'Operação criada manualmente a partir da venda',
@@ -483,7 +483,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // Busca a nota fresca direto do banco em vez de confiar no Map em cache
     // (vendasComNfce pode estar desatualizado se a nota foi emitida/reemitida
     // por outro fluxo/aba que não atualizou este estado local).
-    const { data: notaAtual, error: notaErr } = await supabase
+    const { data: notaAtual, error: notaErr } = await api
       .from('notas_fiscais')
       .select('nuvem_fiscal_id, numero, status')
       .eq('venda_id', vendaParaCancelar)
@@ -507,7 +507,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setCancelDialogOpen(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'cancelar',
           data: {
@@ -552,7 +552,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const {
       data,
       error
-    } = await supabase.from('clientes').select('id, nome, telefone, email').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('clientes').select('id, nome, telefone, email').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
       ascending: true
     });
     if (!error) {
@@ -562,7 +562,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const fetchVendas = async () => {
     if (!empresaId) return;
     setLoading(true);
-    let query = supabase.from('vendas').select('*').eq('empresa_id', empresaId);
+    let query = api.from('vendas').select('*').eq('empresa_id', empresaId);
     if (role === 'vendedor' && user) {
       query = query.eq('vendedor_id', user.id);
     }
@@ -583,7 +583,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const {
       data,
       error
-    } = await supabase.from('produtos').select('id, nome, codigo, preco, estoque, ativo, categoria').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('produtos').select('id, nome, codigo, preco, estoque, ativo, categoria').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
       ascending: true
     });
     if (!error) {
@@ -747,7 +747,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const {
       data: vendaData,
       error: vendaError
-     } = await supabase.from('vendas').insert({
+     } = await api.from('vendas').insert({
       user_id: user.id,
       empresa_id: empresaId,
       cliente_id: resolveClienteId(clientes as any, { nome: novaVenda.cliente_nome, cpf: (novaVenda as any).cliente_cpf, telefone: novaVenda.cliente_telefone }),
@@ -785,7 +785,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }));
     const {
       error: itensError
-    } = await supabase.from('itens_venda').insert(itensParaInserir);
+    } = await api.from('itens_venda').insert(itensParaInserir);
     if (itensError) {
       toast({
         title: "Aviso",
@@ -805,7 +805,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         'Montagem concluída',
       ];
 
-      const { data: opData, error: opError } = await supabase
+      const { data: opData, error: opError } = await api
         .from('operacoes')
         .insert({
           empresa_id: empresaId,
@@ -829,10 +829,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           titulo,
           ordem: i,
         }));
-        await supabase.from('operacao_tarefas').insert(tarefas as any);
+        await api.from('operacao_tarefas').insert(tarefas as any);
 
         // Add history entry
-        await supabase.from('operacao_historico').insert({
+        await api.from('operacao_historico').insert({
           operacao_id: opData.id,
           tipo: 'status_change',
           descricao: `Operação criada automaticamente a partir da venda`,
@@ -851,7 +851,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       if (clienteMatch) {
         // Fetch full client data with address
-        const { data: clienteCompleto } = await supabase
+        const { data: clienteCompleto } = await api
           .from('clientes')
           .select('endereco, cidade, estado, cep, cpf')
           .eq('id', clienteMatch.id)
@@ -864,7 +864,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         }
       }
 
-      const { data: pedidoData, error: pedidoError } = await supabase
+      const { data: pedidoData, error: pedidoError } = await api
         .from('pedidos_entrega')
         .insert({
           venda_id: vendaData.id,
@@ -885,7 +885,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         .single();
 
       if (pedidoData && !pedidoError) {
-        await supabase.from('pedido_entrega_historico').insert({
+        await api.from('pedido_entrega_historico').insert({
           pedido_id: pedidoData.id,
           user_id: user.id,
           status_novo: 'pendente',
@@ -967,12 +967,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Carregar itens da venda (com fallback se colunas novas não existirem)
     let rawItens: any[] = [];
-    const itensRes = await supabase
+    const itensRes = await api
       .from('itens_venda')
       .select('produto_id, variacao_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
       .eq('venda_id', venda.id);
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
-      const fallback = await supabase
+      const fallback = await api
         .from('itens_venda')
         .select('produto_id, quantidade, preco_unitario, subtotal')
         .eq('venda_id', venda.id);
@@ -1048,7 +1048,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     if (newValStr !== oldValStr) changes.push({ campo: 'valor', anterior: oldValStr, novo: newValStr });
     if (editVenda.observacoes !== (editingVenda.observacoes || '')) changes.push({ campo: 'observacoes', anterior: editingVenda.observacoes || '', novo: editVenda.observacoes });
 
-    const { error } = await supabase.from('vendas').update({
+    const { error } = await api.from('vendas').update({
       cliente_id: resolveClienteId(clientes as any, { nome: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
       cliente_nome: editVenda.cliente_nome,
       cliente_telefone: editVenda.cliente_telefone || null,
@@ -1077,7 +1077,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Atualizar itens da venda: SEMPRE deletar os antigos e reinserir os novos
     // Isso garante que itens removidos pelo usuário saiam do pedido de entrega também
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await api
       .from('itens_venda')
       .delete()
       .eq('venda_id', editingVenda.id);
@@ -1106,7 +1106,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           observacao: item.observacao || null,
         };
       });
-      let { error: insertError } = await supabase
+      let { error: insertError } = await api
         .from('itens_venda')
         .insert(itensParaInserir);
       // Fallback se colunas novas não existirem
@@ -1119,7 +1119,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           preco_unitario: item.preco_unitario,
           subtotal: item.subtotal,
         }));
-        ({ error: insertError } = await supabase.from('itens_venda').insert(fallback));
+        ({ error: insertError } = await api.from('itens_venda').insert(fallback));
       }
 
       if (insertError) {
@@ -1141,11 +1141,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         valor_anterior: c.anterior,
         valor_novo: c.novo,
       }));
-      await supabase.from('venda_alteracoes').insert(logEntries as any);
+      await api.from('venda_alteracoes').insert(logEntries as any);
     }
 
     // Sincronizar o Pedido de Entrega com as alterações da venda
-    const { data: pedidoExistente } = await supabase
+    const { data: pedidoExistente } = await api
       .from('pedidos_entrega')
       .select('id')
       .eq('venda_id', editingVenda.id)
@@ -1154,7 +1154,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     if (pedidoExistente) {
       // Sempre atualiza os dados do cliente e pagamento no pedido de entrega
-      await supabase
+      await api
         .from('pedidos_entrega')
         .update({
           cliente_id: resolveClienteId(clientes as any, { nome: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
@@ -1188,7 +1188,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
     try {
       // 1. Deletar histórico de operações vinculadas
-      const { data: operacoesVinculadas } = await supabase
+      const { data: operacoesVinculadas } = await api
         .from('operacoes')
         .select('id')
         .eq('venda_id', id)
@@ -1196,15 +1196,15 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       if (operacoesVinculadas && operacoesVinculadas.length > 0) {
         const operacaoIds = operacoesVinculadas.map(o => o.id);
-        await supabase.from('operacao_historico').delete().in('operacao_id', operacaoIds);
-        await supabase.from('operacao_tarefas').delete().in('operacao_id', operacaoIds);
+        await api.from('operacao_historico').delete().in('operacao_id', operacaoIds);
+        await api.from('operacao_tarefas').delete().in('operacao_id', operacaoIds);
       }
 
       // 2. Deletar operações vinculadas
-      await supabase.from('operacoes').delete().eq('venda_id', id);
+      await api.from('operacoes').delete().eq('venda_id', id);
 
       // 3. Deletar histórico de pedidos de entrega vinculados
-      const { data: pedidosVinculados } = await supabase
+      const { data: pedidosVinculados } = await api
         .from('pedidos_entrega')
         .select('id')
         .eq('venda_id', id)
@@ -1212,29 +1212,29 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       if (pedidosVinculados && pedidosVinculados.length > 0) {
         const pedidoIds = pedidosVinculados.map(p => p.id);
-        await supabase.from('pedido_entrega_historico').delete().in('pedido_id', pedidoIds);
+        await api.from('pedido_entrega_historico').delete().in('pedido_id', pedidoIds);
       }
 
       // 4. Deletar pedidos de entrega vinculados
-      await supabase.from('pedidos_entrega').delete().eq('venda_id', id);
+      await api.from('pedidos_entrega').delete().eq('venda_id', id);
 
       // 5. Deletar comissões vinculadas
-      await supabase.from('comissoes').delete().eq('venda_id', id);
+      await api.from('comissoes').delete().eq('venda_id', id);
 
       // 6. Deletar alterações de venda
-      await supabase.from('venda_alteracoes').delete().eq('venda_id', id);
+      await api.from('venda_alteracoes').delete().eq('venda_id', id);
 
       // 7. Deletar notas fiscais vinculadas
-      await supabase.from('notas_fiscais').delete().eq('venda_id', id);
+      await api.from('notas_fiscais').delete().eq('venda_id', id);
 
       // 8. Deletar contas a receber geradas pela venda
-      await supabase.from('contas_receber').delete().eq('venda_id', id);
+      await api.from('contas_receber').delete().eq('venda_id', id);
 
       // 9. Deletar itens da venda (trigger restaura estoque)
-      await supabase.from('itens_venda').delete().eq('venda_id', id);
+      await api.from('itens_venda').delete().eq('venda_id', id);
 
       // 10. Finalmente, deletar a venda
-      const { error } = await supabase.from('vendas').delete().eq('id', id);
+      const { error } = await api.from('vendas').delete().eq('id', id);
       if (error) throw error;
 
       fetchVendas();
@@ -1308,7 +1308,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     
     try {
       // Buscar configuração fiscal da empresa
-      const { data: empresaFiscal, error: empresaError } = await supabase
+      const { data: empresaFiscal, error: empresaError } = await api
         .from('empresa_fiscal')
         .select('*')
         .single();
@@ -1318,7 +1318,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       }
 
       // Buscar itens da venda com dados dos produtos
-      const { data: itensData, error: itensError } = await supabase
+      const { data: itensData, error: itensError } = await api
         .from('itens_venda')
         .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
         .eq('venda_id', venda.id);
@@ -1329,7 +1329,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // Buscar dados completos dos produtos
       const produtoIds = itensData.map(item => item.produto_id);
-      const { data: produtosData, error: produtosError } = await supabase
+      const { data: produtosData, error: produtosError } = await api
         .from('produtos')
         .select('id, nome, codigo, ncm, cfop, origem, unidade_comercial, preco')
         .in('id', produtoIds);
@@ -1452,7 +1452,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       // Buscar dados do cliente se não for consumidor final
       let cliente = null;
       if (venda.cliente_nome !== 'Consumidor') {
-        const { data: clienteData } = await supabase
+        const { data: clienteData } = await api
           .from('clientes')
           .select('id, nome, cpf, telefone, email, cep, endereco, bairro, complemento')
           .eq('nome', venda.cliente_nome)
@@ -1492,7 +1492,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       console.log('Payload enviado à becoming-nfce:', JSON.stringify(payloadEmissao, null, 2));
 
       // Chamar Edge Function para emitir NFC-e
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'emitir',
           data: payloadEmissao
@@ -1569,7 +1569,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const handleTransmitirNfce = async (vendaId: string) => {
     // Busca a nota fresca direto do banco em vez de confiar no Map em cache
     // (mesma correção aplicada em handleCancelarNfce).
-    const { data: notaAtual, error: notaErr } = await supabase
+    const { data: notaAtual, error: notaErr } = await api
       .from('notas_fiscais')
       .select('nuvem_fiscal_id')
       .eq('venda_id', vendaId)
@@ -1603,7 +1603,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setTransmitindoNfce(vendaId);
 
     try {
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'transmitir',
           data: { id_nfce: idNfce, venda_id: vendaId }

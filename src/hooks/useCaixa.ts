@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 import { useAuth } from './useAuth';
 
@@ -72,7 +72,7 @@ export function useCaixa() {
     // Usamos limit(1) em vez de .maybeSingle() para evitar erro quando,
     // por algum motivo, houver mais de uma sessão "aberto" no banco.
     // O caixa é compartilhado entre todos os usuários da empresa.
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('sessoes_caixa')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -94,7 +94,7 @@ export function useCaixa() {
   useEffect(() => {
     if (!empresaId) return;
 
-    const channel = supabase
+    const channel = api
       .channel(`sessoes_caixa_${empresaId}`)
       .on(
         'postgres_changes',
@@ -111,7 +111,7 @@ export function useCaixa() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      api.removeChannel(channel);
     };
   }, [empresaId, buscarSessaoAtiva]);
 
@@ -120,7 +120,7 @@ export function useCaixa() {
   const abrirCaixa = async (valorAbertura: number) => {
     if (!empresaId || !user) return { data: null, error: new Error('Não autenticado') };
 
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('sessoes_caixa')
       .insert({
         empresa_id: empresaId,
@@ -145,7 +145,7 @@ export function useCaixa() {
   ) => {
     if (!sessaoAtiva || !user) return { error: new Error('Sem sessão ativa') };
 
-    const { error } = await supabase
+    const { error } = await api
       .from('movimentacoes_caixa')
       .insert({
         sessao_id: sessaoAtiva.id,
@@ -172,7 +172,7 @@ export function useCaixa() {
     // Busca vendas registradas durante a sessão (entre abertura e agora).
     // Usa valor_final (com desconto) com fallback para valor.
     const agoraIso = new Date().toISOString();
-    const { data: vendas } = await supabase
+    const { data: vendas } = await api
       .from('vendas')
       .select('valor, valor_final, metodo_pagamento')
       .eq('empresa_id', empresaId)
@@ -197,7 +197,7 @@ export function useCaixa() {
     );
 
     // Busca sangrias e suprimentos da sessão
-    const { data: movs } = await supabase
+    const { data: movs } = await api
       .from('movimentacoes_caixa')
       .select('tipo, valor')
       .eq('sessao_id', sessaoAtiva.id);
@@ -222,7 +222,7 @@ export function useCaixa() {
 
     const nomeUsuario = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Operador';
 
-    const { error } = await supabase
+    const { error } = await api
       .from('sessoes_caixa')
       .update({
         status: 'fechado',

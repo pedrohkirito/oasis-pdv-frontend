@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 
 /**
  * Hook Pluggy — TODO o tráfego com a API Pluggy é proxied via Edge Functions.
@@ -13,7 +13,7 @@ export function usePluggy() {
   const criarConnectToken = async (): Promise<string | null> => {
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('pluggy-token')
+      const { data, error } = await api.functions.invoke('pluggy-token')
       if (error) throw error
       return (data?.connectToken as string) ?? null
     } catch (err) {
@@ -36,7 +36,7 @@ export function usePluggy() {
   ): Promise<{ importadas: number; saldo: number | null; error?: string }> => {
     setImportando(true)
     try {
-      const { data, error } = await supabase.functions.invoke('pluggy-sync', {
+      const { data, error } = await api.functions.invoke('pluggy-sync', {
         body: {
           itemId,
           contaId: contaBancariaId,

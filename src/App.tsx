@@ -11,7 +11,7 @@ import { EmpresaProvider } from "@/hooks/useEmpresa";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LayoutRoute } from "@/components/layout/LayoutRoute";
 import { toast as sonnerToast } from "sonner";
-import { handleSupabaseError } from "@/utils/errorHandler";
+import { handleApiError } from "@/utils/errorHandler";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ContasAPagar from "./pages/ContasAPagar";
@@ -65,9 +65,9 @@ const App = () => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error("Erro não capturado:", event.reason);
       const reason = event.reason;
-      // Check if it's a Supabase/RLS error
+      // Check if it's a API/RLS error
       if (reason && typeof reason === 'object' && (reason.code || reason.message)) {
-        if (!handleSupabaseError(reason, "Ocorreu um erro inesperado. Tente novamente.")) {
+        if (!handleApiError(reason, "Ocorreu um erro inesperado. Tente novamente.")) {
           sonnerToast.error("Ocorreu um erro inesperado. Tente novamente.");
         }
       } else {

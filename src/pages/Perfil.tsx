@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ export default function Perfil() {
       const filePath = `${user?.id}/${Math.random()}.${fileExt}`;
 
       // Upload the file
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await api.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
@@ -74,12 +74,12 @@ export default function Perfil() {
       }
 
       // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = api.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
       // Update user metadata
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { error: updateError } = await api.auth.updateUser({
         data: { avatar_url: publicUrl }
       });
 
@@ -105,7 +105,7 @@ export default function Perfil() {
     try {
       setSavingName(true);
 
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await api.auth.updateUser({
         data: { nome: nome.trim() }
       });
 
@@ -140,7 +140,7 @@ export default function Perfil() {
     try {
       setSavingPassword(true);
 
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await api.auth.updateUser({
         password: newPassword
       });
 
@@ -162,7 +162,7 @@ export default function Perfil() {
     if (!user?.email) return;
     try {
       setSendingResetEmail(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      const { error } = await api.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/redefinir-senha`,
       });
       if (error) throw error;

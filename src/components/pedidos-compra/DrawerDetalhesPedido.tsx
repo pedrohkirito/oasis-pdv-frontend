@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { escapeHtml } from '@/utils/htmlSanitize';
 import type { PedidoCompra, StatusPedido, HistoricoPedido } from '@/hooks/usePedidosCompra';
 import { Input } from '@/components/ui/input';
@@ -149,7 +149,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
 
     const carregar = async () => {
       setLoadingHistorico(true);
-      const { data } = await (supabase as any)
+      const { data } = await (api as any)
         .from('pedidos_compra_historico')
         .select('*')
         .eq('pedido_id', pedido.id)
@@ -188,7 +188,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
     setObsAvancar('');
     setConfirmRecebido(false);
 
-    const { data } = await (supabase as any)
+    const { data } = await (api as any)
       .from('pedidos_compra_historico')
       .select('*')
       .eq('pedido_id', pedido.id)

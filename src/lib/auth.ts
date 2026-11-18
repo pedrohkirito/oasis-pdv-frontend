@@ -8,8 +8,7 @@
  *   import { getEmpresaId, requireEmpresaId, getEmpresaRole } from '@/lib/auth';
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import type { Session, User } from '@supabase/supabase-js';
+import { api, type Session, type User } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Tipos
@@ -43,7 +42,7 @@ export function getEmpresaRoleFromSession(session: Session | null): AppRole | nu
 }
 
 // ---------------------------------------------------------------------------
-// Helpers assíncronos (aguardam a sessão do Supabase)
+// Helpers assíncronos (leem a sessão atual)
 // ---------------------------------------------------------------------------
 
 /**
@@ -53,7 +52,7 @@ export function getEmpresaRoleFromSession(session: Session | null): AppRole | nu
  * @returns empresa_id (uuid string) ou null se não autenticado / sem empresa
  */
 export async function getEmpresaId(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await api.auth.getSession();
   return getEmpresaIdFromSession(data.session);
 }
 
@@ -82,7 +81,7 @@ export async function requireEmpresaId(): Promise<string> {
  * @throws Error se não autenticado ou sem empresa
  */
 export async function getEmpresaContext(): Promise<EmpresaContext> {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await api.auth.getSession();
 
   if (error || !data.session) {
     throw new Error('Usuário não autenticado.');
@@ -105,10 +104,10 @@ export async function getEmpresaContext(): Promise<EmpresaContext> {
 }
 
 /**
- * Retorna o User do Supabase com tipagem para app_metadata.
+ * Retorna o usuário autenticado.
  */
 export async function getAuthUser(): Promise<User | null> {
-  const { data } = await supabase.auth.getUser();
+  const { data } = await api.auth.getUser();
   return data.user;
 }
 
@@ -136,10 +135,10 @@ export function canWrite(session: Session | null): boolean {
 
 /**
  * Retorna os campos obrigatórios de tenant para inserts.
- * Uso: await supabase.from('vendas').insert({ ...dados, ...await tenantFields() })
+ * Uso: await api.from('vendas').insert({ ...dados, ...await tenantFields() })
  */
 export async function tenantFields(): Promise<{ empresa_id: string; user_id: string }> {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await api.auth.getSession();
 
   if (error || !data.session) throw new Error('Usuário não autenticado.');
 
@@ -161,7 +160,7 @@ export async function tenantFields(): Promise<{ empresa_id: string; user_id: str
  * Use apenas em desenvolvimento para depuração.
  */
 export async function debugJwtClaims(): Promise<void> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await api.auth.getSession();
   const meta = data.session?.user?.app_metadata;
 
   console.group('[Auth Debug] JWT app_metadata');

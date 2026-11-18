@@ -30,7 +30,7 @@ import { useLayoutActions } from '@/components/layout/LayoutActions';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { Link } from 'react-router-dom';
@@ -456,7 +456,7 @@ const Index = () => {
 
   const fetchVendas = async () => {
     if (!empresaId) return;
-    let query = supabase.from('vendas').select('*').eq('empresa_id', empresaId);
+    let query = api.from('vendas').select('*').eq('empresa_id', empresaId);
     if (isRestrito && user) {
       query = query.eq('vendedor_id', user.id);
     }
@@ -466,7 +466,7 @@ const Index = () => {
 
   const fetchContasPagar = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('contas_pagar').select('*')
       .eq('empresa_id', empresaId)
       .order('data_vencimento', { ascending: false });
@@ -476,7 +476,7 @@ const Index = () => {
   const fetchContasReceberVencidas = async () => {
     if (!empresaId) return;
     const hoje = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
+    const { data } = await api
       .from('contas_receber')
       .select('id, descricao, cliente_nome, valor, valor_recebido, data_vencimento')
       .eq('empresa_id', empresaId)
@@ -487,7 +487,7 @@ const Index = () => {
 
   const fetchOperacoesPendentes = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('operacoes').select('*')
       .eq('empresa_id', empresaId)
       .not('status', 'eq', 'finalizado')
@@ -729,7 +729,7 @@ const Index = () => {
               </motion.div>
             ) : (
               <motion.div variants={staggerItem}>
-                {/* TODO: conectar ao Supabase — métrica de metas do vendedor */}
+                {/* TODO: conectar à API — métrica de metas do vendedor */}
                 <MetricCard
                   loading={loading}
                   label="Minhas Vendas (mês)"
@@ -763,7 +763,7 @@ const Index = () => {
               </motion.div>
             ) : (
               <motion.div variants={staggerItem}>
-                {/* TODO: conectar ao Supabase — operações pendentes do vendedor */}
+                {/* TODO: conectar à API — operações pendentes do vendedor */}
                 <MetricCard
                   loading={loading}
                   label="Ops. Pendentes"
@@ -795,7 +795,7 @@ const Index = () => {
               </motion.div>
             ) : (
               <motion.div variants={staggerItem}>
-                {/* TODO: conectar ao Supabase — comissão do vendedor no mês */}
+                {/* TODO: conectar à API — comissão do vendedor no mês */}
                 <MetricCard
                   loading={loading}
                   label="Total de Vendas"
@@ -1205,7 +1205,7 @@ const Index = () => {
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onImportComplete={(_: Transaction[]) => {
-          // TODO: conectar ao Supabase — persistir transações importadas
+          // TODO: conectar à API — persistir transações importadas
         }}
       />
     </div>

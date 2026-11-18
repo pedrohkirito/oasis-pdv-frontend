@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
     if (!empresaId) return;
     setLoading(true);
 
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('metodos_pagamento')
       .select('id, nome, tipo, ativo')
       .eq('empresa_id', empresaId)
@@ -65,7 +65,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
 
     for (const nome of METODOS_PADRAO) {
       const tipo = nome.includes('Cartão') ? 'cartao' : nome.toLowerCase();
-      await supabase.from('metodos_pagamento').insert({
+      await api.from('metodos_pagamento').insert({
         empresa_id: empresaId,
         nome,
         tipo,
@@ -85,7 +85,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
     if (!empresaId || !novoNome.trim()) return;
     setAdicionando(true);
 
-    const { error } = await supabase.from('metodos_pagamento').insert({
+    const { error } = await api.from('metodos_pagamento').insert({
       empresa_id: empresaId,
       nome: novoNome.trim(),
       tipo: 'outro',
@@ -108,7 +108,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
   };
 
   const handleToggle = async (metodo: MetodoPagamento) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('metodos_pagamento')
       .update({ ativo: !metodo.ativo, updated_at: new Date().toISOString() } as any)
       .eq('id', metodo.id);
@@ -122,7 +122,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
   };
 
   const handleExcluir = async (metodo: MetodoPagamento) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('metodos_pagamento')
       .delete()
       .eq('id', metodo.id);

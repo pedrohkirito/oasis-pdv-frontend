@@ -8,7 +8,7 @@ import {
   TrendingUp, TrendingDown, Percent, Calculator, Lightbulb,
   AlertTriangle, CheckCircle, Info, ExternalLink, CalendarIcon,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import {
   format, startOfMonth, endOfMonth, subMonths,
@@ -229,21 +229,21 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       { data: taxas      },
       { data: comissoes  },
     ] = await Promise.all([
-      supabase.from('vendas').select('valor_final,valor,valor_bruto,desconto,data_venda,metodo_pagamento')
+      api.from('vendas').select('valor_final,valor,valor_bruto,desconto,data_venda,metodo_pagamento')
         .eq('empresa_id', empresaId).gte('data_venda', inicioStr).lte('data_venda', fimStr),
-      supabase.from('vendas').select('valor_final,valor')
+      api.from('vendas').select('valor_final,valor')
         .eq('empresa_id', empresaId).gte('data_venda', iniAntStr).lte('data_venda', fimAntStr),
-      supabase.from('contas_pagar').select('valor,categoria,data_pagamento,data_vencimento,status')
+      api.from('contas_pagar').select('valor,categoria,data_pagamento,data_vencimento,status')
         .eq('empresa_id', empresaId).eq('status', 'pago')
         .gte('data_pagamento', inicioStr).lte('data_pagamento', fimStr),
-      supabase.from('contas_pagar').select('valor')
+      api.from('contas_pagar').select('valor')
         .eq('empresa_id', empresaId).eq('status', 'pago')
         .gte('data_pagamento', iniAntStr).lte('data_pagamento', fimAntStr),
-      supabase.from('contas_receber').select('id,cliente_nome,valor,valor_recebido,data_vencimento,data_recebimento,status')
+      api.from('contas_receber').select('id,cliente_nome,valor,valor_recebido,data_vencimento,data_recebimento,status')
         .eq('empresa_id', empresaId).order('data_vencimento', { ascending: true }),
-      (supabase as any).from('taxas_pagamento').select('metodo_pagamento,taxa_percentual,parcelas,bandeira')
+      (api as any).from('taxas_pagamento').select('metodo_pagamento,taxa_percentual,parcelas,bandeira')
         .eq('empresa_id', empresaId).eq('parcelas', 0),
-      (supabase as any).from('comissoes').select('valor_comissao,status').eq('empresa_id', empresaId)
+      (api as any).from('comissoes').select('valor_comissao,status').eq('empresa_id', empresaId)
         .eq('status', 'pago').gte('created_at', inicioStr).lte('created_at', fimStr + 'T23:59:59'),
     ]);
 
@@ -341,11 +341,11 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       .slice(0, 5);
 
     // ── Comparativo 6 meses ───────────────────────────────────────────────────
-    const { data: v6 } = await supabase.from('vendas')
+    const { data: v6 } = await api.from('vendas')
       .select('valor_final,valor,data_venda')
       .eq('empresa_id', empresaId)
       .gte('data_venda', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
-    const { data: c6 } = await supabase.from('contas_pagar')
+    const { data: c6 } = await api.from('contas_pagar')
       .select('valor,data_pagamento')
       .eq('empresa_id', empresaId).eq('status', 'pago')
       .gte('data_pagamento', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));

@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { GerenciarCategoriasDialog, CategoriaDB } from '@/components/produtos/GerenciarCategoriasDialog';
 import { ModalEtiquetas } from '@/components/etiquetas/ModalEtiquetas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -194,7 +194,7 @@ const Produtos = () => {
 
   const fetchCategoriasDB = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('categorias_produto')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -205,7 +205,7 @@ const Produtos = () => {
   const fetchUltimasVendas = async () => {
     if (!empresaId) return;
     // Get the most recent sale date for each product via itens_venda
-    const { data } = await supabase
+    const { data } = await api
       .from('itens_venda')
       .select('produto_id, venda_id, vendas!inner(data_venda, empresa_id)')
       .eq('vendas.empresa_id', empresaId)
@@ -235,7 +235,7 @@ const Produtos = () => {
 
   const fetchFornecedores = async () => {
     if (!empresaId) return;
-    const { data } = await supabase.from('fornecedores').select('id, nome').eq('ativo', true).eq('empresa_id', empresaId).order('nome', { ascending: true });
+    const { data } = await api.from('fornecedores').select('id, nome').eq('ativo', true).eq('empresa_id', empresaId).order('nome', { ascending: true });
     setFornecedores(data || []);
   };
 
@@ -247,7 +247,7 @@ const Produtos = () => {
     const pageSize = 1000;
     let hasMore = true;
     while (hasMore) {
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
@@ -273,7 +273,7 @@ const Produtos = () => {
       const pageSize = 1000;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await supabase.from('produtos').select('codigo').eq('empresa_id', empresaId).range(from, from + pageSize - 1);
+        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId).range(from, from + pageSize - 1);
         if (data) {
           allCodigos = allCodigos.concat(data.map(p => p.codigo || '0'));
         }
@@ -298,7 +298,7 @@ const Produtos = () => {
 
     // 1️⃣ Busca por EAN
     if (eanSearch.trim()) {
-      const { data: byEan } = await supabase
+      const { data: byEan } = await api
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
@@ -314,7 +314,7 @@ const Produtos = () => {
 
     // 2️⃣ Busca por nome
     if (novoProduto.nome.trim()) {
-      const { data: byName } = await supabase
+      const { data: byName } = await api
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
@@ -343,7 +343,7 @@ const Produtos = () => {
       return;
     }
     const codigoFinal = novoProduto.codigo.trim() || await gerarProximoCodigo();
-    const { error } = await supabase.from('produtos').insert({
+    const { error } = await api.from('produtos').insert({
       user_id: user.id,
       empresa_id: empresaId,
       nome: novoProduto.nome,
@@ -401,7 +401,7 @@ const Produtos = () => {
   };
 
   const handleAtivarVariacoes = async (produto: Produto) => {
-    await supabase.from('produtos').update({ tem_variacoes: true }).eq('id', produto.id);
+    await api.from('produtos').update({ tem_variacoes: true }).eq('id', produto.id);
     fetchProdutos();
     setEditingProduto({ ...produto, tem_variacoes: true });
   };
@@ -412,7 +412,7 @@ const Produtos = () => {
       return;
     }
     const codigoFinal = editProduto.codigo.trim() || await gerarProximoCodigo();
-    const { error } = await supabase.from('produtos').update({
+    const { error } = await api.from('produtos').update({
       nome: editProduto.nome,
       codigo: codigoFinal,
       fornecedor_id: editProduto.fornecedor_id || null,
@@ -440,7 +440,7 @@ const Produtos = () => {
   const [produtoToDelete, setProdutoToDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('produtos').delete().eq('id', id);
+    const { error } = await api.from('produtos').delete().eq('id', id);
     if (error) {
       toast({ title: "Erro", description: "Erro ao excluir produto", variant: "destructive" });
     } else {
@@ -450,7 +450,7 @@ const Produtos = () => {
   };
 
   const handleToggleAtivo = async (produto: Produto) => {
-    const { error } = await supabase.from('produtos').update({ ativo: !produto.ativo }).eq('id', produto.id);
+    const { error } = await api.from('produtos').update({ ativo: !produto.ativo }).eq('id', produto.id);
     if (error) {
       toast({ title: "Erro", description: "Erro ao atualizar status", variant: "destructive" });
     } else {
@@ -461,7 +461,7 @@ const Produtos = () => {
   const handleDuplicar = async (produto: Produto) => {
     if (!user) return;
     const novoCodigo = await gerarProximoCodigo();
-    const { error } = await supabase.from('produtos').insert({
+    const { error } = await api.from('produtos').insert({
       user_id: user.id,
       empresa_id: empresaId,
       nome: `${produto.nome} (cópia)`,
@@ -616,7 +616,7 @@ const Produtos = () => {
     const needsCode = importedProdutos.some(p => !p.codigo);
     if (needsCode) {
       try {
-        const { data } = await supabase.from('produtos').select('codigo').eq('empresa_id', empresaId);
+        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId);
         let maxNum = 0;
         if (data) { for (const p of data) { const num = parseInt(p.codigo || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
         nextCodeNum = maxNum + 1;
@@ -624,7 +624,7 @@ const Produtos = () => {
     }
     for (const produto of importedProdutos) {
       const codigo = produto.codigo || String(nextCodeNum++).padStart(6, '0');
-      const { error } = await supabase.from('produtos').upsert({
+      const { error } = await api.from('produtos').upsert({
         user_id: user.id,
         empresa_id: empresaId,
         nome: produto.nome,
@@ -652,11 +652,11 @@ const Produtos = () => {
     let fornecedorId: string | null = null;
 
     if (fornecedor && empresaId) {
-      const { data: existing } = await supabase.from('fornecedores').select('id').eq('empresa_id', empresaId).eq('cnpj', fornecedor.cnpj).maybeSingle();
+      const { data: existing } = await api.from('fornecedores').select('id').eq('empresa_id', empresaId).eq('cnpj', fornecedor.cnpj).maybeSingle();
       if (existing) {
         fornecedorId = existing.id;
       } else {
-        const { data: newFornecedor, error: fornError } = await supabase.from('fornecedores').insert({
+        const { data: newFornecedor, error: fornError } = await api.from('fornecedores').insert({
           user_id: user.id, empresa_id: empresaId, nome: fornecedor.nomeFantasia || fornecedor.razaoSocial, razao_social: fornecedor.razaoSocial, cnpj: fornecedor.cnpj, endereco: fornecedor.endereco || null, cidade: fornecedor.cidade || null, estado: fornecedor.estado || null, ativo: true,
         }).select('id').single();
         if (!fornError && newFornecedor) { fornecedorId = newFornecedor.id; fetchFornecedores(); }
@@ -671,7 +671,7 @@ const Produtos = () => {
     let nextCodeNum = 0;
     {
       try {
-        const { data } = await supabase.from('produtos').select('codigo').eq('empresa_id', empresaId);
+        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId);
         let maxNum = 0;
         if (data) { for (const p of data) { const num = parseInt(p.codigo || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
         nextCodeNum = maxNum + 1;
@@ -686,14 +686,14 @@ const Produtos = () => {
         };
         if (produto.precoVenda && produto.precoVenda > 0) updateData.preco = produto.precoVenda;
         if (fornecedorId) updateData.fornecedor_id = fornecedorId;
-        const { error } = await supabase.from('produtos').update(updateData).eq('id', produto.existingProductId);
+        const { error } = await api.from('produtos').update(updateData).eq('id', produto.existingProductId);
         if (error) { errorCount++; } else { updateCount++; }
         continue;
       }
 
       const codigoSequencial = String(nextCodeNum).padStart(6, '0');
       nextCodeNum++;
-      const { error } = await supabase.from('produtos').insert({
+      const { error } = await api.from('produtos').insert({
         user_id: user.id, empresa_id: empresaId, nome: produto.nome, codigo: codigoSequencial, codigo_fornecedor: produto.codigo || null, ean: produto.ean || null, custo: produto.valorUnitario, preco: produto.precoVenda || produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: Math.floor(produto.quantidade), fornecedor_id: fornecedorId, ativo: true
       });
       if (error) { errorCount++; } else { successCount++; }
@@ -704,16 +704,16 @@ const Produtos = () => {
     // Auto-preencher dados fiscais da empresa com o destinatário do XML
     let fiscalUpdated = false;
     if (destinatario && empresaId) {
-      const { data: fiscal } = await supabase.from('empresa_fiscal').select('id, cnpj').eq('empresa_id', empresaId).maybeSingle();
+      const { data: fiscal } = await api.from('empresa_fiscal').select('id, cnpj').eq('empresa_id', empresaId).maybeSingle();
       if (fiscal) {
         if (fiscal.cnpj === destinatario.cnpj || !fiscal.cnpj) {
-          const { error: fiscalError } = await supabase.from('empresa_fiscal').update({
+          const { error: fiscalError } = await api.from('empresa_fiscal').update({
             razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || fiscal.cnpj ? undefined : '', endereco_logradouro: destinatario.logradouro || undefined, endereco_numero: destinatario.numero || undefined, endereco_complemento: destinatario.complemento || undefined, endereco_bairro: destinatario.bairro || undefined, endereco_cidade: destinatario.cidade || undefined, endereco_uf: destinatario.estado || undefined, endereco_cep: destinatario.cep || undefined, endereco_codigo_municipio: destinatario.codigoMunicipio || undefined,
           }).eq('id', fiscal.id);
           if (!fiscalError) fiscalUpdated = true;
         }
       } else {
-        const { error: fiscalError } = await supabase.from('empresa_fiscal').insert({
+        const { error: fiscalError } = await api.from('empresa_fiscal').insert({
           user_id: user.id, empresa_id: empresaId, cnpj: destinatario.cnpj, razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || '', endereco_logradouro: destinatario.logradouro || '', endereco_numero: destinatario.numero || '', endereco_bairro: destinatario.bairro || '', endereco_cidade: destinatario.cidade || '', endereco_uf: destinatario.estado || '', endereco_cep: destinatario.cep || '', endereco_codigo_municipio: destinatario.codigoMunicipio || '',
         });
         if (!fiscalError) fiscalUpdated = true;

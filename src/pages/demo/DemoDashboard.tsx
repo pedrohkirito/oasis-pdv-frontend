@@ -1,6 +1,6 @@
 /**
  * DemoDashboard — versão estática para demonstração pública.
- * Dados 100% fictícios. NÃO conecta ao Supabase nem a nenhum hook de auth.
+ * Dados 100% fictícios. NÃO conecta à API nem a nenhum hook de auth.
  * Rota: /demo/dashboard
  */
 import React from 'react';

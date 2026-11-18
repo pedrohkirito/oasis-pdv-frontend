@@ -3,7 +3,7 @@ import { AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Clock, X } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { differenceInDays, format, startOfDay } from 'date-fns';
@@ -39,7 +39,7 @@ export const AlertasVencimento = () => {
     const hojeStr = format(hoje, 'yyyy-MM-dd');
     
     // Buscar contas pendentes
-    const { data } = await supabase
+    const { data } = await api
       .from('contas_pagar')
       .select('*')
       .eq('status', 'pendente')
@@ -73,7 +73,7 @@ export const AlertasVencimento = () => {
 
       // Atualizar status das contas vencidas para 'vencido'
       if (contasParaAtualizar.length > 0) {
-        await supabase
+        await api
           .from('contas_pagar')
           .update({ status: 'vencido' })
           .in('id', contasParaAtualizar);

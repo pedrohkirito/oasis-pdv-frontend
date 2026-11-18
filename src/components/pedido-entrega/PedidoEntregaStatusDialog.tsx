@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, History } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useToast } from '@/hooks/use-toast';
@@ -56,7 +56,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
     if (!vendaId || !empresaId) return;
     setLoading(true);
 
-    const { data: pedido } = await supabase
+    const { data: pedido } = await api
       .from('pedidos_entrega')
       .select('id, status')
       .eq('venda_id', vendaId)
@@ -70,7 +70,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
       setCurrentStatus(pedido.status);
       setNewStatus(pedido.status);
 
-      const { data: hist } = await supabase
+      const { data: hist } = await api
         .from('pedido_entrega_historico')
         .select('*')
         .eq('pedido_id', pedido.id)
@@ -85,7 +85,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
     if (!pedidoId || !user || newStatus === currentStatus) return;
     setSaving(true);
 
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await api
       .from('pedidos_entrega')
       .update({ status: newStatus })
       .eq('id', pedidoId);
@@ -96,7 +96,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
       return;
     }
 
-    await supabase.from('pedido_entrega_historico').insert({
+    await api.from('pedido_entrega_historico').insert({
       pedido_id: pedidoId,
       user_id: user.id,
       status_anterior: currentStatus,

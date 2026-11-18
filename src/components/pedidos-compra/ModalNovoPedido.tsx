@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, CalendarIcon, ChevronLeft, ChevronRight, ShoppingCart, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import type { NovoPedidoPayload, ItemPedido } from '@/hooks/usePedidosCompra';
 import { Textarea } from '@/components/ui/textarea';
@@ -93,8 +93,8 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
     const carregar = async () => {
       setCarregando(true);
       const [{ data: forn }, { data: prod }] = await Promise.all([
-        supabase.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('produtos').select('id, nome, codigo, custo').eq('empresa_id', empresaId).eq('ativo', true).order('nome'),
+        api.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).order('nome'),
+        api.from('produtos').select('id, nome, codigo, custo').eq('empresa_id', empresaId).eq('ativo', true).order('nome'),
       ]);
       setFornecedores((forn ?? []) as FornecedorOpt[]);
       setProdutos((prod ?? []) as ProdutoOpt[]);

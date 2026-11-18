@@ -25,7 +25,7 @@ import {
   AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { Tables } from '@/integrations/supabase/types'
+import type { Tables } from '@/lib/database'
 
 type ContaPagar = Tables<'contas_pagar'>
 

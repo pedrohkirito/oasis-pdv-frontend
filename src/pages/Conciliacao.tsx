@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useContasBancarias } from '@/hooks/useContasBancarias'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from '@/hooks/useEmpresa'
 import { format, startOfMonth, endOfMonth, parseISO, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -558,9 +558,9 @@ export default function Conciliacao() {
       const pendentes = movs.filter(m => m.status_conciliacao === 'pendente')
       if (pendentes.length > 0) {
         const [{ data: cp }, { data: cr }] = await Promise.all([
-          (supabase.from('contas_pagar').select('id, valor, data_vencimento')
+          (api.from('contas_pagar').select('id, valor, data_vencimento')
             .eq('empresa_id', empresaId).in('status', ['pendente', 'vencido']) as any),
-          (supabase.from('contas_receber').select('id, valor, data_vencimento')
+          (api.from('contas_receber').select('id, valor, data_vencimento')
             .eq('empresa_id', empresaId).eq('status', 'pendente') as any),
         ])
 
@@ -611,7 +611,7 @@ export default function Conciliacao() {
 
     // Busca contas a pagar (débitos)
     if (mov.tipo === 'debito') {
-      const { data: cp } = await (supabase
+      const { data: cp } = await (api
         .from('contas_pagar')
         .select('id, descricao, valor, data_vencimento')
         .eq('empresa_id', empresaId)
@@ -635,7 +635,7 @@ export default function Conciliacao() {
 
     // Busca contas a receber (créditos)
     if (mov.tipo === 'credito') {
-      const { data: cr } = await (supabase
+      const { data: cr } = await (api
         .from('contas_receber')
         .select('id, descricao, valor, data_vencimento')
         .eq('empresa_id', empresaId)
@@ -657,7 +657,7 @@ export default function Conciliacao() {
       }
 
       // Busca vendas (créditos)
-      const { data: vendas } = await (supabase
+      const { data: vendas } = await (api
         .from('vendas')
         .select('id, valor, created_at')
         .eq('empresa_id', empresaId)

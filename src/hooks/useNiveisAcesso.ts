@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 import { toast } from 'sonner';
 
@@ -79,7 +79,7 @@ export function useNiveisAcesso() {
     }
 
     try {
-      const { data: niveisData, error: niveisError } = await supabase
+      const { data: niveisData, error: niveisError } = await api
         .from('niveis_acesso')
         .select('*')
         .eq('empresa_id', empresaId)
@@ -95,7 +95,7 @@ export function useNiveisAcesso() {
       }
 
       const nivelIds = niveisData.map(n => n.id);
-      const { data: permData, error: permError } = await supabase
+      const { data: permData, error: permError } = await api
         .from('nivel_acesso_permissoes')
         .select('*')
         .in('nivel_acesso_id', nivelIds);
@@ -132,7 +132,7 @@ export function useNiveisAcesso() {
     if (!empresaId) return null;
 
     try {
-      const { data: nivel, error: nivelError } = await supabase
+      const { data: nivel, error: nivelError } = await api
         .from('niveis_acesso')
         .insert({
           empresa_id: empresaId,
@@ -157,7 +157,7 @@ export function useNiveisAcesso() {
         }));
 
       if (permissoes.length > 0) {
-        const { error: permError } = await supabase
+        const { error: permError } = await api
           .from('nivel_acesso_permissoes')
           .insert(permissoes);
         if (permError) throw permError;
@@ -178,7 +178,7 @@ export function useNiveisAcesso() {
 
   const updateNivel = async (id: string, input: NivelAcessoInput): Promise<boolean> => {
     try {
-      const { error: nivelError } = await supabase
+      const { error: nivelError } = await api
         .from('niveis_acesso')
         .update({ nome: input.nome, descricao: input.descricao || null })
         .eq('id', id);
@@ -186,7 +186,7 @@ export function useNiveisAcesso() {
       if (nivelError) throw nivelError;
 
       // Delete existing permissions and re-insert
-      await supabase
+      await api
         .from('nivel_acesso_permissoes')
         .delete()
         .eq('nivel_acesso_id', id);
@@ -203,7 +203,7 @@ export function useNiveisAcesso() {
         }));
 
       if (permissoes.length > 0) {
-        const { error: permError } = await supabase
+        const { error: permError } = await api
           .from('nivel_acesso_permissoes')
           .insert(permissoes);
         if (permError) throw permError;
@@ -224,7 +224,7 @@ export function useNiveisAcesso() {
 
   const deleteNivel = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
+      const { error } = await api
         .from('niveis_acesso')
         .delete()
         .eq('id', id);

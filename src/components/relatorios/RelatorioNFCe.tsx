@@ -12,7 +12,7 @@ import { format, startOfMonth, endOfMonth, startOfYear, subMonths, isWithinInter
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { escapeHtml } from '@/utils/htmlSanitize';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -58,7 +58,7 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
 
   const fetchNotas = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('notas_fiscais')
       .select('id, numero, serie, status, ambiente, valor_total, cliente_nome, cliente_cpf, data_emissao, chave_acesso')
       .gte('data_emissao', format(dataInicio, 'yyyy-MM-dd'))

@@ -11,7 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { escapeHtml } from '@/utils/htmlSanitize';
 
@@ -75,7 +75,7 @@ const FechamentoComissoes = () => {
   const fetchVendedores = async () => {
     if (!empresaId) return;
     try {
-      const response = await supabase.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } });
+      const response = await api.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } });
       if (response.data?.users) {
         setVendedores(response.data.users.map((u: any) => ({
           id: u.id,
@@ -99,7 +99,7 @@ const FechamentoComissoes = () => {
     }
 
     // Fetch existing fechamentos
-    const { data: fechData } = await supabase
+    const { data: fechData } = await api
       .from('fechamento_comissao')
       .select('*')
       .eq('empresa_id', empresaId);
@@ -108,7 +108,7 @@ const FechamentoComissoes = () => {
     (fechData || []).forEach((f: any) => { fechMap[f.mes_referencia] = f; });
 
     // Fetch all comissoes with vendas data
-    const { data: comissoes } = await supabase
+    const { data: comissoes } = await api
       .from('comissoes')
       .select('*')
       .eq('empresa_id', empresaId);
@@ -116,7 +116,7 @@ const FechamentoComissoes = () => {
     const vendaIds = [...new Set((comissoes || []).map(c => c.venda_id))];
     let vendasMap: Record<string, any> = {};
     if (vendaIds.length > 0) {
-      const { data: vendas } = await supabase
+      const { data: vendas } = await api
         .from('vendas')
         .select('id, data_venda, valor_bruto, desconto, valor_final')
         .in('id', vendaIds)
@@ -160,7 +160,7 @@ const FechamentoComissoes = () => {
 
     try {
       if (row?.id) {
-        await supabase
+        await api
           .from('fechamento_comissao')
           .update({
             status: 'fechado',
@@ -172,7 +172,7 @@ const FechamentoComissoes = () => {
           } as any)
           .eq('id', row.id);
       } else {
-        await supabase.from('fechamento_comissao').insert({
+        await api.from('fechamento_comissao').insert({
           empresa_id: empresaId,
           mes_referencia: mes,
           status: 'fechado',
@@ -199,7 +199,7 @@ const FechamentoComissoes = () => {
     try {
       const row = fechamentos.find(f => f.mes_referencia === mes);
       if (row?.id) {
-        await supabase
+        await api
           .from('fechamento_comissao')
           .update({ status: 'aberto', data_fechamento: null, updated_at: new Date().toISOString() } as any)
           .eq('id', row.id);
@@ -232,7 +232,7 @@ const FechamentoComissoes = () => {
     const lastDay = new Date(Number(y), Number(m), 0).getDate();
     const endDate = `${mes}-${String(lastDay).padStart(2, '0')}`;
 
-    const { data: vendas } = await supabase
+    const { data: vendas } = await api
       .from('vendas')
       .select('id, data_venda, cliente_nome, valor_bruto, desconto, valor_final, vendedor_id')
       .eq('empresa_id', empresaId)
@@ -242,7 +242,7 @@ const FechamentoComissoes = () => {
     if (!vendas || vendas.length === 0) return [];
 
     const vendaIds = vendas.map(v => v.id);
-    const { data: comissoes } = await supabase
+    const { data: comissoes } = await api
       .from('comissoes')
       .select('*')
       .in('venda_id', vendaIds);

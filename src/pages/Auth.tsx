@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import lafioreLogo from '@/assets/lafiore-logo.jpg';
 import { z } from 'zod';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 
 const authSchema = z.object({
   email: z.string().email('E-mail inválido').max(255, 'E-mail muito longo'),
@@ -121,7 +121,7 @@ const Auth = () => {
     if (!forgotEmail) return;
 
     setForgotLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+    const { error } = await api.auth.resetPasswordForEmail(forgotEmail, {
       redirectTo: `${window.location.origin}/redefinir-senha`,
     });
     setForgotLoading(false);

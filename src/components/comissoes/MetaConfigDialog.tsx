@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Loader2, Save } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { format, startOfMonth, addMonths } from 'date-fns';
@@ -52,7 +52,7 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
 
   const loadMeta = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data } = await api
       .from('metas_vendedor')
       .select('valor_meta')
       .eq('empresa_id', empresaId)
@@ -74,7 +74,7 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
 
     setSaving(true);
 
-    const { error } = await supabase
+    const { error } = await api
       .from('metas_vendedor')
       .upsert(
         {

@@ -4,7 +4,7 @@ import {
   Eye, Download, TrendingUp, Scale, Banknote, Pencil, Save,
   CalendarIcon, Archive, BarChart2, AlertCircle,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Textarea } from '@/components/ui/textarea';
@@ -119,7 +119,7 @@ export default function HistoricoCaixa() {
     const inicioISO = new Date(dataInicio + 'T00:00:00').toISOString();
     const fimISO    = new Date(dataFim   + 'T23:59:59').toISOString();
 
-    const { data } = await supabase
+    const { data } = await api
       .from('sessoes_caixa')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -143,12 +143,12 @@ export default function HistoricoCaixa() {
     setSessaoSelecionada({ ...sessao, movimentacoes: [] });
 
     const [{ data: movs }, { data: vendas }] = await Promise.all([
-      supabase
+      api
         .from('movimentacoes_caixa')
         .select('id, tipo, valor, motivo, created_at')
         .eq('sessao_id', sessao.id)
         .order('created_at', { ascending: true }),
-      supabase
+      api
         .from('vendas')
         .select('valor, metodo_pagamento')
         .eq('empresa_id', sessao.empresa_id)
@@ -217,7 +217,7 @@ export default function HistoricoCaixa() {
       editForm.total_credito +
       editForm.total_pix;
 
-    const { error } = await supabase
+    const { error } = await api
       .from('sessoes_caixa')
       .update({
         valor_abertura: editForm.valor_abertura,

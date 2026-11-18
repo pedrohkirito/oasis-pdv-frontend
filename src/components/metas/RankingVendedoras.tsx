@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from '@/hooks/useEmpresa'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -55,7 +55,7 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     setLoading(true)
 
     // Busca vendas do período agrupadas por vendedor
-    const { data: vendas } = await (supabase
+    const { data: vendas } = await (api
       .from('vendas')
       .select('valor, vendedor, vendedor_id, usuario_id') as any)
       .eq('empresa_id', empresaId)
@@ -63,7 +63,7 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
       .lte('created_at', fim + 'T23:59:59')
 
     // Busca metas de vendedoras do período
-    const { data: metasData } = await (supabase
+    const { data: metasData } = await (api
       .from('metas' as any)
       .select('usuario_id, usuario_nome, valor') as any)
       .eq('empresa_id', empresaId)

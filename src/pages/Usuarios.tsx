@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole, type AppRole } from '@/hooks/useUserRole';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Navigate } from 'react-router-dom';
 
 import { NiveisAcessoSection } from '@/components/usuarios/NiveisAcessoSection';
@@ -192,7 +192,7 @@ const Usuarios = () => {
   const fetchUsers = async () => {
     if (!empresaId) { setUsers([]); setLoading(false); return; }
     try {
-      const response = await supabase.functions.invoke('list-users', {
+      const response = await api.functions.invoke('list-users', {
         body: { empresa_id: empresaId }, method: 'POST',
       });
       if (response.error) throw new Error(response.error.message || 'Erro ao buscar usuários');
@@ -210,7 +210,7 @@ const Usuarios = () => {
 
   const fetchRegrasComissao = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase.from('regras_comissao').select('*').eq('empresa_id', empresaId).order('data_inicio_vigencia', { ascending: false });
+    const { data, error } = await api.from('regras_comissao').select('*').eq('empresa_id', empresaId).order('data_inicio_vigencia', { ascending: false });
     if (!error && data) {
       const grouped: Record<string, any[]> = {};
       data.forEach((r: any) => { if (!grouped[r.usuario_id]) grouped[r.usuario_id] = []; grouped[r.usuario_id].push(r); });
@@ -219,13 +219,13 @@ const Usuarios = () => {
   };
 
   const fetchAllEmpresas = async () => {
-    const { data } = await supabase.from('empresas').select('id, nome').eq('ativo', true);
+    const { data } = await api.from('empresas').select('id, nome').eq('ativo', true);
     if (data) setAllEmpresas(data);
   };
 
   const fetchUserEmpresaLinks = async () => {
     if (!empresaId) { setUserEmpresaLinks([]); return; }
-    const { data: currentEmpresaLinks } = await supabase.from('user_empresas').select('id, user_id, empresa_id, role, nivel_acesso_id').eq('empresa_id', empresaId);
+    const { data: currentEmpresaLinks } = await api.from('user_empresas').select('id, user_id, empresa_id, role, nivel_acesso_id').eq('empresa_id', empresaId);
     if (currentEmpresaLinks) setUserEmpresaLinks(currentEmpresaLinks as UserEmpresaLink[]);
   };
 
@@ -256,7 +256,7 @@ const Usuarios = () => {
     if (!linkEmail || !empresaId) { toast.error('Preencha o email'); return; }
     setLinking(true);
     try {
-      const response = await supabase.functions.invoke('link-existing-user', { body: { email: linkEmail, empresa_id: empresaId, role: linkRole } });
+      const response = await api.functions.invoke('link-existing-user', { body: { email: linkEmail, empresa_id: empresaId, role: linkRole } });
       if (response.data?.error === 'user_not_found') { toast.error('Nenhum usuário encontrado com este email. Cadastre um novo usuário.'); return; }
       if (response.data?.error === 'already_linked') { toast.error('Este usuário já está vinculado a esta empresa.'); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.error?.message || 'Erro ao vincular');
@@ -272,11 +272,11 @@ const Usuarios = () => {
     if (newUserPassword.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
     setCreating(true); setEmailExistsPrompt(false);
     try {
-      const response = await supabase.functions.invoke('create-user', { body: { email: newUserEmail, password: newUserPassword, role: newUserRole, nome: newUserNome || undefined, empresa_id: empresaId } });
+      const response = await api.functions.invoke('create-user', { body: { email: newUserEmail, password: newUserPassword, role: newUserRole, nome: newUserNome || undefined, empresa_id: empresaId } });
       if (response.data?.error === 'email_exists') { setEmailExistsPrompt(true); setCreating(false); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.data?.error || response.error?.message);
       const newUserId = response.data?.user?.id;
-      if (newUserId && empresaId) { await supabase.from('user_empresas').insert({ user_id: newUserId, empresa_id: empresaId, role: newUserRole }); }
+      if (newUserId && empresaId) { await api.from('user_empresas').insert({ user_id: newUserId, empresa_id: empresaId, role: newUserRole }); }
       toast.success('Usuário criado e vinculado à empresa com sucesso!');
       setCreateDialogOpen(false); resetCreateForm(); fetchUsers(); fetchUserEmpresaLinks();
     } catch (error: any) { console.error('Error creating user:', error); toast.error(error.message || 'Erro ao criar usuário'); } finally { setCreating(false); }
@@ -286,7 +286,7 @@ const Usuarios = () => {
     if (!newUserEmail || !empresaId) return;
     setCreating(true);
     try {
-      const response = await supabase.functions.invoke('link-existing-user', { body: { email: newUserEmail, empresa_id: empresaId, role: newUserRole } });
+      const response = await api.functions.invoke('link-existing-user', { body: { email: newUserEmail, empresa_id: empresaId, role: newUserRole } });
       if (response.data?.error === 'already_linked') { toast.error('Este usuário já está vinculado a esta empresa.'); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.error?.message || 'Erro ao vincular');
       toast.success(`Usuário vinculado à empresa com sucesso!`);
@@ -311,10 +311,10 @@ const Usuarios = () => {
     try {
       const link = getUserEmpresaLink(userToEdit.id);
       if (link) {
-        const { error } = await supabase.from('user_empresas').update({ role: editingEmpresaRole, nivel_acesso_id: editingNivelAcessoId || null }).eq('id', link.id);
+        const { error } = await api.from('user_empresas').update({ role: editingEmpresaRole, nivel_acesso_id: editingNivelAcessoId || null }).eq('id', link.id);
         if (error) throw error;
       }
-      if (editingNome !== (userToEdit.nome || '')) { await supabase.functions.invoke('update-user', { body: { userId: userToEdit.id, nome: editingNome, empresa_id: empresaId } }); }
+      if (editingNome !== (userToEdit.nome || '')) { await api.functions.invoke('update-user', { body: { userId: userToEdit.id, nome: editingNome, empresa_id: empresaId } }); }
       setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, role: editingEmpresaRole, nome: editingNome || null } : u));
       toast.success('Usuário atualizado com sucesso!'); setEditDialogOpen(false); setUserToEdit(null); fetchUserEmpresaLinks();
     } catch (error: any) { console.error('Error updating user:', error); toast.error(error.message || 'Erro ao atualizar usuário'); } finally { setUpdating(false); }
@@ -328,7 +328,7 @@ const Usuarios = () => {
     if (desativar && !window.confirm(`Desativar ${userToEdit.nome || userToEdit.email}? Ele deixa de conseguir entrar no sistema. Você pode reativar quando quiser.`)) return;
     setTogglingAtivo(true);
     try {
-      const response = await supabase.functions.invoke('update-user', { body: { userId: userToEdit.id, empresa_id: empresaId, ativo: !desativar } });
+      const response = await api.functions.invoke('update-user', { body: { userId: userToEdit.id, empresa_id: empresaId, ativo: !desativar } });
       if (response.error) throw new Error(response.error.message || 'Erro ao atualizar usuário');
       if (response.data?.error) throw new Error(response.data.error);
       toast.success(desativar ? 'Usuário desativado. Ele não consegue mais entrar no sistema.' : 'Usuário reativado.');
@@ -357,9 +357,9 @@ const Usuarios = () => {
       if (regraAtiva) {
         const fimDate = new Date(dataInicioVigencia);
         fimDate.setDate(fimDate.getDate() - 1);
-        await supabase.from('regras_comissao').update({ data_fim_vigencia: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
+        await api.from('regras_comissao').update({ data_fim_vigencia: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
       }
-      const { error } = await supabase.from('regras_comissao').insert({ usuario_id: comissaoUser.id, empresa_id: empresaId, percentual, data_inicio_vigencia: dataInicio, criado_por: user.id } as any);
+      const { error } = await api.from('regras_comissao').insert({ usuario_id: comissaoUser.id, empresa_id: empresaId, percentual, data_inicio_vigencia: dataInicio, criado_por: user.id } as any);
       if (error) throw error;
       toast.success(`Comissão de ${percentual}% definida para ${comissaoUser.nome || comissaoUser.email}`);
       setComissaoDialogOpen(false); setComissaoUser(null); fetchRegrasComissao();
@@ -376,7 +376,7 @@ const Usuarios = () => {
     if (!empresaDialogUser || !selectedEmpresaId) { toast.error('Selecione uma empresa'); return; }
     setSavingEmpresaLink(true);
     try {
-      const { error } = await supabase.from('user_empresas').insert({ user_id: empresaDialogUser.id, empresa_id: selectedEmpresaId, role: selectedEmpresaRole });
+      const { error } = await api.from('user_empresas').insert({ user_id: empresaDialogUser.id, empresa_id: selectedEmpresaId, role: selectedEmpresaRole });
       if (error) throw error;
       toast.success('Usuário vinculado à empresa com sucesso!'); fetchUserEmpresaLinks(); setSelectedEmpresaId('');
     } catch (error: any) { toast.error(error.message || 'Erro ao vincular usuário'); } finally { setSavingEmpresaLink(false); }
@@ -385,7 +385,7 @@ const Usuarios = () => {
   const handleDesvincularEmpresa = async (linkId: string) => {
     setUnlinkingId(linkId);
     try {
-      const { error } = await supabase.from('user_empresas').delete().eq('id', linkId);
+      const { error } = await api.from('user_empresas').delete().eq('id', linkId);
       if (error) throw error;
       toast.success('Usuário desvinculado da empresa'); fetchUserEmpresaLinks();
     } catch (error: any) { toast.error(error.message || 'Erro ao desvincular usuário'); } finally { setUnlinkingId(null); }

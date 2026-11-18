@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export interface ContaPlano {
@@ -46,7 +46,7 @@ export function usePlanoContas() {
   const buscarContas = useCallback(async () => {
     if (!empresaId) return
     setLoading(true)
-    const { data } = await (supabase
+    const { data } = await (api
       .from('plano_contas' as any)
       .select('*') as any)
       .eq('empresa_id', empresaId)
@@ -65,7 +65,7 @@ export function usePlanoContas() {
   }) => {
     if (!empresaId) return { data: null, error: 'Sem empresa selecionada' }
 
-    const { data, error } = await (supabase
+    const { data, error } = await (api
       .from('plano_contas' as any)
       .insert({ ...conta, empresa_id: empresaId, padrao: false } as any) as any)
       .select()
@@ -76,7 +76,7 @@ export function usePlanoContas() {
   }
 
   const atualizarConta = async (id: string, updates: { nome?: string; ativo?: boolean }) => {
-    const { error } = await (supabase
+    const { error } = await (api
       .from('plano_contas' as any)
       .update({ ...updates, updated_at: new Date().toISOString() } as any) as any)
       .eq('id', id)
@@ -98,7 +98,7 @@ export function usePlanoContas() {
       return { error: 'Esta conta possui contas filhas. Exclua ou mova as contas filhas primeiro.' }
     }
 
-    const { count } = await (supabase
+    const { count } = await (api
       .from('lancamentos_contabeis_itens' as any)
       .select('id', { count: 'exact', head: true }) as any)
       .eq('conta_id', id)
@@ -107,7 +107,7 @@ export function usePlanoContas() {
       return { error: 'Esta conta já possui lançamentos contábeis e não pode ser excluída.' }
     }
 
-    const { error } = await (supabase.from('plano_contas' as any).delete() as any).eq('id', id)
+    const { error } = await (api.from('plano_contas' as any).delete() as any).eq('id', id)
     if (!error) await buscarContas()
     return { error: error ? error.message : null }
   }

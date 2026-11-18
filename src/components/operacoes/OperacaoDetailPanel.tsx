@@ -3,7 +3,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Operacao, OperacaoTarefa, OperacaoHistorico, getStatusLabel, KANBAN_COLUMNS } from '@/hooks/useOperacoes';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -130,7 +130,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
       setItensVenda([]);
       return;
     }
-    const { data } = await supabase
+    const { data } = await api
       .from('itens_venda')
       .select('id, quantidade, preco_unitario, subtotal, produto_id')
       .eq('venda_id', operacao.venda_id);
@@ -141,7 +141,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     }
 
     const produtoIds = data.map(i => i.produto_id);
-    const { data: produtos } = await supabase
+    const { data: produtos } = await api
       .from('produtos')
       .select('id, nome, fornecedor_id')
       .in('id', produtoIds);
@@ -149,7 +149,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     const fornecedorIds = (produtos || []).filter(p => p.fornecedor_id).map(p => p.fornecedor_id!);
     let fornecedoresMap: Record<string, string> = {};
     if (fornecedorIds.length > 0) {
-      const { data: fornecedores } = await supabase
+      const { data: fornecedores } = await api
         .from('fornecedores')
         .select('id, nome')
         .in('id', fornecedorIds);
@@ -173,7 +173,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
   const fetchClienteContatos = async () => {
     if (!operacao?.empresa_id || !operacao?.cliente_nome) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('clientes')
       .select('telefone, telefone_adicional, email')
       .eq('empresa_id', operacao.empresa_id)
@@ -186,7 +186,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const fetchTarefas = async () => {
     if (!operacao) return;
     setLoadingTarefas(true);
-    const { data } = await supabase
+    const { data } = await api
       .from('operacao_tarefas')
       .select('*')
       .eq('operacao_id', operacao.id)
@@ -197,7 +197,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
   const fetchHistorico = async () => {
     if (!operacao) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('operacao_historico')
       .select('*')
       .eq('operacao_id', operacao.id)
@@ -217,12 +217,12 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const toggleTarefa = async (tarefa: OperacaoTarefa) => {
     if (!user || !operacao) return;
     const concluida = !tarefa.concluida;
-    await supabase
+    await api
       .from('operacao_tarefas')
       .update({ concluida, concluida_em: concluida ? new Date().toISOString() : null, concluida_por: concluida ? user.id : null } as any)
       .eq('id', tarefa.id);
 
-    await supabase.from('operacao_historico').insert({
+    await api.from('operacao_historico').insert({
       operacao_id: operacao.id,
       tipo: 'checklist',
       descricao: `${concluida ? '✅' : '⬜'} ${tarefa.titulo}`,
@@ -279,7 +279,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     setSavingObs(true);
 
     try {
-      const { error: histErr } = await supabase.from('operacao_historico').insert({
+      const { error: histErr } = await api.from('operacao_historico').insert({
         operacao_id: operacaoIdAtual,
         tipo: 'note',
         descricao: textoObs,
@@ -289,7 +289,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
       if (histErr) throw histErr;
 
       // Atualiza o campo observacoes APENAS desta operação específica.
-      const { error: updErr } = await supabase
+      const { error: updErr } = await api
         .from('operacoes')
         .update({ observacoes: textoObs } as any)
         .eq('id', operacaoIdAtual);
@@ -317,7 +317,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
   const saveEdits = async () => {
     if (!operacao) return;
-    const { error } = await supabase
+    const { error } = await api
       .from('operacoes')
       .update({
         cliente_nome: editForm.cliente_nome,
@@ -624,7 +624,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                             onSelect={async (date) => {
                               if (!date || !operacao) return;
                               const dateStr = format(date, 'yyyy-MM-dd');
-                              await supabase
+                              await api
                                 .from('operacoes')
                                 .update({ data_prevista: dateStr } as any)
                                 .eq('id', operacao.id);

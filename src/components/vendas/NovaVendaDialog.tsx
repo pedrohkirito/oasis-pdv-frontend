@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Check, User, Package, CalendarIcon, ClipboardList, ShoppingCart, MessageSquare } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { resolveClienteId } from '@/lib/clienteResolver';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresa } from '@/hooks/useEmpresa';
@@ -161,7 +161,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     const pageSize = 1000;
     let hasMore = true;
     while (hasMore) {
-      const { data } = await supabase
+      const { data } = await api
         .from('produtos')
         .select('id, nome, codigo, preco, estoque, ativo, categoria, tem_variacoes')
         .eq('ativo', true)
@@ -174,7 +174,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     }
     setProdutos(allProducts as Produto[]);
 
-    const { data: cliData } = await supabase
+    const { data: cliData } = await api
       .from('clientes')
       .select('id, nome, telefone, email')
       .eq('ativo', true)
@@ -183,7 +183,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     setClientes((cliData ?? []) as Cliente[]);
 
     // Fetch taxas de pagamento
-    const { data: taxasData } = await supabase
+    const { data: taxasData } = await api
       .from('taxas_pagamento')
       .select('metodo_pagamento, taxa_percentual, parcelas, bandeira, tipo_taxa')
       .eq('empresa_id', empresaId);
@@ -195,7 +195,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
 
     // Fetch vendedores
     try {
-      const { data, error } = await supabase.functions.invoke('list-users', {
+      const { data, error } = await api.functions.invoke('list-users', {
         method: 'POST',
         body: { empresa_id: empresaId },
       });
@@ -225,7 +225,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
 
     // Se produto tem variações, abre o seletor de variação
     if (produto.tem_variacoes) {
-      const { data } = await supabase
+      const { data } = await api
         .from('produto_variacoes')
         .select('id, atributos, preco, estoque, sku')
         .eq('produto_id', produto.id)
@@ -382,7 +382,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       ? clientes.find(c => c.id === clienteIdResolvido)
       : clienteByName;
 
-    const { data: rpcResult, error: vendaError } = await supabase.rpc('criar_venda_completa', {
+    const { data: rpcResult, error: vendaError } = await api.rpc('criar_venda_completa', {
       p_venda: {
         user_id: user.id,
         empresa_id: empresaId,
@@ -441,7 +441,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
         'Montagem concluída',
       ];
 
-      const { data: opData, error: opError } = await supabase
+      const { data: opData, error: opError } = await api
         .from('operacoes')
         .insert({
           empresa_id: empresaId,
@@ -464,8 +464,8 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
           titulo,
           ordem: i,
         }));
-        await supabase.from('operacao_tarefas').insert(tarefas as any);
-        await supabase.from('operacao_historico').insert({
+        await api.from('operacao_tarefas').insert(tarefas as any);
+        await api.from('operacao_historico').insert({
           operacao_id: opData.id,
           tipo: 'status_change',
           descricao: 'Operação criada automaticamente a partir da venda',
@@ -482,7 +482,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       let clienteCpf: string | null = null;
 
       if (clienteMatch) {
-        const { data: clienteCompleto } = await supabase
+        const { data: clienteCompleto } = await api
           .from('clientes')
           .select('endereco, cidade, estado, cep, cpf')
           .eq('id', clienteMatch.id)
@@ -494,7 +494,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
         }
       }
 
-      const { data: pedidoData, error: pedidoError } = await supabase
+      const { data: pedidoData, error: pedidoError } = await api
         .from('pedidos_entrega')
         .insert({
           venda_id: vendaId,
@@ -515,7 +515,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
         .single();
 
       if (pedidoData && !pedidoError) {
-        await supabase.from('pedido_entrega_historico').insert({
+        await api.from('pedido_entrega_historico').insert({
           pedido_id: pedidoData.id,
           user_id: user.id,
           status_novo: 'pendente',

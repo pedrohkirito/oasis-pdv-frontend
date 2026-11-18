@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEmpresa } from "@/hooks/useEmpresa";
 import { motion } from "framer-motion";
@@ -115,7 +115,7 @@ export default function ConfiguracoesFiscais() {
     queryKey: ["empresa-fiscal", empresaId],
     queryFn: async () => {
       if (!empresaId) return null;
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from("empresa_fiscal")
         .select("*")
         .eq("empresa_id", empresaId)
@@ -181,10 +181,10 @@ export default function ConfiguracoesFiscais() {
     mutationFn: async (data: EmpresaFormData) => {
       if (!user) throw new Error("Usuário não autenticado");
       if (empresaFiscal?.id) {
-        const { error } = await supabase.from("empresa_fiscal").update({ ...data, user_id: user.id }).eq("id", empresaFiscal.id);
+        const { error } = await api.from("empresa_fiscal").update({ ...data, user_id: user.id }).eq("id", empresaFiscal.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("empresa_fiscal").insert({
+        const { error } = await api.from("empresa_fiscal").insert({
           cnpj: data.cnpj, razao_social: data.razao_social, nome_fantasia: data.nome_fantasia || null,
           inscricao_estadual: data.inscricao_estadual, inscricao_municipal: data.inscricao_municipal || null,
           regime_tributario: data.regime_tributario, endereco_logradouro: data.endereco_logradouro,
@@ -208,7 +208,7 @@ export default function ConfiguracoesFiscais() {
     mutationFn: async (data: NfceFormData) => {
       if (!user) throw new Error("Usuário não autenticado");
       if (!empresaFiscal?.id) throw new Error("Cadastre os dados da empresa primeiro");
-      const { error } = await supabase.from("empresa_fiscal").update(data).eq("id", empresaFiscal.id);
+      const { error } = await api.from("empresa_fiscal").update(data).eq("id", empresaFiscal.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -230,7 +230,7 @@ export default function ConfiguracoesFiscais() {
         itens: [{ id: "teste-001", codigo: "TESTE001", nome: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL", ncm: "00000000", cfop: "5102", unidade_comercial: "UN", quantidade: 1, preco_unitario: 1.00, subtotal: 1.00, origem: "0" }],
         cliente: null,
       };
-      const { data, error } = await supabase.functions.invoke("becoming-nfce", { body: { action: "emitir", data: testData } });
+      const { data, error } = await api.functions.invoke("becoming-nfce", { body: { action: "emitir", data: testData } });
       if (error) throw error;
       return data;
     },

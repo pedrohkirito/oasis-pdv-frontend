@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -1047,7 +1047,7 @@ export default function ConfigEtiquetas() {
   useEffect(() => {
     if (!empresaId) return;
     setLoadingProdutos(true);
-    supabase
+    api
       .from('produtos')
       .select('id, nome, preco, preco_custo:custo, estoque_atual:estoque, codigo, ean, categoria, unidade_comercial, ativo')
       .eq('empresa_id', empresaId)

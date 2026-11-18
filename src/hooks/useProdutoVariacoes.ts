@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 
 export interface ProdutoAtributo {
@@ -34,7 +34,7 @@ export function useProdutoVariacoes(produtoId?: string) {
 
   const buscarVariacoes = async () => {
     if (!produtoId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('produto_variacoes')
       .select('*')
       .eq('produto_id', produtoId)
@@ -46,7 +46,7 @@ export function useProdutoVariacoes(produtoId?: string) {
 
   const buscarAtributos = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('produto_atributos')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -55,7 +55,7 @@ export function useProdutoVariacoes(produtoId?: string) {
   };
 
   const criarVariacao = async (variacao: Partial<ProdutoVariacao>) => {
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('produto_variacoes')
       .insert({ ...variacao, produto_id: produtoId, empresa_id: empresaId })
       .select()
@@ -65,7 +65,7 @@ export function useProdutoVariacoes(produtoId?: string) {
   };
 
   const atualizarVariacao = async (id: string, updates: Partial<ProdutoVariacao>) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('produto_variacoes')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -74,7 +74,7 @@ export function useProdutoVariacoes(produtoId?: string) {
   };
 
   const atualizarEstoque = async (id: string, quantidade: number) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('produto_variacoes')
       .update({ estoque: quantidade, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -83,7 +83,7 @@ export function useProdutoVariacoes(produtoId?: string) {
   };
 
   const excluirVariacao = async (id: string) => {
-    await supabase
+    await api
       .from('produto_variacoes')
       .update({ ativo: false })
       .eq('id', id);
@@ -119,13 +119,13 @@ export function useProdutoVariacoes(produtoId?: string) {
       sku: Object.values(attrs).join('-').toUpperCase(),
     }));
 
-    const { error } = await supabase.from('produto_variacoes').insert(novasVariacoes);
+    const { error } = await api.from('produto_variacoes').insert(novasVariacoes);
     if (!error) buscarVariacoes();
     return { error };
   };
 
   const criarAtributo = async (nome: string, tipo: ProdutoAtributo['tipo'], valores: string[]) => {
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('produto_atributos')
       .insert({ nome, tipo, valores, empresa_id: empresaId })
       .select()

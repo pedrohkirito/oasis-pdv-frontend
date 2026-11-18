@@ -15,7 +15,7 @@ import { useMetas } from '@/hooks/useMetas'
 import { BarraMeta } from '@/components/metas/BarraMeta'
 import { RankingVendedoras } from '@/components/metas/RankingVendedoras'
 import { useEmpresa } from '@/hooks/useEmpresa'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
@@ -175,14 +175,14 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
 
   useEffect(() => {
     if (!open || !empresaId) return
-    supabase.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } })
+    api.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } })
       .then(({ data, error }) => {
         if (error || !data?.users) return
         const lista = (data.users as { id: string; nome: string | null; email: string }[])
           .map(u => ({ id: u.id, nome: u.nome || u.email }))
         setUsuarios(lista)
       })
-    supabase.from('produtos').select('categoria').eq('empresa_id', empresaId).eq('ativo', true)
+    api.from('produtos').select('categoria').eq('empresa_id', empresaId).eq('ativo', true)
       .then(({ data }) => {
         const cats = [...new Set((data || []).map((p: any) => p.categoria).filter(Boolean))] as string[]
         setCategorias(cats)
@@ -441,7 +441,7 @@ const Metas = () => {
     const fim = format(endOfMonth(new Date()), 'yyyy-MM-dd')
     const metaMensal = (metas as any[]).find(m => m.tipo === 'loja' && m.periodo === 'mensal')
 
-    supabase.from('vendas').select('valor, created_at')
+    api.from('vendas').select('valor, created_at')
       .eq('empresa_id', empresaId)
       .gte('created_at', ini + 'T00:00:00')
       .lte('created_at', fim + 'T23:59:59')

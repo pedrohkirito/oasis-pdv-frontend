@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useAuth } from './useAuth';
 import { useEmpresa } from './useEmpresa';
 
@@ -183,7 +183,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       // First try to get role from user_empresas (context-aware per empresa)
       if (empresaId) {
-        const { data: empresaRole, error: empresaError } = await supabase
+        const { data: empresaRole, error: empresaError } = await api
           .from('user_empresas')
           .select('role, nivel_acesso_id')
           .eq('user_id', user.id)
@@ -202,7 +202,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
 
           // If user has custom access level, fetch its permissions
           if (empresaRole.nivel_acesso_id) {
-            const { data: permData } = await supabase
+            const { data: permData } = await api
               .from('nivel_acesso_permissoes')
               .select('modulo, can_view, can_create, can_edit, can_delete')
               .eq('nivel_acesso_id', empresaRole.nivel_acesso_id);
@@ -220,7 +220,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
       }
 
       // Fallback to global user_roles table
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 import { parseOFX } from '@/utils/ofxParser'
 import { format, addDays } from 'date-fns'
@@ -29,7 +29,7 @@ export function useContasBancarias() {
   const BANCOS = BANCOS_BR
 
   const buscarContas = async () => {
-    const { data } = await (supabase
+    const { data } = await (api
       .from('contas_bancarias' as any)
       .select('*') as any)
       .eq('empresa_id', empresaId)
@@ -44,7 +44,7 @@ export function useContasBancarias() {
     dataInicio?: string,
     dataFim?: string
   ) => {
-    let query = (supabase
+    let query = (api
       .from('movimentacoes_bancarias' as any)
       .select('*') as any)
       .eq('conta_id', contaId)
@@ -60,12 +60,12 @@ export function useContasBancarias() {
 
   const criarConta = async (conta: any) => {
     if (conta.padrao) {
-      await (supabase.from('contas_bancarias' as any)
+      await (api.from('contas_bancarias' as any)
         .update({ padrao: false } as any) as any)
         .eq('empresa_id', empresaId)
     }
 
-    const { data, error } = await (supabase
+    const { data, error } = await (api
       .from('contas_bancarias' as any)
       .insert({ ...conta, empresa_id: empresaId } as any) as any)
       .select().single()
@@ -75,14 +75,14 @@ export function useContasBancarias() {
   }
 
   const atualizarConta = async (contaId: string, updates: any) => {
-    await (supabase.from('contas_bancarias' as any)
+    await (api.from('contas_bancarias' as any)
       .update({ ...updates, updated_at: new Date().toISOString() } as any) as any)
       .eq('id', contaId)
     buscarContas()
   }
 
   const atualizarSaldo = async (contaId: string, saldo: number) => {
-    await (supabase.from('contas_bancarias' as any)
+    await (api.from('contas_bancarias' as any)
       .update({
         saldo_atual: saldo,
         updated_at: new Date().toISOString(),
@@ -99,7 +99,7 @@ export function useContasBancarias() {
       return { error: 'Nenhuma transação encontrada no arquivo OFX' }
     }
 
-    const { data: existentes } = await (supabase
+    const { data: existentes } = await (api
       .from('movimentacoes_bancarias' as any)
       .select('identificador_externo') as any)
       .eq('conta_id', contaId)
@@ -121,7 +121,7 @@ export function useContasBancarias() {
       }
     }
 
-    const { error } = await (supabase
+    const { error } = await (api
       .from('movimentacoes_bancarias' as any)
       .insert(novas.map(t => ({
         ...t,
@@ -148,7 +148,7 @@ export function useContasBancarias() {
     if (tipo === 'conta_receber') updates.conta_receber_id = referenciaId
     if (tipo === 'venda') updates.venda_id = referenciaId
 
-    await (supabase.from('movimentacoes_bancarias' as any)
+    await (api.from('movimentacoes_bancarias' as any)
       .update(updates) as any).eq('id', movimentacaoId)
 
     return { error: null }
@@ -161,7 +161,7 @@ export function useContasBancarias() {
     descricao: string,
     data: string
   ) => {
-    const { error } = await (supabase
+    const { error } = await (api
       .from('transferencias_bancarias' as any)
       .insert({
         empresa_id: empresaId,
@@ -173,7 +173,7 @@ export function useContasBancarias() {
       } as any) as any)
 
     if (!error) {
-      await (supabase.from('movimentacoes_bancarias' as any).insert([
+      await (api.from('movimentacoes_bancarias' as any).insert([
         {
           empresa_id: empresaId,
           conta_id: contaOrigemId,
@@ -201,7 +201,7 @@ export function useContasBancarias() {
   }
 
   const excluirConta = async (id: string) => {
-    await (supabase.from('contas_bancarias' as any)
+    await (api.from('contas_bancarias' as any)
       .update({ ativo: false } as any) as any).eq('id', id)
     buscarContas()
   }
@@ -212,7 +212,7 @@ export function useContasBancarias() {
     const dataFim = format(new Date(), 'yyyy-MM-dd')
     const dataInicio = format(addDays(new Date(), -90), 'yyyy-MM-dd')
 
-    const { data, error } = await supabase.functions.invoke('pluggy-sync', {
+    const { data, error } = await api.functions.invoke('pluggy-sync', {
       body: {
         contaId: conta.id,
         pluggyAccountId: conta.pluggy_account_id,

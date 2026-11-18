@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
-import { handleSupabaseError } from '@/utils/errorHandler';
+import { handleApiError } from '@/utils/errorHandler';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables } from '@/lib/database';
 
 type Fornecedor = Tables<'fornecedores'>;
 
@@ -632,13 +632,13 @@ const Fornecedores = () => {
   const fetchFornecedores = async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('fornecedores')
       .select('*')
       .eq('empresa_id', empresaId)
       .order('nome', { ascending: true });
     if (error) {
-      handleSupabaseError(error, "Erro ao carregar fornecedores");
+      handleApiError(error, "Erro ao carregar fornecedores");
     } else {
       setFornecedores(data || []);
     }
@@ -659,7 +659,7 @@ const Fornecedores = () => {
     const enderecoCompleto = novoFornecedor.numero
       ? `${novoFornecedor.endereco}, ${novoFornecedor.numero}`
       : novoFornecedor.endereco;
-    const { error } = await supabase.from('fornecedores').insert({
+    const { error } = await api.from('fornecedores').insert({
       user_id: user.id, empresa_id: empresaId,
       nome: novoFornecedor.nome,
       razao_social: novoFornecedor.razao_social || null,
@@ -673,7 +673,7 @@ const Fornecedores = () => {
       ativo: true,
     });
     if (error) {
-      handleSupabaseError(error, "Erro ao cadastrar fornecedor");
+      handleApiError(error, "Erro ao cadastrar fornecedor");
     } else {
       setNovoFornecedor(emptyForm);
       setDialogOpen(false);
@@ -712,7 +712,7 @@ const Fornecedores = () => {
     const enderecoCompleto = editFornecedor.numero
       ? `${editFornecedor.endereco}, ${editFornecedor.numero}`
       : editFornecedor.endereco;
-    const { error } = await supabase.from('fornecedores')
+    const { error } = await api.from('fornecedores')
       .update({
         nome: editFornecedor.nome,
         razao_social: editFornecedor.razao_social || null,
@@ -726,7 +726,7 @@ const Fornecedores = () => {
       })
       .eq('id', editingFornecedor.id);
     if (error) {
-      handleSupabaseError(error, "Erro ao atualizar fornecedor");
+      handleApiError(error, "Erro ao atualizar fornecedor");
     } else {
       setEditDialogOpen(false);
       setEditingFornecedor(null);
@@ -736,9 +736,9 @@ const Fornecedores = () => {
   };
 
   const handleToggleAtivo = async (fornecedor: Fornecedor) => {
-    const { error } = await supabase.from('fornecedores').update({ ativo: !fornecedor.ativo }).eq('id', fornecedor.id);
+    const { error } = await api.from('fornecedores').update({ ativo: !fornecedor.ativo }).eq('id', fornecedor.id);
     if (error) {
-      handleSupabaseError(error, "Erro ao atualizar status");
+      handleApiError(error, "Erro ao atualizar status");
     } else {
       fetchFornecedores();
       toast({ title: "Sucesso", description: `Fornecedor ${fornecedor.ativo ? 'desativado' : 'ativado'}` });
@@ -746,9 +746,9 @@ const Fornecedores = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('fornecedores').delete().eq('id', id);
+    const { error } = await api.from('fornecedores').delete().eq('id', id);
     if (error) {
-      handleSupabaseError(error, "Erro ao excluir fornecedor");
+      handleApiError(error, "Erro ao excluir fornecedor");
     } else {
       fetchFornecedores();
       toast({ title: "Sucesso", description: "Fornecedor excluído" });

@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { supabase, syncEmpresaNaSessao } from '@/integrations/supabase/client';
+import { api, syncEmpresaNaSessao } from '@/lib/api';
 import { useAuth } from './useAuth';
 
 interface Empresa {
@@ -50,7 +50,7 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('empresas')
         .select('*')
         .eq('ativo', true);

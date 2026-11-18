@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export interface ItemLancamento {
@@ -63,7 +63,7 @@ export function useLancamentosContabeis() {
     offset?: number
   }) => {
     if (!empresaId) return { data: [] as LancamentoContabil[], error: 'Sem empresa selecionada' }
-    const { data, error } = await (supabase.rpc('listar_lancamentos_contabeis', {
+    const { data, error } = await (api.rpc('listar_lancamentos_contabeis', {
       p_empresa_id: empresaId,
       p_data_ini: params.dataIni,
       p_data_fim: params.dataFim,
@@ -81,7 +81,7 @@ export function useLancamentosContabeis() {
     itens: ItemNovoLancamento[]
   }) => {
     if (!empresaId) return { id: null, error: 'Sem empresa selecionada' }
-    const { data, error } = await (supabase.rpc('criar_lancamento_contabil', {
+    const { data, error } = await (api.rpc('criar_lancamento_contabil', {
       p_header: {
         empresa_id: empresaId,
         data_lancamento: params.data,
@@ -94,7 +94,7 @@ export function useLancamentosContabeis() {
   }, [empresaId])
 
   const estornar = useCallback(async (lancamentoId: string, motivo: string) => {
-    const { data, error } = await (supabase.rpc('estornar_lancamento_contabil', {
+    const { data, error } = await (api.rpc('estornar_lancamento_contabil', {
       p_lancamento_id: lancamentoId,
       p_motivo: motivo,
     } as any) as any)
@@ -103,7 +103,7 @@ export function useLancamentosContabeis() {
 
   const saldosPatrimoniais = useCallback(async (data: string) => {
     if (!empresaId) return { data: [] as SaldoPatrimonial[], error: 'Sem empresa selecionada' }
-    const { data: rows, error } = await (supabase.rpc('saldos_patrimoniais', {
+    const { data: rows, error } = await (api.rpc('saldos_patrimoniais', {
       p_empresa_id: empresaId,
       p_data: data,
     } as any) as any)
@@ -112,7 +112,7 @@ export function useLancamentosContabeis() {
 
   const primeiraVenda = useCallback(async (): Promise<string | null> => {
     if (!empresaId) return null
-    const { data } = await (supabase
+    const { data } = await (api
       .from('vendas')
       .select('data_venda') as any)
       .eq('empresa_id', empresaId)

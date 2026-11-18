@@ -6,7 +6,7 @@ import {
   Scale, Banknote, LockKeyhole, Unlock, Lock,
   ArrowDown, ArrowUp,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useCaixa } from '@/hooks/useCaixa';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { Textarea } from '@/components/ui/textarea';
@@ -159,13 +159,13 @@ export default function Caixa() {
     setLoadingDados(true);
 
     const [{ data: vendasData }, { data: movsData }] = await Promise.all([
-      supabase
+      api
         .from('vendas')
         .select('id, created_at, valor, metodo_pagamento, cliente_nome')
         .eq('empresa_id', empresaId)
         .gte('created_at', sessaoAtiva.aberto_em)
         .order('created_at', { ascending: false }),
-      supabase
+      api
         .from('movimentacoes_caixa')
         .select('id, tipo, valor, motivo, created_at')
         .eq('sessao_id', sessaoAtiva.id)

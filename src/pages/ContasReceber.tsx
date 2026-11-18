@@ -17,7 +17,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useContasReceber, type ContaReceber } from '@/hooks/useContasReceber';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { parseMaskedValue, formatMaskedValue } from '@/utils/currencyMask';
 
@@ -126,7 +126,7 @@ export default function ContasReceber() {
   const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
   useEffect(() => {
     if (!empresaId) return;
-    supabase
+    api
       .from('clientes')
       .select('id, nome')
       .eq('empresa_id', empresaId)
@@ -265,7 +265,7 @@ export default function ContasReceber() {
         total_parcelas: numParcelas,
         observacoes: novaConta.observacoes || null,
       }));
-      const { error } = await supabase.from('contas_receber').insert(inserts);
+      const { error } = await api.from('contas_receber').insert(inserts);
       if (error) {
         toast({ title: 'Erro ao criar parcelas', description: error.message, variant: 'destructive' });
       } else {

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { CreditCard, Percent, ChevronDown, Calculator, BarChart2, TrendingDown, Banknote, X } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import GerenciarMetodosPagamento from '@/components/config/GerenciarMetodosPagamento';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -111,7 +111,7 @@ export default function ConfigTaxas() {
 
   const fetchMetodosAtivos = useCallback(async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('metodos_pagamento')
       .select('nome, ativo')
       .eq('empresa_id', empresaId)
@@ -146,7 +146,7 @@ export default function ConfigTaxas() {
     if (!empresaId) return;
     setLoading(true);
     const initial = buildInitialTaxas();
-    const { data } = await supabase
+    const { data } = await api
       .from('taxas_pagamento')
       .select('metodo_pagamento, taxa_percentual, parcelas, bandeira, tipo_taxa, prazo_recebimento')
       .eq('empresa_id', empresaId);
@@ -199,7 +199,7 @@ export default function ConfigTaxas() {
     if (!empresaId) return;
     setSaving(true);
     for (const taxa of taxas) {
-      const { error } = await supabase
+      const { error } = await api
         .from('taxas_pagamento')
         .upsert(
           {
@@ -259,7 +259,7 @@ export default function ConfigTaxas() {
       const now = new Date();
       const inicio = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const fim = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-      const { data } = await supabase
+      const { data } = await api
         .from('vendas')
         .select('valor, valor_final, metodo_pagamento, parcelas, bandeira')
         .eq('empresa_id', empresaId)

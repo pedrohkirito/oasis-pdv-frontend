@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 
 export interface ContaReceber {
@@ -32,7 +32,7 @@ export function useContasReceber() {
   const atualizarVencidas = useCallback(async () => {
     if (!empresaId) return;
     const hoje = new Date().toISOString().split('T')[0];
-    await (supabase as any)
+    await (api as any)
       .from('contas_receber')
       .update({ status: 'vencido' })
       .eq('empresa_id', empresaId)
@@ -43,7 +43,7 @@ export function useContasReceber() {
   const buscarContas = useCallback(async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data } = await (supabase as any)
+    const { data } = await (api as any)
       .from('contas_receber')
       .select('*, clientes(nome, telefone)')
       .eq('empresa_id', empresaId)
@@ -53,7 +53,7 @@ export function useContasReceber() {
   }, [empresaId]);
 
   const criarConta = async (conta: Partial<ContaReceber>) => {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (api as any)
       .from('contas_receber')
       .insert({ ...conta, empresa_id: empresaId })
       .select()
@@ -63,7 +63,7 @@ export function useContasReceber() {
   };
 
   const editarConta = async (id: string, updates: Partial<ContaReceber>) => {
-    const { error } = await (supabase as any)
+    const { error } = await (api as any)
       .from('contas_receber')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -84,7 +84,7 @@ export function useContasReceber() {
     const status: ContaReceber['status'] =
       novoRecebido >= Number(conta.valor) ? 'recebido' : 'recebido_parcial';
 
-    const { error } = await (supabase as any)
+    const { error } = await (api as any)
       .from('contas_receber')
       .update({
         valor_recebido: novoRecebido,
@@ -99,7 +99,7 @@ export function useContasReceber() {
   };
 
   const cancelarConta = async (id: string) => {
-    await (supabase as any)
+    await (api as any)
       .from('contas_receber')
       .update({ status: 'cancelado', updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -107,7 +107,7 @@ export function useContasReceber() {
   };
 
   const excluirConta = async (id: string) => {
-    await (supabase as any).from('contas_receber').delete().eq('id', id);
+    await (api as any).from('contas_receber').delete().eq('id', id);
     buscarContas();
   };
 

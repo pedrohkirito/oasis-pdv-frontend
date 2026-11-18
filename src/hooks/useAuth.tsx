@@ -1,6 +1,5 @@
 import { useState, useEffect, createContext, useContext, useRef } from 'react';
-import { User, Session, type AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { api, type AuthChangeEvent, type Session, type User } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -65,14 +64,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = api.auth.onAuthStateChange(
       (event, session) => {
         applyAuthState(session, event);
       }
     );
 
     // THEN check for existing session (handles initial load / token restore)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    api.auth.getSession().then(({ data: { session } }) => {
       applyAuthState(session, 'INITIAL_SESSION');
     }).catch((error) => {
       console.error('Error getting session:', error);
@@ -80,8 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Safety timeout: never leave the app stuck on the loading screen.
-    // If Supabase fails to respond within 8s (network block, firewall, offline),
-    // release the loading state so the login screen renders.
+    // Se a API não responder em 8s, libera a tela de login.
     const safetyTimeout = setTimeout(() => {
       if (isMounted) {
         console.warn('[Auth] Safety timeout reached — forcing loading=false');
@@ -97,13 +95,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await api.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
+    const { error } = await api.auth.signUp({
       email,
       password,
       options: {
@@ -114,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await api.auth.signOut();
   };
 
   return (

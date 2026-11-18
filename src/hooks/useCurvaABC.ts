@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export function useCurvaABC() {
@@ -14,7 +14,7 @@ export function useCurvaABC() {
     setLoading(true)
 
     // Etapa 1 — Busca os IDs das vendas do período
-    const { data: vendasDoPeriodo } = await supabase
+    const { data: vendasDoPeriodo } = await api
       .from('vendas')
       .select('id')
       .eq('empresa_id', empresaId)
@@ -30,7 +30,7 @@ export function useCurvaABC() {
     }
 
     // Etapa 2 — Busca os itens dessas vendas
-    const { data: itens } = await supabase
+    const { data: itens } = await api
       .from('itens_venda')
       .select(`
         quantidade,

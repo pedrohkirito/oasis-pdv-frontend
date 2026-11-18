@@ -23,12 +23,12 @@ import { ajustarParaProximoDiaUtil } from '@/utils/feriadosUtils';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { handleSupabaseError } from '@/utils/errorHandler';
+import { handleApiError } from '@/utils/errorHandler';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables } from '@/lib/database';
 import { AlertasVencimento } from '@/components/AlertasVencimento';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -173,11 +173,11 @@ const ContasAPagar = () => {
     const {
       data,
       error
-    } = await supabase.from('contas_pagar').select('*').eq('empresa_id', empresaId).order('data_vencimento', {
+    } = await api.from('contas_pagar').select('*').eq('empresa_id', empresaId).order('data_vencimento', {
       ascending: false
     });
     if (error) {
-      handleSupabaseError(error, "Erro ao carregar contas");
+      handleApiError(error, "Erro ao carregar contas");
     } else {
       setContas(data || []);
     }
@@ -188,7 +188,7 @@ const ContasAPagar = () => {
     const {
       data,
       error
-    } = await supabase.from('fornecedores').select('*').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('fornecedores').select('*').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
       ascending: true
     });
     if (!error) {
@@ -197,7 +197,7 @@ const ContasAPagar = () => {
   };
   const fetchMetodosPagamento = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('metodos_pagamento')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -212,7 +212,7 @@ const ContasAPagar = () => {
     const {
       data,
       error
-    } = await supabase.from('contas_pagar').select('*').eq('recorrente', true).eq('empresa_id', empresaId).order('descricao', {
+    } = await api.from('contas_pagar').select('*').eq('recorrente', true).eq('empresa_id', empresaId).order('descricao', {
       ascending: true
     });
     if (!error) {
@@ -246,7 +246,7 @@ const ContasAPagar = () => {
       const {
         data: contaMae,
         error: errorMae
-       } = await supabase.from('contas_pagar').insert({
+       } = await api.from('contas_pagar').insert({
         user_id: user.id,
         empresa_id: empresaId,
         descricao: novaConta.descricao,
@@ -263,7 +263,7 @@ const ContasAPagar = () => {
         provisionada: false
       }).select().single();
       if (errorMae || !contaMae) {
-        handleSupabaseError(errorMae, "Erro ao cadastrar conta recorrente");
+        handleApiError(errorMae, "Erro ao cadastrar conta recorrente");
         return;
       }
 
@@ -290,7 +290,7 @@ const ContasAPagar = () => {
       if (contasProvisionadas.length > 0) {
         const {
           error: errorProvisionadas
-        } = await supabase.from('contas_pagar').insert(contasProvisionadas);
+        } = await api.from('contas_pagar').insert(contasProvisionadas);
         if (errorProvisionadas) {
           toast({
             title: "Aviso",
@@ -344,9 +344,9 @@ const ContasAPagar = () => {
     }));
     const {
       error
-    } = await supabase.from('contas_pagar').insert(contasParaInserir);
+    } = await api.from('contas_pagar').insert(contasParaInserir);
     if (error) {
-      handleSupabaseError(error, "Erro ao cadastrar conta");
+      handleApiError(error, "Erro ao cadastrar conta");
     } else {
       setNovaConta({
         descricao: '',
@@ -392,20 +392,20 @@ const ContasAPagar = () => {
     const idsParaExcluir = contasParaExcluir.map(c => c.id);
 
     // Excluir as contas selecionadas
-    const { error: errorExcluir } = await supabase
+    const { error: errorExcluir } = await api
       .from('contas_pagar')
       .delete()
       .in('id', idsParaExcluir);
 
     if (errorExcluir) {
-      handleSupabaseError(errorExcluir, "Erro ao excluir contas");
+      handleApiError(errorExcluir, "Erro ao excluir contas");
       return;
     }
 
     // Se excluiu todas as pendentes, desmarcar como recorrente (se a mãe não foi excluída)
     const excluiuMae = idsParaExcluir.includes(contaParaDesmarcar.id);
     if (!excluiuMae && quantidadeExcluir === contasPendentesParaExcluir.length) {
-      await supabase
+      await api
         .from('contas_pagar')
         .update({ recorrente: false })
         .eq('id', contaParaDesmarcar.id);
@@ -440,18 +440,18 @@ const ContasAPagar = () => {
     // 1. Atualizar o valor da conta mãe (recorrente)
     const {
       error: errorMae
-    } = await supabase.from('contas_pagar').update({
+    } = await api.from('contas_pagar').update({
       valor: novoValorRecorrente
     }).eq('id', contaParaEditarValor.id);
     if (errorMae) {
-      handleSupabaseError(errorMae, "Erro ao atualizar conta recorrente");
+      handleApiError(errorMae, "Erro ao atualizar conta recorrente");
       return;
     }
 
     // 2. Atualizar todas as contas provisionadas pendentes vinculadas
     const {
       error: errorProvisionadas
-    } = await supabase.from('contas_pagar').update({
+    } = await api.from('contas_pagar').update({
       valor: novoValorRecorrente
     }).eq('conta_recorrente_id', contaParaEditarValor.id).eq('status', 'pendente');
     if (errorProvisionadas) {
@@ -513,9 +513,9 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await supabase.from('contas_pagar').insert(novasContas);
+    } = await api.from('contas_pagar').insert(novasContas);
     if (error) {
-      handleSupabaseError(error, "Erro ao estender recorrência");
+      handleApiError(error, "Erro ao estender recorrência");
     } else {
       toast({
         title: "Sucesso!",
@@ -536,7 +536,7 @@ const ContasAPagar = () => {
     });
   }, [contasRecorrentes, contas]);
   const handleMoverConta = async (contaId: string, novaData: string) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('contas_pagar')
       .update({ data_vencimento: novaData })
       .eq('id', contaId);
@@ -598,9 +598,9 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await supabase.from('contas_pagar').insert(contasParaInserir);
+    } = await api.from('contas_pagar').insert(contasParaInserir);
     if (error) {
-      handleSupabaseError(error, "Erro ao criar parcelas");
+      handleApiError(error, "Erro ao criar parcelas");
     } else {
       setDuplicarDialogOpen(false);
       setContaParaDuplicar(null);
@@ -639,7 +639,7 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await supabase.from('contas_pagar').update({
+    } = await api.from('contas_pagar').update({
       descricao: editConta.descricao,
       fornecedor_nome: isFornecedorRequired ? editConta.fornecedor_nome : categoriaFinal,
       valor: editConta.valor,
@@ -651,7 +651,7 @@ const ContasAPagar = () => {
       codigo_pagamento: editConta.codigo_pagamento || null
     }).eq('id', editingConta.id);
     if (error) {
-      handleSupabaseError(error, "Erro ao atualizar conta");
+      handleApiError(error, "Erro ao atualizar conta");
     } else {
       setEditDialogOpen(false);
       setEditingConta(null);
@@ -666,7 +666,7 @@ const ContasAPagar = () => {
   const handleMarcarPago = async (conta: ContaPagar) => {
     const {
       error
-    } = await supabase.from('contas_pagar').update({
+    } = await api.from('contas_pagar').update({
       status: 'pago',
       data_pagamento: format(new Date(), 'yyyy-MM-dd')
     }).eq('id', conta.id);
@@ -709,7 +709,7 @@ const ContasAPagar = () => {
     if (!contaSelecionada) return;
     const base = Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor);
     const valorPago = base + pagJuros + pagMulta - pagDesconto;
-    const { error } = await supabase.from('contas_pagar').update({
+    const { error } = await api.from('contas_pagar').update({
       status: 'pago',
       valor_original: base,
       valor_juros: pagJuros,
@@ -733,7 +733,7 @@ const ContasAPagar = () => {
   const handleDelete = async (id: string) => {
     const {
       error
-    } = await supabase.from('contas_pagar').delete().eq('id', id);
+    } = await api.from('contas_pagar').delete().eq('id', id);
     if (error) {
       toast({
         title: "Erro",

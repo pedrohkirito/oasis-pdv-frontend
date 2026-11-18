@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 import {
   startOfMonth, endOfMonth, addDays,
@@ -20,7 +20,7 @@ export function useFinanceiro() {
     const hoje = format(new Date(), 'yyyy-MM-dd')
 
     // Vendas do mês
-    const { data: vendas } = await supabase
+    const { data: vendas } = await api
       .from('vendas')
       .select('valor_final, data_venda')
       .eq('empresa_id', empresaId)
@@ -28,7 +28,7 @@ export function useFinanceiro() {
       .lte('data_venda', fim)
 
     // Contas a pagar do mês
-    const { data: contasPagar } = await supabase
+    const { data: contasPagar } = await api
       .from('contas_pagar')
       .select('valor, status, data_vencimento, data_pagamento')
       .eq('empresa_id', empresaId)
@@ -36,7 +36,7 @@ export function useFinanceiro() {
       .lte('data_vencimento', fim)
 
     // Contas a receber do mês
-    const { data: contasReceber } = await supabase
+    const { data: contasReceber } = await api
       .from('contas_receber')
       .select('valor, valor_recebido, status, data_vencimento')
       .eq('empresa_id', empresaId)
@@ -117,7 +117,7 @@ export function useFinanceiro() {
     const hojeStr = format(hoje, 'yyyy-MM-dd')
 
     // Contas a pagar futuras
-    const { data: pagarFuturas } = await supabase
+    const { data: pagarFuturas } = await api
       .from('contas_pagar')
       .select('valor, data_vencimento, descricao, categoria')
       .eq('empresa_id', empresaId)
@@ -127,7 +127,7 @@ export function useFinanceiro() {
       .order('data_vencimento')
 
     // Contas a receber futuras
-    const { data: receberFuturas } = await supabase
+    const { data: receberFuturas } = await api
       .from('contas_receber')
       .select('valor, data_vencimento, descricao, cliente_nome')
       .eq('empresa_id', empresaId)
@@ -138,7 +138,7 @@ export function useFinanceiro() {
 
     // Média diária de vendas (últimos 30 dias)
     const inicioHistorico = format(addDays(hoje, -30), 'yyyy-MM-dd')
-    const { data: vendasHistorico } = await supabase
+    const { data: vendasHistorico } = await api
       .from('vendas')
       .select('valor_final')
       .eq('empresa_id', empresaId)
@@ -239,7 +239,7 @@ export function useFinanceiro() {
     const fluxo = await buscarFluxoProjetado(30)
 
     // Prazo médio de recebimento
-    const { data: recebimentos } = await supabase
+    const { data: recebimentos } = await api
       .from('contas_receber')
       .select('created_at, data_recebimento')
       .eq('empresa_id', empresaId)
@@ -256,7 +256,7 @@ export function useFinanceiro() {
       : 0
 
     // Prazo médio de pagamento
-    const { data: pagamentos } = await supabase
+    const { data: pagamentos } = await api
       .from('contas_pagar')
       .select('created_at, data_pagamento')
       .eq('empresa_id', empresaId)

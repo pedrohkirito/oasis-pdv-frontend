@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 import { useAuth } from './useAuth';
 
@@ -85,7 +85,7 @@ export function usePedidosCompra() {
     if (!empresaId) return;
     setLoading(true);
 
-    const { data } = await (supabase as any)
+    const { data } = await (api as any)
       .from('pedidos_compra')
       .select('*, pedidos_compra_itens(*)')
       .eq('empresa_id', empresaId)
@@ -103,7 +103,7 @@ export function usePedidosCompra() {
     statusNovo: string,
     observacao: string = '',
   ) => {
-    await (supabase as any).from('pedidos_compra_historico').insert({
+    await (api as any).from('pedidos_compra_historico').insert({
       pedido_id: pedidoId,
       empresa_id: empresaId,
       status_anterior: statusAnterior,
@@ -127,7 +127,7 @@ export function usePedidosCompra() {
       0,
     );
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (api as any)
       .from('pedidos_compra')
       .insert({ ...pedido, empresa_id: empresaId, valor_total: valorTotal })
       .select()
@@ -136,7 +136,7 @@ export function usePedidosCompra() {
     if (error || !data) return { data: null, error };
 
     if (itens.length > 0) {
-      await (supabase as any).from('pedidos_compra_itens').insert(
+      await (api as any).from('pedidos_compra_itens').insert(
         itens.map(i => ({
           ...i,
           pedido_id: data.id,
@@ -159,7 +159,7 @@ export function usePedidosCompra() {
   ) => {
     const pedido = pedidos.find(p => p.id === pedidoId);
 
-    const { error } = await (supabase as any)
+    const { error } = await (api as any)
       .from('pedidos_compra')
       .update({
         status: statusNovo,
@@ -182,7 +182,7 @@ export function usePedidosCompra() {
   // ── Buscar histórico de um pedido ────────────────────────────────────────────
 
   const buscarHistorico = async (pedidoId: string): Promise<HistoricoPedido[]> => {
-    const { data } = await (supabase as any)
+    const { data } = await (api as any)
       .from('pedidos_compra_historico')
       .select('*')
       .eq('pedido_id', pedidoId)
@@ -193,7 +193,7 @@ export function usePedidosCompra() {
   // ── Excluir pedido ──────────────────────────────────────────────────────────
 
   const excluirPedido = async (pedidoId: string) => {
-    const { error } = await (supabase as any)
+    const { error } = await (api as any)
       .from('pedidos_compra')
       .delete()
       .eq('id', pedidoId);

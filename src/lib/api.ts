@@ -1,14 +1,20 @@
 /**
- * Cliente compatível com as chamadas que o PDV fazia ao Supabase.
- * Toda leitura e escrita vai para a API do oasis-backend.
+ * Cliente HTTP do backend. A origem vem de VITE_API_URL, sem barra no final.
  */
 
-const API = '/api';
+function backendUrl() {
+  const raw = import.meta.env.VITE_API_URL;
+  if (!raw) throw new Error("Defina VITE_API_URL com a URL do backend.");
+  return String(raw).replace(/\/$/, "");
+}
+
 const EMPRESA_KEY = 'lafiore-empresa-ativa';
 
-type Listener = (event: string, session: Session | null) => void;
+export type AuthChangeEvent = "INITIAL_SESSION" | "SIGNED_IN" | "SIGNED_OUT" | "TOKEN_REFRESHED" | "USER_UPDATED";
 
-interface SessionUser {
+type Listener = (event: AuthChangeEvent, session: Session | null) => void;
+
+export interface User {
   id: string;
   email: string;
   aud: string;
@@ -17,9 +23,9 @@ interface SessionUser {
   app_metadata: { empresa_id?: string | null; empresa_role?: string | null };
 }
 
-interface Session {
+export interface Session {
   access_token: string;
-  user: SessionUser;
+  user: User;
 }
 
 interface EmpresaSessao {
@@ -66,7 +72,7 @@ function buildSession(): Session | null {
   };
 }
 
-function emit(event: string) {
+function emit(event: AuthChangeEvent) {
   const session = buildSession();
   for (const listener of listeners) listener(event, session);
 }
@@ -76,14 +82,14 @@ export function syncEmpresaNaSessao(empresaId: string) {
   emit('TOKEN_REFRESHED');
 }
 
-async function api(path: string, init?: RequestInit) {
+async function request(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
   if (!headers.has('Content-Type') && init?.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
   const empresaId = empresaAtivaId();
   if (empresaId) headers.set('X-Empresa-Id', empresaId);
-  const response = await fetch(`${API}${path}`, {
+  const response = await fetch(`${backendUrl()}${path}`, {
     ...init,
     headers,
     credentials: 'include',
@@ -94,7 +100,7 @@ async function api(path: string, init?: RequestInit) {
 }
 
 async function carregarSessao() {
-  const { ok, body } = await api('/auth/sessao');
+  const { ok, body } = await request('/auth/sessao');
   if (!ok || !body?.usuario) {
     cachedUser = null;
     return null;
@@ -244,7 +250,7 @@ class Query {
 
   private async run() {
     try {
-      const { ok, body } = await api('/dados', {
+      const { ok, body } = await request('/dados', {
         method: 'POST',
         body: JSON.stringify({
           table: this.table,
@@ -282,7 +288,7 @@ class Query {
 
 async function invoke(name: string, options?: { body?: unknown; method?: string }) {
   try {
-    const { ok, body } = await api(`/functions/${name}`, {
+    const { ok, body } = await request(`/functions/${name}`, {
       method: options?.method ?? 'POST',
       body: JSON.stringify(options?.body ?? {}),
     });
@@ -298,12 +304,12 @@ async function invoke(name: string, options?: { body?: unknown; method?: string 
   }
 }
 
-export const supabase = {
+export const api = {
   from(table: string) {
     return new Query(table);
   },
   rpc(name: string, args?: Record<string, unknown>) {
-    return api(`/rpc/${name}`, { method: 'POST', body: JSON.stringify(args ?? {}) }).then(({ ok, body }) => {
+    return request(`/rpc/${name}`, { method: 'POST', body: JSON.stringify(args ?? {}) }).then(({ ok, body }) => {
       if (!ok) {
         return { data: null, error: { message: body?.error?.message ?? body?.error ?? 'Erro ao executar operação' } };
       }
@@ -338,7 +344,7 @@ export const supabase = {
           const bytes = new Uint8Array(buffer);
           let binary = '';
           for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i] ?? 0);
-          const { ok, body } = await api(`/storage/${bucket}`, {
+          const { ok, body } = await request(`/storage/${bucket}`, {
             method: 'POST',
             body: JSON.stringify({
               path,
@@ -350,7 +356,7 @@ export const supabase = {
           return { data: { path }, error: null };
         },
         getPublicUrl(path: string) {
-          return { data: { publicUrl: `/api/arquivos/${bucket}/${path}` } };
+          return { data: { publicUrl: `${backendUrl()}/arquivos/${bucket}/${path}` } };
         },
       };
     },
@@ -373,7 +379,7 @@ export const supabase = {
       return { data: { subscription: { unsubscribe: () => listeners.delete(callback) } } };
     },
     async signInWithPassword({ email, password }: { email: string; password: string }) {
-      const { ok, body } = await api('/auth/login', {
+      const { ok, body } = await request('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
@@ -383,7 +389,7 @@ export const supabase = {
       return { data: { user: buildSession()?.user ?? null }, error: null };
     },
     async signUp({ email, password, options }: { email: string; password: string; options?: { data?: { nome?: string }; emailRedirectTo?: string } }) {
-      const { ok, body } = await api('/auth/cadastro', {
+      const { ok, body } = await request('/auth/cadastro', {
         method: 'POST',
         body: JSON.stringify({ email, password, nome: options?.data?.nome }),
       });
@@ -393,13 +399,13 @@ export const supabase = {
       return { data: { user: buildSession()?.user ?? null }, error: null };
     },
     async signOut() {
-      await api('/auth/logout', { method: 'POST', body: '{}' });
+      await request('/auth/logout', { method: 'POST', body: '{}' });
       cachedUser = null;
       emit('SIGNED_OUT');
       return { error: null };
     },
     async updateUser(payload: { password?: string; data?: Record<string, unknown> }) {
-      const { ok, body } = await api('/auth/perfil', {
+      const { ok, body } = await request('/auth/perfil', {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 import { startOfDay, endOfDay, startOfWeek,
          endOfWeek, startOfMonth, endOfMonth,
@@ -11,7 +11,7 @@ export function useMetas() {
   const [loading, setLoading] = useState(true)
 
   const buscarMetas = async () => {
-    const { data } = await (supabase
+    const { data } = await (api
       .from('metas' as any)
       .select('*') as any)
       .eq('empresa_id', empresaId)
@@ -22,7 +22,7 @@ export function useMetas() {
   }
 
   const criarMeta = async (meta: any) => {
-    const { data, error } = await (supabase
+    const { data, error } = await (api
       .from('metas' as any)
       .insert({ ...meta, empresa_id: empresaId }) as any)
       .select().single()
@@ -31,7 +31,7 @@ export function useMetas() {
   }
 
   const atualizarMeta = async (id: string, updates: any) => {
-    const { error } = await (supabase
+    const { error } = await (api
       .from('metas' as any)
       .update({ ...updates, updated_at: new Date().toISOString() }) as any)
       .eq('id', id)
@@ -40,7 +40,7 @@ export function useMetas() {
   }
 
   const excluirMeta = async (id: string) => {
-    await (supabase.from('metas' as any)
+    await (api.from('metas' as any)
       .update({ ativo: false }) as any).eq('id', id)
     buscarMetas()
   }
@@ -52,7 +52,7 @@ export function useMetas() {
     if (meta.tipo === 'categoria' && meta.categoria) {
       // Soma subtotais dos itens de venda cujo produto pertença à categoria da meta,
       // dentro do período. Usa join implícito via PostgREST.
-      const { data: itens } = await (supabase
+      const { data: itens } = await (api
         .from('itens_venda')
         .select('subtotal, produtos!inner(categoria, empresa_id), vendas!inner(data_venda, empresa_id)') as any)
         .eq('produtos.categoria', meta.categoria)
@@ -64,7 +64,7 @@ export function useMetas() {
         (acc: number, i: any) => acc + Number(i.subtotal || 0), 0
       )
     } else {
-      let query = (supabase
+      let query = (api
         .from('vendas')
         .select('valor, valor_final, vendedor_id, data_venda') as any)
         .eq('empresa_id', empresaId)

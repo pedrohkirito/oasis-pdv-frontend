@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { Operacao } from '@/hooks/useOperacoes';
 import { X, Layers } from 'lucide-react';
@@ -55,7 +55,7 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
 
   useEffect(() => {
     if (open && empresaId) {
-      supabase.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).eq('ativo', true).then(({ data }) => {
+      api.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).eq('ativo', true).then(({ data }) => {
         setFornecedores(data || []);
       });
     }

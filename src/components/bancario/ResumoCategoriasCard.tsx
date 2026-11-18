@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,7 +38,7 @@ export function ResumoCategoriasCard({ empresaId }: { empresaId: string }) {
     if (!empresaId) return
     const buscar = async () => {
       setLoading(true)
-      const { data } = await (supabase
+      const { data } = await (api
         .from('movimentacoes_bancarias' as any)
         .select('categoria, valor, tipo') as any)
         .eq('empresa_id', empresaId)

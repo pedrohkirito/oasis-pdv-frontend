@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 import { useAuth } from './useAuth'
 
@@ -10,7 +10,7 @@ export function useOrcamentos() {
   const [loading, setLoading] = useState(true)
 
   const buscarOrcamentos = async () => {
-    const { data } = await supabase
+    const { data } = await api
       .from('orcamentos')
       .select('*, orcamento_itens(*)')
       .eq('empresa_id', empresaId)
@@ -34,7 +34,7 @@ export function useOrcamentos() {
     )
     const total = subtotal - (orcamento.desconto || 0)
 
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('orcamentos')
       .insert({
         ...orcamento,
@@ -46,7 +46,7 @@ export function useOrcamentos() {
       .select().single()
 
     if (!error && data) {
-      await supabase.from('orcamento_itens').insert(
+      await api.from('orcamento_itens').insert(
         itens.map(i => ({
           ...i,
           orcamento_id: data.id,
@@ -60,7 +60,7 @@ export function useOrcamentos() {
   }
 
   const atualizarStatus = async (id: string, status: string) => {
-    await supabase.from('orcamentos')
+    await api.from('orcamentos')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
     buscarOrcamentos()
@@ -71,7 +71,7 @@ export function useOrcamentos() {
     if (!orcamento) return { error: 'Orçamento não encontrado' }
 
     // Cria a venda com os campos corretos da tabela vendas
-    const { data: venda, error } = await (supabase
+    const { data: venda, error } = await (api
       .from('vendas')
       .insert({
         empresa_id: empresaId,
@@ -92,7 +92,7 @@ export function useOrcamentos() {
       const itens: any[] = orcamento.orcamento_itens || []
       const itensValidos = itens.filter(i => i.produto_id)
       if (itensValidos.length > 0) {
-        await supabase.from('itens_venda').insert(
+        await api.from('itens_venda').insert(
           itensValidos.map(i => ({
             venda_id: venda.id,
             produto_id: i.produto_id,
@@ -104,7 +104,7 @@ export function useOrcamentos() {
       }
 
       // Atualiza orçamento como convertido
-      await supabase.from('orcamentos')
+      await api.from('orcamentos')
         .update({
           status: 'convertido',
           venda_id: venda.id,
@@ -118,7 +118,7 @@ export function useOrcamentos() {
   }
 
   const excluirOrcamento = async (id: string) => {
-    await supabase.from('orcamentos').delete().eq('id', id)
+    await api.from('orcamentos').delete().eq('id', id)
     buscarOrcamentos()
   }
 

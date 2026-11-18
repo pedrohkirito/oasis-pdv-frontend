@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Printer, Download, ChevronLeft, ChevronRight, FileCode, ChevronDown, ChevronUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useEtiquetaConfig } from '@/hooks/useEtiquetaConfig';
 import { useEmpresa } from '@/hooks/useEmpresa';
@@ -78,7 +78,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
     if (!produtosComVar.length) return;
     Promise.all(
       produtosComVar.map(p =>
-        supabase
+        api
           .from('produto_variacoes')
           .select('id, atributos, preco, estoque')
           .eq('produto_id', p.id)

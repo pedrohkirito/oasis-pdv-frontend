@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from './useEmpresa';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -82,7 +82,7 @@ export function useOperacoes() {
   const fetchOperacoes = useCallback(async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('operacoes')
       .select('*, vendas:venda_id(vendedor)')
       .eq('empresa_id', empresaId)
@@ -113,7 +113,7 @@ export function useOperacoes() {
       status: data.status || 'venda_confirmada',
     };
 
-    const { data: created, error } = await supabase
+    const { data: created, error } = await api
       .from('operacoes')
       .insert(payload as any)
       .select()
@@ -130,10 +130,10 @@ export function useOperacoes() {
       titulo,
       ordem: i,
     }));
-    await supabase.from('operacao_tarefas').insert(tarefas as any);
+    await api.from('operacao_tarefas').insert(tarefas as any);
 
     // Add history entry
-    await supabase.from('operacao_historico').insert({
+    await api.from('operacao_historico').insert({
       operacao_id: created.id,
       tipo: 'status_change',
       descricao: 'Operação criada',
@@ -148,7 +148,7 @@ export function useOperacoes() {
 
   const updateStatus = async (operacaoId: string, newStatus: KanbanStatus, oldStatus: string) => {
     if (!user) return;
-    const { error } = await supabase
+    const { error } = await api
       .from('operacoes')
       .update({ status: newStatus } as any)
       .eq('id', operacaoId);
@@ -158,7 +158,7 @@ export function useOperacoes() {
       return;
     }
 
-    await supabase.from('operacao_historico').insert({
+    await api.from('operacao_historico').insert({
       operacao_id: operacaoId,
       tipo: 'status_change',
       descricao: `Status alterado de "${getStatusLabel(oldStatus)}" para "${getStatusLabel(newStatus)}"`,
@@ -171,7 +171,7 @@ export function useOperacoes() {
   };
 
   const updateOperacao = async (operacaoId: string, data: Partial<Operacao>) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('operacoes')
       .update(data as any)
       .eq('id', operacaoId);
@@ -184,7 +184,7 @@ export function useOperacoes() {
   };
 
   const deleteOperacao = async (operacaoId: string) => {
-    const { error } = await supabase
+    const { error } = await api
       .from('operacoes')
       .delete()
       .eq('id', operacaoId);

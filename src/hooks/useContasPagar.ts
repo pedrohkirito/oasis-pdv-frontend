@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { format, addMonths, addDays, differenceInDays } from 'date-fns';
 
@@ -94,7 +94,7 @@ export function useContasPagar() {
   const buscarContas = useCallback(async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('contas_pagar')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -138,7 +138,7 @@ export function useContasPagar() {
       },
     ];
 
-    const { error } = await supabase
+    const { error } = await api
       .from('contas_pagar')
       .update({
         status: 'pago',
@@ -195,7 +195,7 @@ export function useContasPagar() {
       }
     }
 
-    const { error } = await supabase
+    const { error } = await api
       .from('contas_pagar')
       .insert(parcelas as never[]);
 
@@ -210,13 +210,13 @@ export function useContasPagar() {
   ): Promise<{ data: ContaPagar[]; error: unknown }> => {
     if (!empresaId) return { data: [], error: 'Empresa não definida' };
 
-    let query = (supabase as ReturnType<typeof supabase.from>)
+    let query = (api as ReturnType<typeof api.from>)
       .from('contas_pagar')
       .select('*, contas_bancarias(nome, banco)')
-      .eq('empresa_id', empresaId) as ReturnType<typeof supabase.from>;
+      .eq('empresa_id', empresaId) as ReturnType<typeof api.from>;
 
     // workaround: use any for dynamic chaining
-    let q: any = supabase
+    let q: any = api
       .from('contas_pagar')
       .select('*, contas_bancarias(nome, banco)')
       .eq('empresa_id', empresaId);

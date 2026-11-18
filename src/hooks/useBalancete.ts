@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export interface LinhaBalancete {
@@ -22,7 +22,7 @@ export function useBalancete() {
   const buscarBalancete = useCallback(async (dataIni: string, dataFim: string) => {
     if (!empresaId) return { data: null, error: 'Sem empresa selecionada' }
     setLoading(true)
-    const { data, error } = await (supabase.rpc('balancete', {
+    const { data, error } = await (api.rpc('balancete', {
       p_empresa_id: empresaId,
       p_data_ini: dataIni,
       p_data_fim: dataFim,

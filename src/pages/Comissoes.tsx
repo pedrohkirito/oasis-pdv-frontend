@@ -17,10 +17,10 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useEmpresa } from '@/hooks/useEmpresa';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
-import { handleSupabaseError } from '@/utils/errorHandler';
+import { handleApiError } from '@/utils/errorHandler';
 import { escapeHtml } from '@/utils/htmlSanitize';
 
 // --- Types ---
@@ -235,7 +235,7 @@ const Comissoes = () => {
   const buildVendaIdsQuery = useCallback(async (): Promise<string[]> => {
     if (!empresaId) return [];
 
-    let query = supabase
+    let query = api
       .from('vendas')
       .select('id')
       .eq('empresa_id', empresaId);
@@ -273,7 +273,7 @@ const Comissoes = () => {
     let allComissoes: any[] = [];
     for (let i = 0; i < vendaIds.length; i += 100) {
       const chunk = vendaIds.slice(i, i + 100);
-      let query = supabase
+      let query = api
         .from('comissoes')
         .select('valor_base, valor_comissao')
         .eq('empresa_id', empresaId)
@@ -308,7 +308,7 @@ const Comissoes = () => {
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    let query = supabase
+    let query = api
       .from('comissoes')
       .select('*', { count: 'exact' })
       .eq('empresa_id', empresaId)
@@ -319,7 +319,7 @@ const Comissoes = () => {
     const { data, error, count } = await query;
 
     if (error) {
-      handleSupabaseError(error, 'Erro ao carregar comissões');
+      handleApiError(error, 'Erro ao carregar comissões');
       setPaginatedComissoes([]);
       setPageLoading(false);
       return;
@@ -331,7 +331,7 @@ const Comissoes = () => {
     const pageVendaIds = [...new Set((data || []).map(c => c.venda_id))];
     let vendasMap: Record<string, any> = {};
     if (pageVendaIds.length > 0) {
-      const { data: vendas } = await supabase
+      const { data: vendas } = await api
         .from('vendas')
         .select('id, cliente_nome, produtos, data_venda, vendedor')
         .in('id', pageVendaIds)
@@ -366,7 +366,7 @@ const Comissoes = () => {
     let allComissoes: any[] = [];
     for (let i = 0; i < vendaIds.length; i += 100) {
       const chunk = vendaIds.slice(i, i + 100);
-      const { data } = await supabase
+      const { data } = await api
         .from('comissoes')
         .select('id, venda_id, vendedor_id, valor_base, percentual, valor_comissao, data_calculo, empresa_id, created_at')
         .eq('empresa_id', empresaId)
@@ -379,7 +379,7 @@ const Comissoes = () => {
     let vendasMap: Record<string, any> = {};
     for (let i = 0; i < allVendaIds.length; i += 100) {
       const chunk = allVendaIds.slice(i, i + 100);
-      const { data: vendas } = await supabase
+      const { data: vendas } = await api
         .from('vendas')
         .select('id, data_venda')
         .in('id', chunk)
@@ -398,7 +398,7 @@ const Comissoes = () => {
   const fetchMetas = async () => {
     if (!empresaId) return;
     const mesAtual = format(new Date(), 'yyyy-MM');
-    const { data } = await supabase
+    const { data } = await api
       .from('metas_vendedor')
       .select('vendedor_id, valor_meta')
       .eq('empresa_id', empresaId)
@@ -412,25 +412,17 @@ const Comissoes = () => {
   const fetchVendedores = async () => {
     if (!empresaId) return;
     try {
-      const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-users`);
-      url.searchParams.set('empresa_id', empresaId);
-      const { data: session } = await supabase.auth.getSession();
-      const res = await fetch(url.toString(), {
-        headers: {
-          Authorization: `Bearer ${session.session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
+      const { data, error } = await api.functions.invoke('list-users', {
+        body: { empresa_id: empresaId },
       });
-      const data = await res.json();
-      if (data?.users) {
-        setVendedores(
-          data.users.map((u: any) => ({
-            id: u.id,
-            nome: u.nome || u.email?.split('@')[0] || 'Sem nome',
-            email: u.email || '',
-          }))
-        );
-      }
+      if (error || !data?.users) return;
+      setVendedores(
+        data.users.map((u: any) => ({
+          id: u.id,
+          nome: u.nome || u.email?.split('@')[0] || 'Sem nome',
+          email: u.email || '',
+        }))
+      );
     } catch (e) {
       console.error('Error fetching vendedores:', e);
     }

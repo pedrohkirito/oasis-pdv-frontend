@@ -8,7 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Trash2, Plus, User, Package } from 'lucide-react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from '@/hooks/useEmpresa'
 import { addDays, format, differenceInDays, parseISO } from 'date-fns'
 
@@ -75,7 +75,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
 
   useEffect(() => {
     if (!open || !empresaId) return
-    supabase.from('clientes').select('id, nome, telefone, email').eq('empresa_id', empresaId).eq('ativo', true).order('nome')
+    api.from('clientes').select('id, nome, telefone, email').eq('empresa_id', empresaId).eq('ativo', true).order('nome')
       .then(({ data }) => setClientes(data || []))
     // Paginated product fetch to handle >1000 products
     const fetchAllProducts = async () => {
@@ -84,7 +84,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
       const pageSize = 1000;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await supabase.from('produtos').select('id, nome, preco, estoque, codigo').eq('empresa_id', empresaId).eq('ativo', true).order('nome').range(from, from + pageSize - 1);
+        const { data } = await api.from('produtos').select('id, nome, preco, estoque, codigo').eq('empresa_id', empresaId).eq('ativo', true).order('nome').range(from, from + pageSize - 1);
         all = all.concat(data || []);
         hasMore = (data?.length || 0) === pageSize;
         from += pageSize;

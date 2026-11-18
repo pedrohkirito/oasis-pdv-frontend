@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Download, Loader2, Printer } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -131,10 +131,10 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
     setLoading(true);
 
     const [pedidoRes, itensRes, fiscalRes, vendaRes] = await Promise.all([
-      supabase.from('pedidos_entrega').select('*').eq('venda_id', vendaId).eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(1).single(),
-      supabase.from('itens_venda').select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, produtos(nome, codigo, categoria)').eq('venda_id', vendaId),
-      supabase.from('empresa_fiscal').select('razao_social, nome_fantasia, cnpj, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf, endereco_cep').eq('empresa_id', empresaId).limit(1).single(),
-      supabase.from('vendas').select('valor, valor_bruto, desconto, valor_final, metodo_pagamento, parcelas, vendedor, observacoes, data_venda, cliente_nome, cliente_id').eq('id', vendaId).single(),
+      api.from('pedidos_entrega').select('*').eq('venda_id', vendaId).eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(1).single(),
+      api.from('itens_venda').select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, produtos(nome, codigo, categoria)').eq('venda_id', vendaId),
+      api.from('empresa_fiscal').select('razao_social, nome_fantasia, cnpj, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf, endereco_cep').eq('empresa_id', empresaId).limit(1).single(),
+      api.from('vendas').select('valor, valor_bruto, desconto, valor_final, metodo_pagamento, parcelas, vendedor, observacoes, data_venda, cliente_nome, cliente_id').eq('id', vendaId).single(),
     ]);
 
     if (pedidoRes.data) setPedido(pedidoRes.data as any);
@@ -143,7 +143,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
     let itensData: any[] = itensRes.data || [];
     let usouFallback = false;
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
-      const fallback = await supabase
+      const fallback = await api
         .from('itens_venda')
         .select('produto_id, quantidade, preco_unitario, subtotal, produtos(nome, codigo, categoria)')
         .eq('venda_id', vendaId);
@@ -170,7 +170,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
 
     let cli: any = null;
     if (clienteId) {
-      const { data } = await supabase
+      const { data } = await api
         .from('clientes')
         .select(clienteFields)
         .eq('id', clienteId)
@@ -178,7 +178,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
       cli = data;
     }
     if (!cli && clienteNome) {
-      const { data } = await supabase
+      const { data } = await api
         .from('clientes')
         .select(clienteFields)
         .eq('empresa_id', empresaId)

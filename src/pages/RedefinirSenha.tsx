@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import lafioreLogo from '@/assets/lafiore-logo.jpg';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const RedefinirSenha = () => {
   useEffect(() => {
     // Verifica se há um evento de recovery na URL (hash)
     const handleRecovery = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await api.auth.getSession();
       if (session) {
         setValidSession(true);
       } else {
@@ -37,7 +37,7 @@ const RedefinirSenha = () => {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = api.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setValidSession(true);
       }
@@ -71,7 +71,7 @@ const RedefinirSenha = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await api.auth.updateUser({ password });
 
     setLoading(false);
 

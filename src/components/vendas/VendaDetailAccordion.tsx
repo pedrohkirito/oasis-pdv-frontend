@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -99,17 +99,17 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
 
       // Fetch all in parallel - all queries filter by empresa context
       const [itensRes, operacaoRes, comissaoRes] = await Promise.all([
-        supabase
+        api
           .from('itens_venda')
           .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
           .eq('venda_id', vendaId),
-        supabase
+        api
           .from('operacoes')
           .select('id, tipo, status, data_prevista, data_entrega, data_montagem, observacoes')
           .eq('venda_id', vendaId)
           .eq('empresa_id', empresaId)
           .maybeSingle(),
-        supabase
+        api
           .from('comissoes')
           .select('id, percentual, valor_base, valor_comissao, vendedor_id')
           .eq('venda_id', vendaId)
@@ -120,7 +120,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       // If the extended columns don't exist yet, fall back to the basic query
       let itensData: any[] = itensRes.data || [];
       if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
-        const fallback = await supabase
+        const fallback = await api
           .from('itens_venda')
           .select('produto_id, quantidade, preco_unitario, subtotal')
           .eq('venda_id', vendaId);
@@ -130,7 +130,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       // Resolve product names
       if (itensData && itensData.length > 0) {
         const produtoIds = itensData.map((i: any) => i.produto_id);
-        const { data: produtosData } = await supabase
+        const { data: produtosData } = await api
           .from('produtos')
           .select('id, nome')
           .in('id', produtoIds);
@@ -155,14 +155,14 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       // Check if month is closed for commission status
       if (comissaoRes.data && empresaId) {
         // We'll derive from fechamento_comissao
-        const { data: vendaData } = await supabase
+        const { data: vendaData } = await api
           .from('vendas')
           .select('data_venda')
           .eq('id', vendaId)
           .single();
         if (vendaData) {
           const mes = vendaData.data_venda.substring(0, 7);
-          const { data: fechamento } = await supabase
+          const { data: fechamento } = await api
             .from('fechamento_comissao')
             .select('id')
             .eq('empresa_id', empresaId)

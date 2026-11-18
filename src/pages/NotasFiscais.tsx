@@ -11,7 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 
 interface NotaFiscal {
@@ -312,7 +312,7 @@ const NotasFiscais = () => {
 
   const fetchEmpresaFiscal = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('empresa_fiscal')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -322,7 +322,7 @@ const NotasFiscais = () => {
 
   const fetchInutilizacoes = async () => {
     if (!empresaId) return;
-    const { data } = await supabase
+    const { data } = await api
       .from('inutilizacoes_nfce')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -347,7 +347,7 @@ const NotasFiscais = () => {
     }
     setInutilizando(true);
     try {
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: { action: 'inutilizar', data: { empresaFiscal, numeroInicial: numInicial, numeroFinal: numFinal, justificativa: justificativaInut.trim(), userId: user?.id } }
       });
       if (error) throw new Error(error.message);
@@ -369,9 +369,9 @@ const NotasFiscais = () => {
     setLoadingVenda(true);
     try {
       if (nota.venda_id) {
-        const { data: venda } = await supabase.from('vendas').select('*').eq('id', nota.venda_id).eq('empresa_id', empresaId).single();
+        const { data: venda } = await api.from('vendas').select('*').eq('id', nota.venda_id).eq('empresa_id', empresaId).single();
         setVendaOriginal(venda);
-        const { data: itens } = await supabase.from('itens_venda').select('*, produtos(*)').eq('venda_id', nota.venda_id);
+        const { data: itens } = await api.from('itens_venda').select('*, produtos(*)').eq('venda_id', nota.venda_id);
         setItensVenda(itens || []);
       }
     } catch (error) {
@@ -400,7 +400,7 @@ const NotasFiscais = () => {
         preco_unitario: item.preco_unitario,
         subtotal: item.subtotal,
       }));
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'emitir',
           data: {
@@ -413,7 +413,7 @@ const NotasFiscais = () => {
       });
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
-      await supabase.from('notas_fiscais').update({ motivo_rejeicao: `${notaParaReemitir.motivo_rejeicao} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
+      await api.from('notas_fiscais').update({ motivo_rejeicao: `${notaParaReemitir.motivo_rejeicao} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
       toast({ title: "NFC-e Reemitida", description: `Nova NFC-e emitida com sucesso! Número: ${data.infNFe?.ide?.nNF || empresaFiscal.numero_nfce}` });
       setReemitirDialogOpen(false);
       setNotaParaReemitir(null); setVendaOriginal(null); setItensVenda([]);
@@ -435,7 +435,7 @@ const NotasFiscais = () => {
 
   const fetchNotas = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('notas_fiscais')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -479,7 +479,7 @@ const NotasFiscais = () => {
     }
     setCancelando(true);
     try {
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: { action: 'cancelar', nota_id: selectedNota.id, motivo: motivoCancelamento }
       });
       if (error) throw new Error(error.message);
@@ -497,7 +497,7 @@ const NotasFiscais = () => {
   const handleDownload = async (nota: NotaFiscal, tipo: 'pdf' | 'xml') => {
     setBaixando(`${nota.id}-${tipo}`);
     try {
-      const { data, error } = await supabase.functions.invoke('becoming-nfce', {
+      const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: { action: tipo === 'pdf' ? 'download_pdf' : 'download_xml', nota_id: nota.id }
       });
       if (error) throw new Error(error.message);

@@ -21,10 +21,10 @@ import {
 import { PageTransition } from '@/components/layout/PageTransition';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { handleSupabaseError } from '@/utils/errorHandler';
+import { handleApiError } from '@/utils/errorHandler';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -383,14 +383,14 @@ const Clientes = () => {
   const fetchClientes = async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('clientes')
       .select('*')
       .eq('empresa_id', empresaId)
       .order('nome', { ascending: true });
     
     if (error) {
-      handleSupabaseError(error, "Erro ao carregar clientes");
+      handleApiError(error, "Erro ao carregar clientes");
     } else {
       setClientes(data || []);
     }
@@ -423,7 +423,7 @@ const Clientes = () => {
       ? `${novoCliente.endereco}, ${novoCliente.numero}` 
       : novoCliente.endereco;
 
-    const { error } = await supabase.from('clientes').insert({
+    const { error } = await api.from('clientes').insert({
       user_id: user.id,
       empresa_id: empresaId,
       nome: novoCliente.nome,
@@ -442,7 +442,7 @@ const Clientes = () => {
     });
 
     if (error) {
-      handleSupabaseError(error, "Erro ao cadastrar cliente");
+      handleApiError(error, "Erro ao cadastrar cliente");
     } else {
       setNovoCliente({
         nome: '',
@@ -516,7 +516,7 @@ const Clientes = () => {
       ? `${editCliente.endereco}, ${editCliente.numero}` 
       : editCliente.endereco;
 
-    const { error } = await supabase.from('clientes').update({
+    const { error } = await api.from('clientes').update({
       nome: editCliente.nome,
       cpf: editCliente.cpf || null,
       telefone: editCliente.telefone || null,
@@ -533,7 +533,7 @@ const Clientes = () => {
     }).eq('id', editingCliente.id);
 
     if (error) {
-      handleSupabaseError(error, "Erro ao atualizar cliente");
+      handleApiError(error, "Erro ao atualizar cliente");
     } else {
       setEditDialogOpen(false);
       setEditingCliente(null);
@@ -546,9 +546,9 @@ const Clientes = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('clientes').delete().eq('id', id);
+    const { error } = await api.from('clientes').delete().eq('id', id);
     if (error) {
-      handleSupabaseError(error, "Erro ao excluir cliente");
+      handleApiError(error, "Erro ao excluir cliente");
     } else {
       fetchClientes();
       toast({
@@ -663,7 +663,7 @@ const Clientes = () => {
       cep: c.cep || null
     }));
 
-    const { error } = await supabase.from('clientes').insert(clientesParaInserir);
+    const { error } = await api.from('clientes').insert(clientesParaInserir);
 
     if (error) {
       toast({

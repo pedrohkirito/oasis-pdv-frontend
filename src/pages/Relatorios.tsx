@@ -13,11 +13,11 @@ import { TrendingUp, DollarSign, FileBarChart, CalendarIcon, BarChart3 } from 'l
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, startOfWeek, endOfWeek, subWeeks, eachMonthOfInterval, eachWeekOfInterval, eachDayOfInterval, subDays, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables } from '@/lib/database';
 
 type ContaPagar = Tables<'contas_pagar'>;
 type Venda = Tables<'vendas'>;
@@ -244,7 +244,7 @@ const Relatorios = () => {
   const fetchContas = async () => {
     if (!empresaId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('contas_pagar')
       .select('*')
       .eq('empresa_id', empresaId)
@@ -260,7 +260,7 @@ const Relatorios = () => {
 
   const fetchVendas = async () => {
     if (!empresaId) return;
-    const { data, error } = await supabase
+    const { data, error } = await api
       .from('vendas')
       .select('*')
       .eq('empresa_id', empresaId)

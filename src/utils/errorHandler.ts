@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-interface PostgrestError {
+interface ApiError {
   message?: string;
   code?: string;
   details?: string;
@@ -12,8 +12,8 @@ interface PostgrestError {
  * and shows a friendly toast message to the user.
  * Returns true if it was an RLS error (so caller can skip generic error handling).
  */
-export function handleSupabaseError(
-  error: PostgrestError | null | undefined,
+export function handleApiError(
+  error: ApiError | null | undefined,
   fallbackMessage = "Ocorreu um erro inesperado."
 ): boolean {
   if (!error) return false;
@@ -59,7 +59,7 @@ export function handleSupabaseError(
 
   // Fallback — show generic message (do not leak raw DB error details)
   if (error.message) {
-    console.error('[Supabase error]', error);
+    console.error('[API error]', error);
   }
   toast.error(fallbackMessage, {
     duration: 5000,

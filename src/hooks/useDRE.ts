@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export function useDRE() {
@@ -11,7 +11,7 @@ export function useDRE() {
     setLoading(true)
 
     // 1. Receita bruta (vendas concluídas)
-    const { data: vendas } = await (supabase
+    const { data: vendas } = await (api
       .from('vendas')
       .select('valor_final, valor, desconto, created_at') as any)
       .eq('empresa_id', empresaId)
@@ -20,7 +20,7 @@ export function useDRE() {
 
     // 2. CMV — custo das mercadorias vendidas
     // Busca itens de venda com preço de custo
-    const { data: itensVenda } = await (supabase
+    const { data: itensVenda } = await (api
       .from('itens_venda')
       .select('quantidade, custo_unitario, venda_id, vendas!inner(created_at, empresa_id)') as any)
       .eq('vendas.empresa_id', empresaId)
@@ -28,7 +28,7 @@ export function useDRE() {
       .lte('vendas.created_at', dataFim)
 
     // 3. Despesas operacionais (contas a pagar pagas)
-    const { data: despesas } = await supabase
+    const { data: despesas } = await api
       .from('contas_pagar')
       .select('valor, categoria, data_pagamento')
       .eq('empresa_id', empresaId)
@@ -39,7 +39,7 @@ export function useDRE() {
     // 4. Comissões pagas
     let comissoes: { valor_comissao: number }[] = []
     try {
-      const { data } = await (supabase
+      const { data } = await (api
         .from('comissoes')
         .select('valor_comissao') as any)
         .eq('empresa_id', empresaId)
@@ -52,7 +52,7 @@ export function useDRE() {
     }
 
     // 5. Contas a receber recebidas
-    const { data: recebimentos } = await supabase
+    const { data: recebimentos } = await api
       .from('contas_receber')
       .select('valor, valor_recebido, categoria')
       .eq('empresa_id', empresaId)

@@ -15,7 +15,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -67,7 +67,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
   const fetchCategorias = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await api
         .from('categorias_produto')
         .select('*')
         .eq('empresa_id', empresaId)
@@ -77,7 +77,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
       setCategorias(data || []);
 
       // Count products per category
-      const { data: produtos } = await supabase
+      const { data: produtos } = await api
         .from('produtos')
         .select('categoria')
         .eq('empresa_id', empresaId);
@@ -100,7 +100,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
     if (!novaCategoria.trim()) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('categorias_produto').insert({
+      const { error } = await api.from('categorias_produto').insert({
         empresa_id: empresaId,
         nome: novaCategoria.trim(),
         cor: novaCor,
@@ -131,7 +131,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
       const cat = categorias.find(c => c.id === id);
       const oldName = cat?.nome;
 
-      const { error } = await supabase
+      const { error } = await api
         .from('categorias_produto')
         .update({ nome: editNome.trim(), cor: editCor })
         .eq('id', id);
@@ -144,7 +144,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
       // Update products with old category name
       if (oldName && oldName !== editNome.trim()) {
-        await supabase
+        await api
           .from('produtos')
           .update({ categoria: editNome.trim() })
           .eq('empresa_id', empresaId)
@@ -164,7 +164,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
   const handleToggleAtivo = async (cat: CategoriaDB) => {
     try {
-      const { error } = await supabase
+      const { error } = await api
         .from('categorias_produto')
         .update({ ativo: !cat.ativo })
         .eq('id', cat.id);
@@ -188,7 +188,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
       return;
     }
     try {
-      const { error } = await supabase
+      const { error } = await api
         .from('categorias_produto')
         .delete()
         .eq('id', cat.id);

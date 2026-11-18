@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useMotionValue } from 'framer-motion';
 import {
   ShoppingCart, FileText, Receipt,
@@ -482,13 +483,13 @@ function Header() {
 
         {/* CTAs — desktop */}
         <div className="hidden md:flex items-center gap-3">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-sm font-semibold transition-all duration-200 hover:opacity-80"
             style={{ ...glass.medium, borderRadius: '12px', padding: '8px 20px', color: '#6B7280' }}
           >
             Entrar
-          </a>
+          </Link>
           <a
             href="#planos"
             onClick={(e) => { e.preventDefault(); document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' }); }}
@@ -524,12 +525,12 @@ function Header() {
             </button>
           ))}
           <div className="pt-2 flex flex-col gap-2">
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="w-full py-2.5 text-sm font-semibold rounded-xl border border-[#8E5FCF] text-[#8E5FCF] hover:bg-[#8E5FCF]/5 transition-colors duration-200 text-center"
             >
               Entrar
-            </a>
+            </Link>
             <button
               onClick={() => { setMobileOpen(false); document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="w-full py-2.5 text-sm font-semibold rounded-xl bg-[#8E5FCF] text-white hover:bg-[#47118F] transition-colors duration-200"

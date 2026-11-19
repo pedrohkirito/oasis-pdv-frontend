@@ -19,9 +19,9 @@ interface NivelAcessoDialogProps {
 
 function buildInitialPermissoes(existing?: PermissaoModulo[]): PermissaoModulo[] {
   return MODULOS_SISTEMA.map(m => {
-    const found = existing?.find(p => p.modulo === m.id);
+    const found = existing?.find(p => p.module === m.id);
     return {
-      modulo: m.id,
+      module: m.id,
       can_view: found?.can_view ?? false,
       can_create: found?.can_create ?? false,
       can_edit: found?.can_edit ?? false,
@@ -31,7 +31,7 @@ function buildInitialPermissoes(existing?: PermissaoModulo[]): PermissaoModulo[]
 }
 
 export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAcessoDialogProps) {
-  const [nome, setNome] = useState('');
+  const [name, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [permissoes, setPermissoes] = useState<PermissaoModulo[]>(buildInitialPermissoes());
   const [saving, setSaving] = useState(false);
@@ -39,7 +39,7 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
   useEffect(() => {
     if (open) {
       if (nivel) {
-        setNome(nivel.nome);
+        setNome(nivel.name);
         setDescricao(nivel.descricao || '');
         setPermissoes(buildInitialPermissoes(nivel.permissoes));
       } else {
@@ -50,16 +50,16 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
     }
   }, [open, nivel]);
 
-  const togglePermission = (modulo: string, field: keyof Omit<PermissaoModulo, 'modulo'>) => {
+  const togglePermission = (module: string, field: keyof Omit<PermissaoModulo, 'module'>) => {
     setPermissoes(prev => {
       // Find children of this module
       const childIds = MODULOS_SISTEMA
-        .filter(m => 'parent' in m && (m as any).parent === modulo)
+        .filter(m => 'parent' in m && (m as any).parent === module)
         .map(m => m.id);
 
       return prev.map(p => {
         // Handle the toggled module itself
-        if (p.modulo === modulo) {
+        if (p.module === module) {
           const updated = { ...p, [field]: !p[field] };
           if (field !== 'can_view' && updated[field]) {
             updated.can_view = true;
@@ -72,8 +72,8 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
           return updated;
         }
         // Cascade: if parent view is being disabled, disable children too
-        if (field === 'can_view' && childIds.includes(p.modulo as any)) {
-          const parentWillBeOff = !prev.find(x => x.modulo === modulo)![field];
+        if (field === 'can_view' && childIds.includes(p.module as any)) {
+          const parentWillBeOff = !prev.find(x => x.module === module)![field];
           // parentWillBeOff means the parent was ON and is being toggled OFF
           if (!parentWillBeOff) {
             // parent is turning off
@@ -107,14 +107,14 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
     );
   };
 
-  const allChecked = (field: keyof Omit<PermissaoModulo, 'modulo'>) =>
+  const allChecked = (field: keyof Omit<PermissaoModulo, 'module'>) =>
     permissoes.every(p => p[field]);
 
   const handleSave = async () => {
-    if (!nome.trim()) return;
+    if (!name.trim()) return;
     setSaving(true);
     try {
-      const result = await onSave({ nome: nome.trim(), descricao: descricao.trim() || undefined, permissoes });
+      const result = await onSave({ name: name.trim(), descricao: descricao.trim() || undefined, permissoes });
       if (result !== false && result !== null) {
         onOpenChange(false);
       }
@@ -135,8 +135,8 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Edite o nome e as permissões deste nível de acesso.'
-              : 'Defina um nome e selecione quais telas e ações este nível pode acessar.'}
+              ? 'Edite o name e as permissões deste nível de acesso.'
+              : 'Defina um name e selecione quais telas e ações este nível pode acessar.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -146,7 +146,7 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
               <Label>Nome *</Label>
               <Input
                 placeholder="Ex: Supervisor, Auxiliar..."
-                value={nome}
+                value={name}
                 onChange={e => setNome(e.target.value)}
                 maxLength={50}
               />
@@ -222,15 +222,15 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
                   </tr>
                 </thead>
                 <tbody>
-                {MODULOS_SISTEMA.map((modulo, idx) => {
-                    const perm = permissoes.find(p => p.modulo === modulo.id)!;
+                {MODULOS_SISTEMA.map((module, idx) => {
+                    const perm = permissoes.find(p => p.module === module.id)!;
                     const isBlocked = !perm.can_view;
-                    const isChild = 'parent' in modulo;
+                    const isChild = 'parent' in module;
                     // Check if parent is blocked (for child modules)
-                    const parentPerm = isChild ? permissoes.find(p => p.modulo === (modulo as any).parent) : null;
+                    const parentPerm = isChild ? permissoes.find(p => p.module === (module as any).parent) : null;
                     const parentBlocked = parentPerm ? !parentPerm.can_view : false;
                     return (
-                      <tr key={modulo.id} className={cn(
+                      <tr key={module.id} className={cn(
                         idx % 2 === 0 ? 'bg-background' : 'bg-muted/30',
                         parentBlocked && isChild ? 'opacity-40' : ''
                       )}>
@@ -240,14 +240,14 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
                           isBlocked ? 'text-muted-foreground line-through' : ''
                         )}>
                           {isChild && <span className="text-muted-foreground mr-1">└</span>}
-                          {modulo.label}
+                          {module.label}
                         </td>
                         <td className="text-center px-2 py-2">
                           <Checkbox
                             checked={isBlocked}
                             onCheckedChange={() => {
                               if (!isBlocked) {
-                                togglePermission(modulo.id, 'can_view');
+                                togglePermission(module.id, 'can_view');
                               }
                             }}
                             disabled={parentBlocked && isChild}
@@ -257,28 +257,28 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
                         <td className="text-center px-2 py-2">
                           <Checkbox
                             checked={perm.can_view}
-                            onCheckedChange={() => togglePermission(modulo.id, 'can_view')}
+                            onCheckedChange={() => togglePermission(module.id, 'can_view')}
                             disabled={parentBlocked && isChild}
                           />
                         </td>
                         <td className="text-center px-2 py-2">
                           <Checkbox
                             checked={perm.can_create}
-                            onCheckedChange={() => togglePermission(modulo.id, 'can_create')}
+                            onCheckedChange={() => togglePermission(module.id, 'can_create')}
                             disabled={(parentBlocked && isChild) || isChild}
                           />
                         </td>
                         <td className="text-center px-2 py-2">
                           <Checkbox
                             checked={perm.can_edit}
-                            onCheckedChange={() => togglePermission(modulo.id, 'can_edit')}
+                            onCheckedChange={() => togglePermission(module.id, 'can_edit')}
                             disabled={(parentBlocked && isChild) || isChild}
                           />
                         </td>
                         <td className="text-center px-2 py-2">
                           <Checkbox
                             checked={perm.can_delete}
-                            onCheckedChange={() => togglePermission(modulo.id, 'can_delete')}
+                            onCheckedChange={() => togglePermission(module.id, 'can_delete')}
                             disabled={(parentBlocked && isChild) || isChild}
                           />
                         </td>
@@ -295,7 +295,7 @@ export function NivelAcessoDialog({ open, onOpenChange, nivel, onSave }: NivelAc
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={saving || !nome.trim()}>
+          <Button onClick={handleSave} disabled={saving || !name.trim()}>
             {saving ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
             ) : isEditing ? 'Salvar Alterações' : 'Criar Nível'}

@@ -9,7 +9,7 @@ import { ptBR } from 'date-fns/locale'
 
 interface VendedoraStats {
   usuario_id: string
-  nome: string
+  name: string
   realizado: number
   meta?: number
   percentual?: number
@@ -38,7 +38,7 @@ function corBarra(pct: number): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProps) {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [ranking, setRanking]   = useState<VendedoraStats[]>([])
   const [loading, setLoading]   = useState(true)
 
@@ -47,18 +47,18 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
   const tituloMes = format(startOfMonth(new Date()), 'MMMM/yyyy', { locale: ptBR })
 
   useEffect(() => {
-    if (!empresaId) return
+    if (!companyId) return
     carregarRanking()
-  }, [empresaId, ini, fim])
+  }, [companyId, ini, fim])
 
   const carregarRanking = async () => {
     setLoading(true)
 
     // Busca vendas do período agrupadas por vendedor
     const { data: vendas } = await (api
-      .from('vendas')
+      .from('sale')
       .select('valor, vendedor, vendedor_id, usuario_id') as any)
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .gte('created_at', ini + 'T00:00:00')
       .lte('created_at', fim + 'T23:59:59')
 
@@ -66,18 +66,18 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     const { data: metasData } = await (api
       .from('metas' as any)
       .select('usuario_id, usuario_nome, valor') as any)
-      .eq('empresa_id', empresaId)
-      .eq('tipo', 'vendedora')
-      .eq('ativo', true)
+      .eq('company_id', companyId)
+      .eq('kind', 'vendedora')
+      .eq('active', true)
       .lte('data_inicio', fim)
       .gte('data_fim', ini)
 
     // Agrupa vendas por vendedor
-    const porVendedor: Record<string, { nome: string; total: number }> = {}
+    const porVendedor: Record<string, { name: string; total: number }> = {}
     for (const v of (vendas || [])) {
       const chave = v.usuario_id || v.vendedor_id || v.vendedor || 'desconhecido'
-      const nome  = v.vendedor || 'Não identificado'
-      if (!porVendedor[chave]) porVendedor[chave] = { nome, total: 0 }
+      const name  = v.vendedor || 'Não identificado'
+      if (!porVendedor[chave]) porVendedor[chave] = { name, total: 0 }
       porVendedor[chave].total += v.valor || 0
     }
 
@@ -88,11 +88,11 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     }
 
     const lista: VendedoraStats[] = Object.entries(porVendedor)
-      .map(([uid, { nome, total }]) => {
+      .map(([uid, { name, total }]) => {
         const meta = metaMap[uid]
         return {
           usuario_id: uid,
-          nome,
+          name,
           realizado: total,
           meta,
           percentual: meta ? Math.min((total / meta) * 100, 100) : undefined,
@@ -128,14 +128,14 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
               const cor = v.percentual !== undefined ? corBarra(v.percentual) : '#8b5cf6'
               return (
                 <div key={v.usuario_id}>
-                  {/* Linha: medalha + nome + valor */}
+                  {/* Linha: medalha + name + valor */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>
                         {MEDALHAS[idx] ?? `${idx + 1}º`}
                       </span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#1F2937' }}>
-                        {v.nome}
+                        {v.name}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

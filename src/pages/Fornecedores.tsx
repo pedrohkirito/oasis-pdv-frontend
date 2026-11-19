@@ -84,7 +84,7 @@ const validateCNPJ = (cnpj: string): boolean => {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FormData = {
-  nome: string; razao_social: string; cnpj: string; email: string;
+  name: string; razao_social: string; cnpj: string; email: string;
   telefone: string; endereco: string; numero: string;
   cidade: string; estado: string; cep: string; categoria: string;
 };
@@ -98,8 +98,8 @@ interface FormFieldsProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const initials = (nome: string) =>
-  nome.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase()
+const initials = (name: string) =>
+  name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase()
 
 const labelStyle: React.CSSProperties = {
   fontSize: '0.8rem', fontWeight: 600, fontFamily: 'Gilroy', color: '#374151', display: 'block', marginBottom: 4,
@@ -111,14 +111,14 @@ const FormFields = ({ data, setData, loadingCepState, onCepChange }: FormFieldsP
   <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0' }}>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
       <div>
-        <Label htmlFor="nome" style={labelStyle}>Nome Fantasia *</Label>
-        <Input id="nome" placeholder="Nome do fornecedor" value={data.nome}
-          onChange={(e) => setData(prev => ({ ...prev, nome: e.target.value }))}
+        <Label htmlFor="name" style={labelStyle}>Nome Fantasia *</Label>
+        <Input id="name" placeholder="Nome do fornecedor" value={data.name}
+          onChange={(e) => setData(prev => ({ ...prev, name: e.target.value }))}
           style={{ fontFamily: 'Gilroy' }} />
       </div>
       <div>
-        <Label htmlFor="razao_social" style={labelStyle}>Razão Social</Label>
-        <Input id="razao_social" placeholder="Razão social" value={data.razao_social}
+        <Label htmlFor="legal_name" style={labelStyle}>Razão Social</Label>
+        <Input id="legal_name" placeholder="Razão social" value={data.razao_social}
           onChange={(e) => setData(prev => ({ ...prev, razao_social: e.target.value }))}
           style={{ fontFamily: 'Gilroy' }} />
       </div>
@@ -188,8 +188,8 @@ const FormFields = ({ data, setData, loadingCepState, onCepChange }: FormFieldsP
       </div>
     </div>
     <div>
-      <Label htmlFor="categoria" style={labelStyle}>Categoria</Label>
-      <Input id="categoria" placeholder="Ex: Produtos, Serviços, Utilidades" value={data.categoria}
+      <Label htmlFor="category" style={labelStyle}>Categoria</Label>
+      <Input id="category" placeholder="Ex: Produtos, Serviços, Utilidades" value={data.categoria}
         onChange={(e) => setData(prev => ({ ...prev, categoria: e.target.value }))}
         style={{ fontFamily: 'Gilroy' }} />
     </div>
@@ -232,13 +232,13 @@ function FornecedorRow({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDeta
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.85rem', color: '#8E5FCF' }}>
-              {initials(fornecedor.nome)}
+              {initials(fornecedor.name)}
             </span>
           </div>
           {/* Name + CNPJ */}
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 700, color: '#1F2937', fontFamily: 'Gilroy', fontSize: '0.9rem', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {fornecedor.nome}
+              {fornecedor.name}
             </p>
             {fornecedor.cnpj && (
               <p style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy', margin: 0 }}>
@@ -261,15 +261,15 @@ function FornecedorRow({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDeta
           <span
             onClick={() => onToggleAtivo(fornecedor)}
             style={{
-              background: fornecedor.ativo ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)',
-              color: fornecedor.ativo ? '#10B981' : '#6B7280',
+              background: fornecedor.active ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)',
+              color: fornecedor.active ? '#10B981' : '#6B7280',
               borderRadius: 20, padding: '4px 10px',
               fontSize: '0.72rem', fontFamily: 'Gilroy', fontWeight: 600,
               whiteSpace: 'nowrap', flexShrink: 0, cursor: 'pointer',
               transition: 'opacity 0.15s',
             }}
           >
-            {fornecedor.ativo ? 'Ativo' : 'Inativo'}
+            {fornecedor.active ? 'Ativo' : 'Inativo'}
           </span>
         </div>
 
@@ -349,7 +349,7 @@ function FornecedorRow({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDeta
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir fornecedor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir "{fornecedor.nome}"? Essa ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{fornecedor.name}"? Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -420,7 +420,7 @@ function FornecedorCard({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDet
     >
       {/* Corpo */}
       <div style={{ padding: 20 }}>
-        {/* Topo: avatar + badge ativo */}
+        {/* Topo: avatar + badge active */}
         <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', marginBottom: 12 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 16,
@@ -430,27 +430,27 @@ function FornecedorCard({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDet
             transition: 'transform 0.25s ease',
           }}>
             <span style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1.25rem', color: '#8E5FCF' }}>
-              {initials(fornecedor.nome)}
+              {initials(fornecedor.name)}
             </span>
           </div>
           <span
             onClick={() => onToggleAtivo(fornecedor)}
             style={{
               position: 'absolute', top: 0, right: 0,
-              background: fornecedor.ativo ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)',
-              color: fornecedor.ativo ? '#10B981' : '#6B7280',
+              background: fornecedor.active ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)',
+              color: fornecedor.active ? '#10B981' : '#6B7280',
               borderRadius: 20, padding: '3px 8px',
               fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            {fornecedor.ativo ? 'Ativo' : 'Inativo'}
+            {fornecedor.active ? 'Ativo' : 'Inativo'}
           </span>
         </div>
 
         {/* Nome */}
         <p style={{ fontWeight: 700, fontFamily: 'Gilroy', textAlign: 'center', color: '#1F2937', margin: '0 0 8px', fontSize: '0.95rem' }}>
-          {fornecedor.nome}
+          {fornecedor.name}
         </p>
 
         {/* Categoria */}
@@ -546,7 +546,7 @@ function FornecedorCard({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDet
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir fornecedor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir "{fornecedor.nome}"? Essa ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{fornecedor.name}"? Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -566,7 +566,7 @@ function FornecedorCard({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDet
 const Fornecedores = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
 
   const [dialogOpen,       setDialogOpen]       = useState(false);
@@ -585,7 +585,7 @@ const Fornecedores = () => {
   const [hovNovo,          setHovNovo]          = useState(false);
 
   const emptyForm = {
-    nome: '', razao_social: '', cnpj: '', email: '', telefone: '',
+    name: '', razao_social: '', cnpj: '', email: '', telefone: '',
     endereco: '', numero: '', cidade: '', estado: '', cep: '', categoria: '',
   };
 
@@ -624,19 +624,19 @@ const Fornecedores = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && empresaId) fetchFornecedores();
-  }, [user, empresaId]);
+    if (user && companyId) fetchFornecedores();
+  }, [user, companyId]);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchFornecedores = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
-      .from('fornecedores')
+      .from('supplier')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .order('nome', { ascending: true });
+      .eq('company_id', companyId)
+      .order('name', { ascending: true });
     if (error) {
       handleApiError(error, "Erro ao carregar fornecedores");
     } else {
@@ -648,7 +648,7 @@ const Fornecedores = () => {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleSalvar = async () => {
-    if (!novoFornecedor.nome || !novoFornecedor.cnpj || !user) {
+    if (!novoFornecedor.name || !novoFornecedor.cnpj || !user) {
       toast({ title: "Erro", description: "Preencha os campos obrigatórios", variant: "destructive" });
       return;
     }
@@ -659,9 +659,9 @@ const Fornecedores = () => {
     const enderecoCompleto = novoFornecedor.numero
       ? `${novoFornecedor.endereco}, ${novoFornecedor.numero}`
       : novoFornecedor.endereco;
-    const { error } = await api.from('fornecedores').insert({
-      user_id: user.id, empresa_id: empresaId,
-      nome: novoFornecedor.nome,
+    const { error } = await api.from('supplier').insert({
+      user_id: user.id, company_id: companyId,
+      name: novoFornecedor.name,
       razao_social: novoFornecedor.razao_social || null,
       cnpj: novoFornecedor.cnpj,
       email: novoFornecedor.email || null,
@@ -670,7 +670,7 @@ const Fornecedores = () => {
       cidade: novoFornecedor.cidade || null,
       estado: novoFornecedor.estado || null,
       categoria: novoFornecedor.categoria || 'Outros',
-      ativo: true,
+      active: true,
     });
     if (error) {
       handleApiError(error, "Erro ao cadastrar fornecedor");
@@ -685,7 +685,7 @@ const Fornecedores = () => {
   const handleEdit = (fornecedor: Fornecedor) => {
     setEditingFornecedor(fornecedor);
     setEditFornecedor({
-      nome: fornecedor.nome,
+      name: fornecedor.name,
       razao_social: fornecedor.razao_social || '',
       cnpj: fornecedor.cnpj,
       email: fornecedor.email || '',
@@ -701,7 +701,7 @@ const Fornecedores = () => {
   };
 
   const handleSalvarEdicao = async () => {
-    if (!editingFornecedor || !editFornecedor.nome || !editFornecedor.cnpj) {
+    if (!editingFornecedor || !editFornecedor.name || !editFornecedor.cnpj) {
       toast({ title: "Erro", description: "Preencha os campos obrigatórios", variant: "destructive" });
       return;
     }
@@ -712,9 +712,9 @@ const Fornecedores = () => {
     const enderecoCompleto = editFornecedor.numero
       ? `${editFornecedor.endereco}, ${editFornecedor.numero}`
       : editFornecedor.endereco;
-    const { error } = await api.from('fornecedores')
+    const { error } = await api.from('supplier')
       .update({
-        nome: editFornecedor.nome,
+        name: editFornecedor.name,
         razao_social: editFornecedor.razao_social || null,
         cnpj: editFornecedor.cnpj,
         email: editFornecedor.email || null,
@@ -736,17 +736,17 @@ const Fornecedores = () => {
   };
 
   const handleToggleAtivo = async (fornecedor: Fornecedor) => {
-    const { error } = await api.from('fornecedores').update({ ativo: !fornecedor.ativo }).eq('id', fornecedor.id);
+    const { error } = await api.from('supplier').update({ active: !fornecedor.active }).eq('id', fornecedor.id);
     if (error) {
       handleApiError(error, "Erro ao atualizar status");
     } else {
       fetchFornecedores();
-      toast({ title: "Sucesso", description: `Fornecedor ${fornecedor.ativo ? 'desativado' : 'ativado'}` });
+      toast({ title: "Sucesso", description: `Fornecedor ${fornecedor.active ? 'desativado' : 'ativado'}` });
     }
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await api.from('fornecedores').delete().eq('id', id);
+    const { error } = await api.from('supplier').delete().eq('id', id);
     if (error) {
       handleApiError(error, "Erro ao excluir fornecedor");
     } else {
@@ -756,7 +756,7 @@ const Fornecedores = () => {
   };
 
   const filteredFornecedores = fornecedores.filter(f =>
-    f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (f.razao_social && f.razao_social.toLowerCase().includes(searchTerm.toLowerCase())) ||
     f.cnpj.includes(searchTerm)
   );
@@ -769,8 +769,8 @@ const Fornecedores = () => {
 
   const kpiCards = [
     { label: 'Total Fornecedores', value: fornecedores.length, sub: 'cadastrados', Icon: Truck, iconBg: 'rgba(142,95,207,0.12)', iconColor: '#8E5FCF', valueColor: '#1F2937', borderColor: '#8E5FCF' },
-    { label: 'Fornecedores Ativos', value: fornecedores.filter(f => f.ativo).length, sub: 'em operação', Icon: CheckCircle, iconBg: 'rgba(16,185,129,0.12)', iconColor: '#10B981', valueColor: '#10B981', borderColor: '#10B981' },
-    { label: 'Fornecedores Inativos', value: fornecedores.filter(f => !f.ativo).length, sub: 'desativados', Icon: XCircle, iconBg: 'rgba(245,158,11,0.12)', iconColor: '#F59E0B', valueColor: '#F59E0B', borderColor: '#F59E0B' },
+    { label: 'Fornecedores Ativos', value: fornecedores.filter(f => f.active).length, sub: 'em operação', Icon: CheckCircle, iconBg: 'rgba(16,185,129,0.12)', iconColor: '#10B981', valueColor: '#10B981', borderColor: '#10B981' },
+    { label: 'Fornecedores Inativos', value: fornecedores.filter(f => !f.active).length, sub: 'desativados', Icon: XCircle, iconBg: 'rgba(245,158,11,0.12)', iconColor: '#F59E0B', valueColor: '#F59E0B', borderColor: '#F59E0B' },
     { label: 'Com Categoria', value: fornecedores.filter(f => f.categoria).length, sub: 'categorizados', Icon: Tag, iconBg: 'rgba(59,130,246,0.12)', iconColor: '#3B82F6', valueColor: '#3B82F6', borderColor: '#3B82F6' },
   ]
 
@@ -897,7 +897,7 @@ const Fornecedores = () => {
             <input
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nome, CNPJ..."
+              placeholder="Buscar por name, CNPJ..."
               style={{ ...inputStyle, paddingLeft: 36, width: '100%', boxSizing: 'border-box' as const }}
               onFocus={onFocusInput}
               onBlur={onBlurInput}
@@ -1007,16 +1007,16 @@ const Fornecedores = () => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 8 }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, flexShrink: 0, background: 'linear-gradient(135deg, rgba(142,95,207,0.15), rgba(71,17,143,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1.25rem', color: '#8E5FCF' }}>
-                      {initials(detalheFornecedor.nome)}
+                      {initials(detalheFornecedor.name)}
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.1rem', color: '#1F2937', margin: 0 }}>
-                        {detalheFornecedor.nome}
+                        {detalheFornecedor.name}
                       </p>
-                      <span style={{ background: detalheFornecedor.ativo ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)', color: detalheFornecedor.ativo ? '#10B981' : '#6B7280', borderRadius: 20, padding: '3px 10px', fontSize: '0.72rem', fontFamily: 'Gilroy', fontWeight: 600 }}>
-                        {detalheFornecedor.ativo ? 'Ativo' : 'Inativo'}
+                      <span style={{ background: detalheFornecedor.active ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)', color: detalheFornecedor.active ? '#10B981' : '#6B7280', borderRadius: 20, padding: '3px 10px', fontSize: '0.72rem', fontFamily: 'Gilroy', fontWeight: 600 }}>
+                        {detalheFornecedor.active ? 'Ativo' : 'Inativo'}
                       </span>
                     </div>
                     {detalheFornecedor.cnpj && (

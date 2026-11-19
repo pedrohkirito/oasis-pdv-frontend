@@ -25,9 +25,9 @@ import type { EtiquetaConfig } from '@/pages/ConfigEtiquetas';
 
 export interface ProdutoLista {
   id: string;
-  nome: string;
+  name: string;
   preco: number;
-  codigo: string | null;
+  code: string | null;
   ean: string | null;
   unidade_comercial: string | null;
   codigo_interno?: string | null;
@@ -67,7 +67,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
   const [step, setStep] = useState(0);
 
   // ── Estado passo 1 ───────────────────────────────────────────────────────
-  // selecionados: chave pode ser "produtoId" ou "produtoId__variacaoId"
+  // selecionados: chave pode ser "productId" ou "produtoId__variacaoId"
   const [selecionados, setSelecionados] = useState<Record<string, number>>({}); // chave → quantidade
   const [variacoesPorProduto, setVariacoesPorProduto] = useState<Record<string, VariacaoEtiqueta[]>>({});
   const [expandidos, setExpandidos] = useState<Record<string, boolean>>({});
@@ -79,10 +79,10 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
     Promise.all(
       produtosComVar.map(p =>
         api
-          .from('produto_variacoes')
+          .from('product_variant')
           .select('id, atributos, preco, estoque')
-          .eq('produto_id', p.id)
-          .eq('ativo', true)
+          .eq('product_id', p.id)
+          .eq('active', true)
           .order('created_at')
           .then(({ data }) => ({ id: p.id, variacoes: (data as VariacaoEtiqueta[]) || [] }))
       )
@@ -148,28 +148,28 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
   // Lista completa para geração
   const produtosParaGerar = useMemo<ProdutoEtiqueta[]>(() => {
     return Object.entries(selecionados).map(([chave, qtd]) => {
-      const [produtoId, variacaoId] = chave.split('__');
-      const p = produtos.find((x) => x.id === produtoId)!;
+      const [productId, variacaoId] = chave.split('__');
+      const p = produtos.find((x) => x.id === productId)!;
       if (!p) return null;
       if (variacaoId) {
-        const v = (variacoesPorProduto[produtoId] ?? []).find(vv => vv.id === variacaoId);
+        const v = (variacoesPorProduto[productId] ?? []).find(vv => vv.id === variacaoId);
         const label = v ? Object.values(v.atributos).join(' / ') : '';
         return {
           id: chave,
-          nome: label ? `${p.nome} | ${label.split(' / ').join(' | ')}` : p.nome,
+          name: label ? `${p.name} | ${label.split(' / ').join(' | ')}` : p.name,
           preco: v?.preco ?? p.preco,
-          codigo: p.ean ?? p.codigo ?? undefined,
-          codigo_interno: p.codigo ?? p.codigo_interno ?? undefined,
+          code: p.ean ?? p.code ?? undefined,
+          codigo_interno: p.code ?? p.codigo_interno ?? undefined,
           tamanho: label || undefined,
           quantidade: qtd,
         };
       }
       return {
         id: p.id,
-        nome: p.nome,
+        name: p.name,
         preco: p.preco,
-        codigo: p.ean ?? p.codigo ?? undefined,
-        codigo_interno: p.codigo ?? p.codigo_interno ?? undefined,
+        code: p.ean ?? p.code ?? undefined,
+        codigo_interno: p.code ?? p.codigo_interno ?? undefined,
         tamanho: p.unidade_comercial ?? undefined,
         quantidade: qtd,
       };
@@ -268,7 +268,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
                           {expandido ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
                         <div className="flex-1 min-w-0 text-left">
-                          <p className="text-sm font-medium text-foreground truncate">{p.nome}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {variacoes.length} variação(ões)
                           </p>
@@ -344,11 +344,11 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
                       {sel && <div className="w-2 h-2 rounded-sm bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{p.nome}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         {p.ean && ` · EAN: ${p.ean}`}
-                        {!p.ean && p.codigo && ` · Cód: ${p.codigo}`}
+                        {!p.ean && p.code && ` · Cód: ${p.code}`}
                       </p>
                     </div>
                     {sel && (
@@ -446,7 +446,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
                 <div>
                   <p className="text-sm font-semibold text-foreground mb-1">Preview</p>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Mostrando etiqueta com dados de: <strong>{primeiroProduto.nome}</strong>
+                    Mostrando etiqueta com dados de: <strong>{primeiroProduto.name}</strong>
                   </p>
                   <div className="flex justify-center p-4 bg-muted/30 rounded-xl border border-border">
                     <EtiquetaPreview

@@ -17,14 +17,14 @@ export type KanbanStatus = typeof KANBAN_COLUMNS[number]['id'];
 
 export interface Operacao {
   id: string;
-  empresa_id: string;
+  company_id: string;
   venda_id: string | null;
   user_id: string;
   cliente_nome: string;
   cliente_telefone: string | null;
   cliente_email: string | null;
   produtos: string;
-  tipo: string;
+  kind: string;
   status: KanbanStatus;
   status_pagamento: string;
   data_prevista: string | null;
@@ -51,7 +51,7 @@ export interface OperacaoTarefa {
 export interface OperacaoHistorico {
   id: string;
   operacao_id: string;
-  tipo: string;
+  kind: string;
   descricao: string;
   status_anterior: string | null;
   status_novo: string | null;
@@ -73,19 +73,19 @@ const DEFAULT_CHECKLIST = [
 ];
 
 export function useOperacoes() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { user } = useAuth();
   const { toast } = useToast();
   const [operacoes, setOperacoes] = useState<Operacao[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchOperacoes = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
-      .from('operacoes')
+      .from('operation')
       .select('*, vendas:venda_id(vendedor)')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -98,23 +98,23 @@ export function useOperacoes() {
       setOperacoes(enriched as unknown as Operacao[]);
     }
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchOperacoes();
   }, [fetchOperacoes]);
 
   const createOperacao = async (data: Partial<Operacao>) => {
-    if (!empresaId || !user) return null;
+    if (!companyId || !user) return null;
     const payload = {
       ...data,
-      empresa_id: empresaId,
+      company_id: companyId,
       user_id: user.id,
       status: data.status || 'venda_confirmada',
     };
 
     const { data: created, error } = await api
-      .from('operacoes')
+      .from('operation')
       .insert(payload as any)
       .select()
       .single();
@@ -130,12 +130,12 @@ export function useOperacoes() {
       titulo,
       ordem: i,
     }));
-    await api.from('operacao_tarefas').insert(tarefas as any);
+    await api.from('operation_task').insert(tarefas as any);
 
     // Add history entry
-    await api.from('operacao_historico').insert({
+    await api.from('operation_event').insert({
       operacao_id: created.id,
-      tipo: 'status_change',
+      kind: 'status_change',
       descricao: 'Operação criada',
       status_novo: 'venda_confirmada',
       user_id: user.id,
@@ -149,7 +149,7 @@ export function useOperacoes() {
   const updateStatus = async (operacaoId: string, newStatus: KanbanStatus, oldStatus: string) => {
     if (!user) return;
     const { error } = await api
-      .from('operacoes')
+      .from('operation')
       .update({ status: newStatus } as any)
       .eq('id', operacaoId);
 
@@ -158,9 +158,9 @@ export function useOperacoes() {
       return;
     }
 
-    await api.from('operacao_historico').insert({
+    await api.from('operation_event').insert({
       operacao_id: operacaoId,
-      tipo: 'status_change',
+      kind: 'status_change',
       descricao: `Status alterado de "${getStatusLabel(oldStatus)}" para "${getStatusLabel(newStatus)}"`,
       status_anterior: oldStatus,
       status_novo: newStatus,
@@ -172,7 +172,7 @@ export function useOperacoes() {
 
   const updateOperacao = async (operacaoId: string, data: Partial<Operacao>) => {
     const { error } = await api
-      .from('operacoes')
+      .from('operation')
       .update(data as any)
       .eq('id', operacaoId);
 
@@ -185,7 +185,7 @@ export function useOperacoes() {
 
   const deleteOperacao = async (operacaoId: string) => {
     const { error } = await api
-      .from('operacoes')
+      .from('operation')
       .delete()
       .eq('id', operacaoId);
 

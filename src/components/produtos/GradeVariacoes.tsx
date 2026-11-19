@@ -24,8 +24,8 @@ const COR_MAP: Record<string, string> = {
   roxo: '#8B5CF6',
 };
 
-function corHex(nome: string): string | null {
-  return COR_MAP[nome.toLowerCase().trim()] ?? null;
+function corHex(name: string): string | null {
+  return COR_MAP[name.toLowerCase().trim()] ?? null;
 }
 
 // ─── Chips selecionáveis ─────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ function Chip({
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface GradeVariacoesProps {
-  produtoId: string;
+  productId: string;
   precoBase: number;
   precoCustoBase: number;
 }
@@ -78,14 +78,14 @@ const NUMERACOES_SUGERIDAS = ['34', '36', '38', '40', '42', '44'];
 
 // ─── Componente principal ────────────────────────────────────────────────────
 
-export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVariacoesProps) {
+export function GradeVariacoes({ productId, precoBase, precoCustoBase }: GradeVariacoesProps) {
   const {
     variacoes,
     loading,
     gerarVariacoes,
     atualizarVariacao,
     excluirVariacao,
-  } = useProdutoVariacoes(produtoId);
+  } = useProdutoVariacoes(productId);
 
   // ── Estado: seleção de tamanhos ──
   const [tamanhosSel, setTamanhosSel] = useState<string[]>([]);
@@ -106,17 +106,17 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
 
   // ── Preview das combinações ──
   const preview = useMemo(() => {
-    const grupos: { nome: string; valores: string[] }[] = [];
-    if (tamanhosSel.length) grupos.push({ nome: 'Tamanho', valores: tamanhosSel });
-    if (coresSel.length) grupos.push({ nome: 'Cor', valores: coresSel });
-    if (numSel.length) grupos.push({ nome: 'Numeração', valores: numSel });
+    const grupos: { name: string; valores: string[] }[] = [];
+    if (tamanhosSel.length) grupos.push({ name: 'Tamanho', valores: tamanhosSel });
+    if (coresSel.length) grupos.push({ name: 'Cor', valores: coresSel });
+    if (numSel.length) grupos.push({ name: 'Numeração', valores: numSel });
 
     if (!grupos.length) return [];
 
     return grupos.reduce(
       (acc, g) => {
-        if (!acc.length) return g.valores.map(v => ({ [g.nome]: v }));
-        return acc.flatMap(combo => g.valores.map(v => ({ ...combo, [g.nome]: v })));
+        if (!acc.length) return g.valores.map(v => ({ [g.name]: v }));
+        return acc.flatMap(combo => g.valores.map(v => ({ ...combo, [g.name]: v })));
       },
       [] as Record<string, string>[]
     );
@@ -151,10 +151,10 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
 
   // ── Gerar variações ──
   async function handleGerar() {
-    const grupos: { nome: string; valores: string[] }[] = [];
-    if (tamanhosSel.length) grupos.push({ nome: 'Tamanho', valores: tamanhosSel });
-    if (coresSel.length) grupos.push({ nome: 'Cor', valores: coresSel });
-    if (numSel.length) grupos.push({ nome: 'Numeração', valores: numSel });
+    const grupos: { name: string; valores: string[] }[] = [];
+    if (tamanhosSel.length) grupos.push({ name: 'Tamanho', valores: tamanhosSel });
+    if (coresSel.length) grupos.push({ name: 'Cor', valores: coresSel });
+    if (numSel.length) grupos.push({ name: 'Numeração', valores: numSel });
 
     if (!grupos.length) {
       toast({ title: 'Selecione ao menos um atributo', variant: 'destructive' });
@@ -395,9 +395,9 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                 </thead>
                 <tbody>
                   {variacoes.map(variacao => {
-                    const estoque = Number(valorEdicao(variacao, 'estoque') ?? 0);
-                    const estoqueMin = Number(valorEdicao(variacao, 'estoque_minimo') ?? 0);
-                    const preco = valorEdicao(variacao, 'preco');
+                    const estoque = Number(valorEdicao(variacao, 'stock') ?? 0);
+                    const estoqueMin = Number(valorEdicao(variacao, 'minimum_stock') ?? 0);
+                    const preco = valorEdicao(variacao, 'price');
                     const precoCusto = valorEdicao(variacao, 'preco_custo');
                     const baixoEstoque = estoque <= estoqueMin;
 
@@ -457,7 +457,7 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                               step="0.01"
                               value={preco ?? ''}
                               onChange={e =>
-                                editarCampo(variacao.id, 'preco', parseFloat(e.target.value))
+                                editarCampo(variacao.id, 'price', parseFloat(e.target.value))
                               }
                               className={`h-7 pl-7 text-xs ${
                                 preco !== precoBase ? 'text-primary font-semibold' : 'text-muted-foreground'
@@ -494,7 +494,7 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                             <button
                               type="button"
                               onClick={() =>
-                                editarCampo(variacao.id, 'estoque', Math.max(0, estoque - 1))
+                                editarCampo(variacao.id, 'stock', Math.max(0, estoque - 1))
                               }
                               className="w-6 h-6 rounded border text-xs hover:bg-muted flex items-center justify-center"
                             >
@@ -506,7 +506,7 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                               onChange={e =>
                                 editarCampo(
                                   variacao.id,
-                                  'estoque',
+                                  'stock',
                                   Math.max(0, parseInt(e.target.value) || 0)
                                 )
                               }
@@ -517,7 +517,7 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                             <button
                               type="button"
                               onClick={() =>
-                                editarCampo(variacao.id, 'estoque', estoque + 1)
+                                editarCampo(variacao.id, 'stock', estoque + 1)
                               }
                               className="w-6 h-6 rounded border text-xs hover:bg-muted flex items-center justify-center"
                             >
@@ -534,7 +534,7 @@ export function GradeVariacoes({ produtoId, precoBase, precoCustoBase }: GradeVa
                             onChange={e =>
                               editarCampo(
                                 variacao.id,
-                                'estoque_minimo',
+                                'minimum_stock',
                                 parseInt(e.target.value) || 0
                               )
                             }

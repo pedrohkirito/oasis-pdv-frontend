@@ -11,7 +11,7 @@ import { BarChart3, Download } from 'lucide-react'
 
 interface Produto {
   produto_id: string
-  nome: string
+  name: string
   categoria: string
   tipo: 'produto' | 'servico'
   quantidade: number
@@ -159,8 +159,8 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
 
   const dadosGrafico = useMemo(() =>
     produtosFiltrados.slice(0, 20).map(p => ({
-      nome: p.nome.length > 14 ? p.nome.slice(0, 13) + '…' : p.nome,
-      nomeCompleto: p.nome,
+      name: p.name.length > 14 ? p.name.slice(0, 13) + '…' : p.name,
+      nomeCompleto: p.name,
       faturamento: p.faturamento,
       percentual: p.percentual,
       percentualAcumulado: p.percentualAcumulado,
@@ -183,7 +183,7 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
     const linhas = [
       ['#', 'Produto', 'Categoria', 'Classe', 'Qtd Vendida', 'Faturamento', '% Total', '% Acumulado', 'Transações'],
       ...produtosFiltrados.map(p => [
-        p.posicao, p.nome, p.categoria, p.classe, p.quantidade,
+        p.posicao, p.name, p.categoria, p.classe, p.quantidade,
         p.faturamento.toFixed(2).replace('.', ','),
         p.percentual.toFixed(2).replace('.', ','),
         p.percentualAcumulado.toFixed(2).replace('.', ','),
@@ -374,7 +374,7 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
             <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={dadosGrafico} margin={{ top: 5, right: 30, left: 10, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="nome" tick={{ fontSize: 11, fontFamily: 'Gilroy', fill: '#9CA3AF' }} angle={-40} textAnchor="end" interval={0} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fontFamily: 'Gilroy', fill: '#9CA3AF' }} angle={-40} textAnchor="end" interval={0} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11, fontFamily: 'Gilroy', fill: '#9CA3AF' }} tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fontFamily: 'Gilroy', fill: '#9CA3AF' }} tickFormatter={v => `${v}%`} />
                 <Tooltip content={<CustomTooltip />} />
@@ -458,7 +458,7 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
                         {p.posicao}
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        <span style={{ fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy', fontSize: '0.875rem' }}>{p.nome}</span>
+                        <span style={{ fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy', fontSize: '0.875rem' }}>{p.name}</span>
                         <BadgeCategoria cat={p.categoria} />
                       </td>
                       <td style={{ padding: '10px 16px', textAlign: 'center' }}>

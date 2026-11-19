@@ -42,7 +42,7 @@ const SelecionarEmpresa = () => {
               <Building2 className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Olá, {user?.user_metadata?.nome || user?.email?.split('@')[0]}
+              Olá, {user?.user_metadata?.name || user?.email?.split('@')[0]}
             </h1>
             <p className="text-muted-foreground">
               Selecione a empresa que deseja acessar
@@ -68,13 +68,13 @@ const SelecionarEmpresa = () => {
                   {empresa.logo_url ? (
                     <img
                       src={empresa.logo_url}
-                      alt={empresa.nome}
+                      alt={empresa.name}
                       className="h-12 w-12 rounded-lg object-contain bg-muted p-1"
                     />
                   ) : (
                     <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                       <span className="text-lg font-bold text-primary">
-                        {empresa.nome.charAt(0).toUpperCase()}
+                        {empresa.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -83,7 +83,7 @@ const SelecionarEmpresa = () => {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-base truncate">
-                    {empresa.nome}
+                    {empresa.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     Acessar painel

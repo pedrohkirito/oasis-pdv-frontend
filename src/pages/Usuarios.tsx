@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 interface UserWithRole {
   id: string;
   email: string;
-  nome: string | null;
+  name: string | null;
   role: AppRole;
   created_at: string;
   last_sign_in: string | null;
@@ -57,8 +57,8 @@ const roleDescriptions: Record<AppRole, string> = {
 
 // ─── Helpers visuais ──────────────────────────────────────────────────────────
 
-const getInitials = (nome: string | null, email: string) => {
-  if (nome) return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+const getInitials = (name: string | null, email: string) => {
+  if (name) return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return email.slice(0, 2).toUpperCase();
 };
 
@@ -136,7 +136,7 @@ function ModalHeader({ icon, title, subtitle, onClose }: { icon: React.ReactNode
 const Usuarios = () => {
   const { user, loading: authLoading } = useAuth();
   const { hasPermission, loading: roleLoading } = useUserRole();
-  const { empresaId, empresaAtiva } = useEmpresa();
+  const { companyId, empresaAtiva } = useEmpresa();
   const { niveis: niveisAcesso } = useNiveisAcesso();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,13 +147,13 @@ const Usuarios = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserNome, setNewUserNome] = useState('');
-  const [newUserRole, setNewUserRole] = useState<AppRole>('vendedor');
+  const [newUserRole, setNewUserRole] = useState<AppRole>('seller');
   const [emailExistsPrompt, setEmailExistsPrompt] = useState(false);
 
   // Link existing user state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkEmail, setLinkEmail] = useState('');
-  const [linkRole, setLinkRole] = useState<AppRole>('vendedor');
+  const [linkRole, setLinkRole] = useState<AppRole>('seller');
   const [linking, setLinking] = useState(false);
 
   // Ativar/desativar usuário (tela de edição)
@@ -162,7 +162,7 @@ const Usuarios = () => {
   // Edit user state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserWithRole | null>(null);
-  const [editingEmpresaRole, setEditingEmpresaRole] = useState<AppRole>('vendedor');
+  const [editingEmpresaRole, setEditingEmpresaRole] = useState<AppRole>('seller');
   const [editingNome, setEditingNome] = useState('');
   const [editingNivelAcessoId, setEditingNivelAcessoId] = useState<string>('');
   const [updating, setUpdating] = useState(false);
@@ -178,27 +178,27 @@ const Usuarios = () => {
   const [historicoUser, setHistoricoUser] = useState<UserWithRole | null>(null);
 
   // Empresa management state
-  interface EmpresaInfo { id: string; nome: string; }
-  interface UserEmpresaLink { id: string; user_id: string; empresa_id: string; role: AppRole; nivel_acesso_id?: string | null; }
+  interface EmpresaInfo { id: string; name: string; }
+  interface UserEmpresaLink { id: string; user_id: string; company_id: string; role: AppRole; nivel_acesso_id?: string | null; }
   const [allEmpresas, setAllEmpresas] = useState<EmpresaInfo[]>([]);
   const [userEmpresaLinks, setUserEmpresaLinks] = useState<UserEmpresaLink[]>([]);
   const [empresaDialogOpen, setEmpresaDialogOpen] = useState(false);
   const [empresaDialogUser, setEmpresaDialogUser] = useState<UserWithRole | null>(null);
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string>('');
-  const [selectedEmpresaRole, setSelectedEmpresaRole] = useState<AppRole>('vendedor');
+  const [selectedEmpresaRole, setSelectedEmpresaRole] = useState<AppRole>('seller');
   const [savingEmpresaLink, setSavingEmpresaLink] = useState(false);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
-    if (!empresaId) { setUsers([]); setLoading(false); return; }
+    if (!companyId) { setUsers([]); setLoading(false); return; }
     try {
       const response = await api.functions.invoke('list-users', {
-        body: { empresa_id: empresaId }, method: 'POST',
+        body: { company_id: companyId }, method: 'POST',
       });
       if (response.error) throw new Error(response.error.message || 'Erro ao buscar usuários');
       if (response.data?.error) throw new Error(response.data.error);
       const usersWithRoles: UserWithRole[] = (response.data?.users || []).map((item: any) => ({
-        id: item.id, email: item.email || 'Email não disponível', nome: item.nome,
+        id: item.id, email: item.email || 'Email não disponível', name: item.name,
         role: item.role as AppRole, created_at: item.created_at, last_sign_in: item.last_sign_in, desativado: !!item.desativado,
       }));
       setUsers(usersWithRoles);
@@ -209,8 +209,8 @@ const Usuarios = () => {
   };
 
   const fetchRegrasComissao = async () => {
-    if (!empresaId) return;
-    const { data, error } = await api.from('regras_comissao').select('*').eq('empresa_id', empresaId).order('data_inicio_vigencia', { ascending: false });
+    if (!companyId) return;
+    const { data, error } = await api.from('commission_rule').select('*').eq('company_id', companyId).order('data_inicio_vigencia', { ascending: false });
     if (!error && data) {
       const grouped: Record<string, any[]> = {};
       data.forEach((r: any) => { if (!grouped[r.usuario_id]) grouped[r.usuario_id] = []; grouped[r.usuario_id].push(r); });
@@ -219,13 +219,13 @@ const Usuarios = () => {
   };
 
   const fetchAllEmpresas = async () => {
-    const { data } = await api.from('empresas').select('id, nome').eq('ativo', true);
+    const { data } = await api.from('company').select('id, name').eq('active', true);
     if (data) setAllEmpresas(data);
   };
 
   const fetchUserEmpresaLinks = async () => {
-    if (!empresaId) { setUserEmpresaLinks([]); return; }
-    const { data: currentEmpresaLinks } = await api.from('user_empresas').select('id, user_id, empresa_id, role, nivel_acesso_id').eq('empresa_id', empresaId);
+    if (!companyId) { setUserEmpresaLinks([]); return; }
+    const { data: currentEmpresaLinks } = await api.from('company_user').select('id, user_id, empresa_id, role, nivel_acesso_id').eq('company_id', companyId);
     if (currentEmpresaLinks) setUserEmpresaLinks(currentEmpresaLinks as UserEmpresaLink[]);
   };
 
@@ -249,19 +249,19 @@ const Usuarios = () => {
     if (!authLoading && !roleLoading && hasPermission('canManageUsers')) {
       fetchUsers(); fetchRegrasComissao(); fetchAllEmpresas(); fetchUserEmpresaLinks();
     }
-  }, [authLoading, roleLoading, hasPermission, empresaId]);
+  }, [authLoading, roleLoading, hasPermission, companyId]);
 
   // === LINK EXISTING USER ===
   const handleLinkExistingUser = async () => {
-    if (!linkEmail || !empresaId) { toast.error('Preencha o email'); return; }
+    if (!linkEmail || !companyId) { toast.error('Preencha o email'); return; }
     setLinking(true);
     try {
-      const response = await api.functions.invoke('link-existing-user', { body: { email: linkEmail, empresa_id: empresaId, role: linkRole } });
+      const response = await api.functions.invoke('link-existing-user', { body: { email: linkEmail, company_id: companyId, role: linkRole } });
       if (response.data?.error === 'user_not_found') { toast.error('Nenhum usuário encontrado com este email. Cadastre um novo usuário.'); return; }
       if (response.data?.error === 'already_linked') { toast.error('Este usuário já está vinculado a esta empresa.'); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.error?.message || 'Erro ao vincular');
       toast.success(`Usuário ${response.data.user.email} vinculado com sucesso!`);
-      setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('vendedor');
+      setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('seller');
       fetchUsers(); fetchUserEmpresaLinks();
     } catch (error: any) { toast.error(error.message || 'Erro ao vincular usuário'); } finally { setLinking(false); }
   };
@@ -272,21 +272,21 @@ const Usuarios = () => {
     if (newUserPassword.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
     setCreating(true); setEmailExistsPrompt(false);
     try {
-      const response = await api.functions.invoke('create-user', { body: { email: newUserEmail, password: newUserPassword, role: newUserRole, nome: newUserNome || undefined, empresa_id: empresaId } });
+      const response = await api.functions.invoke('create-user', { body: { email: newUserEmail, password: newUserPassword, role: newUserRole, name: newUserNome || undefined, company_id: companyId } });
       if (response.data?.error === 'email_exists') { setEmailExistsPrompt(true); setCreating(false); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.data?.error || response.error?.message);
       const newUserId = response.data?.user?.id;
-      if (newUserId && empresaId) { await api.from('user_empresas').insert({ user_id: newUserId, empresa_id: empresaId, role: newUserRole }); }
+      if (newUserId && companyId) { await api.from('company_user').insert({ user_id: newUserId, company_id: companyId, role: newUserRole }); }
       toast.success('Usuário criado e vinculado à empresa com sucesso!');
       setCreateDialogOpen(false); resetCreateForm(); fetchUsers(); fetchUserEmpresaLinks();
     } catch (error: any) { console.error('Error creating user:', error); toast.error(error.message || 'Erro ao criar usuário'); } finally { setCreating(false); }
   };
 
   const handleLinkFromCreate = async () => {
-    if (!newUserEmail || !empresaId) return;
+    if (!newUserEmail || !companyId) return;
     setCreating(true);
     try {
-      const response = await api.functions.invoke('link-existing-user', { body: { email: newUserEmail, empresa_id: empresaId, role: newUserRole } });
+      const response = await api.functions.invoke('link-existing-user', { body: { email: newUserEmail, company_id: companyId, role: newUserRole } });
       if (response.data?.error === 'already_linked') { toast.error('Este usuário já está vinculado a esta empresa.'); return; }
       if (response.error || response.data?.error) throw new Error(response.data?.message || response.error?.message || 'Erro ao vincular');
       toast.success(`Usuário vinculado à empresa com sucesso!`);
@@ -294,28 +294,28 @@ const Usuarios = () => {
     } catch (error: any) { toast.error(error.message || 'Erro ao vincular usuário'); } finally { setCreating(false); }
   };
 
-  const resetCreateForm = () => { setNewUserEmail(''); setNewUserPassword(''); setNewUserNome(''); setNewUserRole('vendedor'); setEmailExistsPrompt(false); };
+  const resetCreateForm = () => { setNewUserEmail(''); setNewUserPassword(''); setNewUserNome(''); setNewUserRole('seller'); setEmailExistsPrompt(false); };
 
   // === EDIT USER ===
   const openEditDialog = (userItem: UserWithRole) => {
     setUserToEdit(userItem); setEditingEmpresaRole(getUserEmpresaRole(userItem.id) || userItem.role);
-    setEditingNome(userItem.nome || '');
+    setEditingNome(userItem.name || '');
     const link = getUserEmpresaLink(userItem.id);
     setEditingNivelAcessoId(link?.nivel_acesso_id || '');
     setEditDialogOpen(true);
   };
 
   const handleUpdateUser = async () => {
-    if (!userToEdit || !empresaId) return;
+    if (!userToEdit || !companyId) return;
     setUpdating(true);
     try {
       const link = getUserEmpresaLink(userToEdit.id);
       if (link) {
-        const { error } = await api.from('user_empresas').update({ role: editingEmpresaRole, nivel_acesso_id: editingNivelAcessoId || null }).eq('id', link.id);
+        const { error } = await api.from('company_user').update({ role: editingEmpresaRole, nivel_acesso_id: editingNivelAcessoId || null }).eq('id', link.id);
         if (error) throw error;
       }
-      if (editingNome !== (userToEdit.nome || '')) { await api.functions.invoke('update-user', { body: { userId: userToEdit.id, nome: editingNome, empresa_id: empresaId } }); }
-      setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, role: editingEmpresaRole, nome: editingNome || null } : u));
+      if (editingNome !== (userToEdit.name || '')) { await api.functions.invoke('update-user', { body: { userId: userToEdit.id, name: editingNome, company_id: companyId } }); }
+      setUsers(prev => prev.map(u => u.id === userToEdit.id ? { ...u, role: editingEmpresaRole, name: editingNome || null } : u));
       toast.success('Usuário atualizado com sucesso!'); setEditDialogOpen(false); setUserToEdit(null); fetchUserEmpresaLinks();
     } catch (error: any) { console.error('Error updating user:', error); toast.error(error.message || 'Erro ao atualizar usuário'); } finally { setUpdating(false); }
   };
@@ -323,12 +323,12 @@ const Usuarios = () => {
   // === ATIVAR / DESATIVAR ===
   // Usuários não são excluídos: desativar bloqueia o login e mantém todo o histórico.
   const handleToggleAtivo = async () => {
-    if (!userToEdit || !empresaId) return;
+    if (!userToEdit || !companyId) return;
     const desativar = !userToEdit.desativado;
-    if (desativar && !window.confirm(`Desativar ${userToEdit.nome || userToEdit.email}? Ele deixa de conseguir entrar no sistema. Você pode reativar quando quiser.`)) return;
+    if (desativar && !window.confirm(`Desativar ${userToEdit.name || userToEdit.email}? Ele deixa de conseguir entrar no sistema. Você pode reativar quando quiser.`)) return;
     setTogglingAtivo(true);
     try {
-      const response = await api.functions.invoke('update-user', { body: { userId: userToEdit.id, empresa_id: empresaId, ativo: !desativar } });
+      const response = await api.functions.invoke('update-user', { body: { userId: userToEdit.id, company_id: companyId, active: !desativar } });
       if (response.error) throw new Error(response.error.message || 'Erro ao atualizar usuário');
       if (response.data?.error) throw new Error(response.data.error);
       toast.success(desativar ? 'Usuário desativado. Ele não consegue mais entrar no sistema.' : 'Usuário reativado.');
@@ -346,7 +346,7 @@ const Usuarios = () => {
   const openHistoricoDialog = (userItem: UserWithRole) => { setHistoricoUser(userItem); setHistoricoDialogOpen(true); };
 
   const handleSalvarComissao = async () => {
-    if (!comissaoUser || !novoPercentual || !user || !empresaId) return;
+    if (!comissaoUser || !novoPercentual || !user || !companyId) return;
     const percentual = parseFloat(novoPercentual);
     if (isNaN(percentual) || percentual < 0 || percentual > 100) { toast.error('Percentual deve ser entre 0 e 100'); return; }
     setSavingComissao(true);
@@ -357,26 +357,26 @@ const Usuarios = () => {
       if (regraAtiva) {
         const fimDate = new Date(dataInicioVigencia);
         fimDate.setDate(fimDate.getDate() - 1);
-        await api.from('regras_comissao').update({ data_fim_vigencia: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
+        await api.from('commission_rule').update({ data_fim_vigencia: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
       }
-      const { error } = await api.from('regras_comissao').insert({ usuario_id: comissaoUser.id, empresa_id: empresaId, percentual, data_inicio_vigencia: dataInicio, criado_por: user.id } as any);
+      const { error } = await api.from('commission_rule').insert({ usuario_id: comissaoUser.id, company_id: companyId, percentual, data_inicio_vigencia: dataInicio, criado_por: user.id } as any);
       if (error) throw error;
-      toast.success(`Comissão de ${percentual}% definida para ${comissaoUser.nome || comissaoUser.email}`);
+      toast.success(`Comissão de ${percentual}% definida para ${comissaoUser.name || comissaoUser.email}`);
       setComissaoDialogOpen(false); setComissaoUser(null); fetchRegrasComissao();
     } catch (error: any) { toast.error(error.message || 'Erro ao salvar regra de comissão'); } finally { setSavingComissao(false); }
   };
 
   // === EMPRESA MANAGEMENT ===
-  const openEmpresaDialog = (userItem: UserWithRole) => { setEmpresaDialogUser(userItem); setSelectedEmpresaId(''); setSelectedEmpresaRole('vendedor'); setEmpresaDialogOpen(true); };
+  const openEmpresaDialog = (userItem: UserWithRole) => { setEmpresaDialogUser(userItem); setSelectedEmpresaId(''); setSelectedEmpresaRole('seller'); setEmpresaDialogOpen(true); };
 
   const getUserEmpresas = (userId: string) =>
-    userEmpresaLinks.filter(link => link.user_id === userId).map(link => ({ ...link, empresaNome: allEmpresas.find(e => e.id === link.empresa_id)?.nome || 'Desconhecida' }));
+    userEmpresaLinks.filter(link => link.user_id === userId).map(link => ({ ...link, empresaNome: allEmpresas.find(e => e.id === link.empresa_id)?.name || 'Desconhecida' }));
 
   const handleVincularEmpresa = async () => {
     if (!empresaDialogUser || !selectedEmpresaId) { toast.error('Selecione uma empresa'); return; }
     setSavingEmpresaLink(true);
     try {
-      const { error } = await api.from('user_empresas').insert({ user_id: empresaDialogUser.id, empresa_id: selectedEmpresaId, role: selectedEmpresaRole });
+      const { error } = await api.from('company_user').insert({ user_id: empresaDialogUser.id, company_id: selectedEmpresaId, role: selectedEmpresaRole });
       if (error) throw error;
       toast.success('Usuário vinculado à empresa com sucesso!'); fetchUserEmpresaLinks(); setSelectedEmpresaId('');
     } catch (error: any) { toast.error(error.message || 'Erro ao vincular usuário'); } finally { setSavingEmpresaLink(false); }
@@ -385,7 +385,7 @@ const Usuarios = () => {
   const handleDesvincularEmpresa = async (linkId: string) => {
     setUnlinkingId(linkId);
     try {
-      const { error } = await api.from('user_empresas').delete().eq('id', linkId);
+      const { error } = await api.from('company_user').delete().eq('id', linkId);
       if (error) throw error;
       toast.success('Usuário desvinculado da empresa'); fetchUserEmpresaLinks();
     } catch (error: any) { toast.error(error.message || 'Erro ao desvincular usuário'); } finally { setUnlinkingId(null); }
@@ -399,7 +399,7 @@ const Usuarios = () => {
   // ── Computed ───────────────────────────────────────────────────────────────
   const filteredUsers = users.filter(u => {
     const matchSearch = !searchQuery ||
-      (u.nome || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchRole = filterRole === 'todos' || u.role === filterRole;
     return matchSearch && matchRole;
@@ -518,7 +518,7 @@ const Usuarios = () => {
               style={{ ...inputStyle, paddingLeft: 38, width: '100%' }} />
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            {(['todos', 'admin', 'gerente', 'vendedor', 'visualizador'] as const).map(r => (
+            {(['todos', 'admin', 'manager', 'seller', 'viewer'] as const).map(r => (
               <button key={r} onClick={() => setFilterRole(r)}
                 style={{ padding: '6px 14px', borderRadius: 20, border: filterRole === r ? 'none' : '1px solid rgba(142,95,207,0.2)', background: filterRole === r ? 'linear-gradient(135deg, #8E5FCF, #47118F)' : 'transparent', color: filterRole === r ? '#fff' : '#6B7280', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, fontFamily: 'Gilroy, sans-serif', transition: 'all 0.2s', boxShadow: filterRole === r ? '0 4px 12px rgba(142,95,207,0.3)' : 'none' }}>
                 {r === 'todos' ? 'Todos' : roleLabels[r]}
@@ -528,7 +528,7 @@ const Usuarios = () => {
         </div>
 
         {/* User Grid */}
-        {!empresaId ? (
+        {!companyId ? (
           <div style={{ ...glassCard, padding: '60px 24px', textAlign: 'center' }}>
             <div style={{ width: 80, height: 80, borderRadius: 24, background: 'linear-gradient(135deg, rgba(142,95,207,0.15), rgba(71,17,143,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Building2 style={{ width: 32, height: 32, color: '#8E5FCF' }} />
@@ -573,17 +573,17 @@ const Usuarios = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 12 }}>
                       <div style={{ position: 'relative', display: 'inline-block' }}>
                         <div style={{ width: 64, height: 64, borderRadius: 20, background: getRoleAvatarBg(displayRole), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', fontFamily: 'Gilroy, sans-serif' }}>{getInitials(userItem.nome, userItem.email)}</span>
+                          <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', fontFamily: 'Gilroy, sans-serif' }}>{getInitials(userItem.name, userItem.email)}</span>
                         </div>
                         {isOnline && (
                           <div style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: '#10B981', border: '2px solid white' }} />
                         )}
                       </div>
                       <p style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'Gilroy, sans-serif', color: '#1F2937', textAlign: 'center', margin: '10px 0 2px' }}>
-                        {userItem.nome || userItem.email}
+                        {userItem.name || userItem.email}
                         {isMe && <span style={{ fontSize: 10, fontWeight: 600, color: '#8E5FCF', background: 'rgba(142,95,207,0.1)', padding: '1px 6px', borderRadius: 99, marginLeft: 6, fontFamily: 'Gilroy, sans-serif' }}>Você</span>}
                       </p>
-                      {userItem.nome && <p style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy, sans-serif', textAlign: 'center', margin: 0 }}>{userItem.email}</p>}
+                      {userItem.name && <p style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy, sans-serif', textAlign: 'center', margin: 0 }}>{userItem.email}</p>}
                       <div style={{ marginTop: 8 }}>
                         {(() => {
                           if (link?.nivel_acesso_id === '__no_access__') return (
@@ -595,7 +595,7 @@ const Usuarios = () => {
                             const nivel = niveisAcesso.find(n => n.id === link.nivel_acesso_id);
                             if (nivel) return (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(142,95,207,0.1)', color: '#8E5FCF', border: '1px solid rgba(142,95,207,0.2)', fontFamily: 'Gilroy, sans-serif' }}>
-                                <Shield style={{ width: 12, height: 12 }} /> {nivel.nome}
+                                <Shield style={{ width: 12, height: 12 }} /> {nivel.name}
                               </span>
                             );
                           }
@@ -660,8 +660,8 @@ const Usuarios = () => {
       {/* ══ MODAIS ════════════════════════════════════════════════════════════ */}
 
       {/* Link Existing */}
-      <GlassModal open={linkDialogOpen} onClose={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('vendedor'); }}>
-        <ModalHeader icon={<Search style={{ width: 16, height: 16, color: '#fff' }} />} title="Vincular Usuário Existente" subtitle={`Busque por email e vincule à empresa ${empresaAtiva?.nome}`} onClose={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('vendedor'); }} />
+      <GlassModal open={linkDialogOpen} onClose={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('seller'); }}>
+        <ModalHeader icon={<Search style={{ width: 16, height: 16, color: '#fff' }} />} title="Vincular Usuário Existente" subtitle={`Busque por email e vincule à empresa ${empresaAtiva?.name}`} onClose={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('seller'); }} />
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div><label style={labelStyle}>Email do usuário</label><input type="email" placeholder="email@exemplo.com" value={linkEmail} onChange={e => setLinkEmail(e.target.value)} style={modalInputStyle} /></div>
           <div>
@@ -670,16 +670,16 @@ const Usuarios = () => {
               <SelectTrigger style={{ height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Crown style={{ width: 14, height: 14 }} /> Administrador</span></SelectItem>
-                <SelectItem value="gerente"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shield style={{ width: 14, height: 14 }} /> Gerente</span></SelectItem>
-                <SelectItem value="vendedor"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ShoppingCart style={{ width: 14, height: 14 }} /> Vendedor</span></SelectItem>
-                <SelectItem value="visualizador"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Eye style={{ width: 14, height: 14 }} /> Visualizador</span></SelectItem>
+                <SelectItem value="manager"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shield style={{ width: 14, height: 14 }} /> Gerente</span></SelectItem>
+                <SelectItem value="seller"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ShoppingCart style={{ width: 14, height: 14 }} /> Vendedor</span></SelectItem>
+                <SelectItem value="viewer"><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Eye style={{ width: 14, height: 14 }} /> Visualizador</span></SelectItem>
               </SelectContent>
             </Select>
             <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4, fontFamily: 'Gilroy, sans-serif' }}>{roleDescriptions[linkRole]}</p>
           </div>
         </div>
         <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(142,95,207,0.1)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('vendedor'); }} disabled={linking} style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, borderRadius: 10, border: '1px solid rgba(142,95,207,0.2)', background: 'transparent', color: '#6B7280', cursor: 'pointer', fontFamily: 'Gilroy, sans-serif' }}>Cancelar</button>
+          <button onClick={() => { setLinkDialogOpen(false); setLinkEmail(''); setLinkRole('seller'); }} disabled={linking} style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, borderRadius: 10, border: '1px solid rgba(142,95,207,0.2)', background: 'transparent', color: '#6B7280', cursor: 'pointer', fontFamily: 'Gilroy, sans-serif' }}>Cancelar</button>
           <button onClick={handleLinkExistingUser} disabled={linking || !linkEmail} style={{ padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 10, border: 'none', background: (!linking && linkEmail) ? 'linear-gradient(135deg, #47118F, #8E5FCF)' : 'rgba(142,95,207,0.3)', color: '#fff', cursor: (!linking && linkEmail) ? 'pointer' : 'not-allowed', fontFamily: 'Gilroy, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
             {linking ? <><Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> Vinculando…</> : <><Link style={{ width: 14, height: 14 }} /> Vincular</>}
           </button>
@@ -688,12 +688,12 @@ const Usuarios = () => {
 
       {/* Create User */}
       <GlassModal open={createDialogOpen} onClose={() => { setCreateDialogOpen(false); resetCreateForm(); }}>
-        <ModalHeader icon={<UserPlus style={{ width: 16, height: 16, color: '#fff' }} />} title="Cadastrar Novo Usuário" subtitle={`Criar conta e vincular à empresa ${empresaAtiva?.nome}`} onClose={() => { setCreateDialogOpen(false); resetCreateForm(); }} />
+        <ModalHeader icon={<UserPlus style={{ width: 16, height: 16, color: '#fff' }} />} title="Cadastrar Novo Usuário" subtitle={`Criar conta e vincular à empresa ${empresaAtiva?.name}`} onClose={() => { setCreateDialogOpen(false); resetCreateForm(); }} />
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {emailExistsPrompt && (
             <div style={{ padding: 16, borderRadius: 14, border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.06)' }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#92400E', margin: '0 0 6px', fontFamily: 'Gilroy, sans-serif' }}>⚠️ Usuário já existe no sistema.</p>
-              <p style={{ fontSize: 12, color: '#B45309', margin: '0 0 10px', fontFamily: 'Gilroy, sans-serif' }}>Deseja vincular este usuário à empresa <strong>{empresaAtiva?.nome}</strong> como <strong>{roleLabels[newUserRole]}</strong>?</p>
+              <p style={{ fontSize: 12, color: '#B45309', margin: '0 0 10px', fontFamily: 'Gilroy, sans-serif' }}>Deseja vincular este usuário à empresa <strong>{empresaAtiva?.name}</strong> como <strong>{roleLabels[newUserRole]}</strong>?</p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={handleLinkFromCreate} disabled={creating} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#F59E0B', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'Gilroy, sans-serif' }}>{creating ? 'Vinculando…' : 'Sim, vincular'}</button>
                 <button onClick={() => setEmailExistsPrompt(false)} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)', background: 'transparent', color: '#B45309', cursor: 'pointer', fontSize: 12, fontFamily: 'Gilroy, sans-serif' }}>Cancelar</button>
@@ -709,9 +709,9 @@ const Usuarios = () => {
               <SelectTrigger style={{ height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="gerente">Gerente</SelectItem>
-                <SelectItem value="vendedor">Vendedor</SelectItem>
-                <SelectItem value="visualizador">Visualizador</SelectItem>
+                <SelectItem value="manager">Gerente</SelectItem>
+                <SelectItem value="seller">Vendedor</SelectItem>
+                <SelectItem value="viewer">Visualizador</SelectItem>
               </SelectContent>
             </Select>
             <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4, fontFamily: 'Gilroy, sans-serif' }}>{roleDescriptions[newUserRole]}</p>
@@ -727,7 +727,7 @@ const Usuarios = () => {
 
       {/* Edit User */}
       <GlassModal open={editDialogOpen} onClose={() => setEditDialogOpen(false)}>
-        <ModalHeader icon={<Pencil style={{ width: 16, height: 16, color: '#fff' }} />} title="Editar Usuário" subtitle={`${userToEdit?.nome || userToEdit?.email} — ${empresaAtiva?.nome}`} onClose={() => setEditDialogOpen(false)} />
+        <ModalHeader icon={<Pencil style={{ width: 16, height: 16, color: '#fff' }} />} title="Editar Usuário" subtitle={`${userToEdit?.name || userToEdit?.email} — ${empresaAtiva?.name}`} onClose={() => setEditDialogOpen(false)} />
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={labelStyle}>Nome</label><input placeholder="Nome do usuário" value={editingNome} onChange={e => setEditingNome(e.target.value)} style={modalInputStyle} /></div>
           <div><label style={labelStyle}>Email</label><p style={{ fontSize: 13, color: '#9CA3AF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{userToEdit?.email}</p></div>
@@ -735,20 +735,20 @@ const Usuarios = () => {
             <label style={labelStyle}>Papel nesta empresa</label>
             <Select value={editingNivelAcessoId ? `nivel_${editingNivelAcessoId}` : editingEmpresaRole}
               onValueChange={value => {
-                if (value === '__no_access__') { setEditingNivelAcessoId('__no_access__'); setEditingEmpresaRole('visualizador'); }
-                else if (value.startsWith('nivel_')) { setEditingNivelAcessoId(value.replace('nivel_', '')); setEditingEmpresaRole('visualizador'); }
+                if (value === '__no_access__') { setEditingNivelAcessoId('__no_access__'); setEditingEmpresaRole('viewer'); }
+                else if (value.startsWith('nivel_')) { setEditingNivelAcessoId(value.replace('nivel_', '')); setEditingEmpresaRole('viewer'); }
                 else { setEditingNivelAcessoId(''); setEditingEmpresaRole(value as AppRole); }
               }}>
               <SelectTrigger style={{ height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="gerente">Gerente</SelectItem>
-                <SelectItem value="vendedor">Vendedor</SelectItem>
-                <SelectItem value="visualizador">Visualizador</SelectItem>
+                <SelectItem value="manager">Gerente</SelectItem>
+                <SelectItem value="seller">Vendedor</SelectItem>
+                <SelectItem value="viewer">Visualizador</SelectItem>
                 {niveisAcesso.length > 0 && (
                   <>
                     <SelectItem value="__no_access__"><span style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: 6 }}><ShieldOff style={{ width: 14, height: 14 }} /> Sem Acesso</span></SelectItem>
-                    {niveisAcesso.map(nivel => (<SelectItem key={nivel.id} value={`nivel_${nivel.id}`}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shield style={{ width: 14, height: 14, color: '#8E5FCF' }} /> {nivel.nome}</span></SelectItem>))}
+                    {niveisAcesso.map(nivel => (<SelectItem key={nivel.id} value={`nivel_${nivel.id}`}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shield style={{ width: 14, height: 14, color: '#8E5FCF' }} /> {nivel.name}</span></SelectItem>))}
                   </>
                 )}
               </SelectContent>
@@ -787,7 +787,7 @@ const Usuarios = () => {
 
       {/* Commission */}
       <GlassModal open={comissaoDialogOpen} onClose={() => setComissaoDialogOpen(false)}>
-        <ModalHeader icon={<Percent style={{ width: 16, height: 16, color: '#fff' }} />} title="Alterar Comissão" subtitle={`${comissaoUser?.nome || comissaoUser?.email}`} onClose={() => setComissaoDialogOpen(false)} />
+        <ModalHeader icon={<Percent style={{ width: 16, height: 16, color: '#fff' }} />} title="Alterar Comissão" subtitle={`${comissaoUser?.name || comissaoUser?.email}`} onClose={() => setComissaoDialogOpen(false)} />
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(142,95,207,0.06)' }}>
             <p style={{ fontSize: 12, color: '#8E5FCF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>A nova comissão será aplicada apenas para vendas a partir da data selecionada.</p>
@@ -826,7 +826,7 @@ const Usuarios = () => {
 
       {/* Commission History */}
       <GlassModal open={historicoDialogOpen} onClose={() => setHistoricoDialogOpen(false)} maxWidth={560}>
-        <ModalHeader icon={<History style={{ width: 16, height: 16, color: '#fff' }} />} title="Histórico de Comissão" subtitle={historicoUser?.nome || historicoUser?.email} onClose={() => setHistoricoDialogOpen(false)} />
+        <ModalHeader icon={<History style={{ width: 16, height: 16, color: '#fff' }} />} title="Histórico de Comissão" subtitle={historicoUser?.name || historicoUser?.email} onClose={() => setHistoricoDialogOpen(false)} />
         <div style={{ padding: '20px 24px' }}>
           {historicoUser && regrasComissao[historicoUser.id]?.length > 0 ? (
             <div style={{ background: 'rgba(142,95,207,0.03)', borderRadius: 14, overflow: 'hidden' }}>
@@ -854,7 +854,7 @@ const Usuarios = () => {
 
       {/* Empresa Management */}
       <GlassModal open={empresaDialogOpen} onClose={() => setEmpresaDialogOpen(false)} maxWidth={560}>
-        <ModalHeader icon={<Building2 style={{ width: 16, height: 16, color: '#fff' }} />} title="Gerenciar Empresas" subtitle={`Vínculos de ${empresaDialogUser?.nome || empresaDialogUser?.email}`} onClose={() => setEmpresaDialogOpen(false)} />
+        <ModalHeader icon={<Building2 style={{ width: 16, height: 16, color: '#fff' }} />} title="Gerenciar Empresas" subtitle={`Vínculos de ${empresaDialogUser?.name || empresaDialogUser?.email}`} onClose={() => setEmpresaDialogOpen(false)} />
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label style={labelStyle}>Empresas vinculadas</label>
@@ -885,7 +885,7 @@ const Usuarios = () => {
                 <SelectTrigger style={{ flex: 1, height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                 <SelectContent>
                   {allEmpresas.filter(e => empresaDialogUser && !getUserEmpresas(empresaDialogUser.id).some(ue => ue.empresa_id === e.id)).map(empresa => (
-                    <SelectItem key={empresa.id} value={empresa.id}>{empresa.nome}</SelectItem>
+                    <SelectItem key={empresa.id} value={empresa.id}>{empresa.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -893,9 +893,9 @@ const Usuarios = () => {
                 <SelectTrigger style={{ width: 150, height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="gerente">Gerente</SelectItem>
-                  <SelectItem value="vendedor">Vendedor</SelectItem>
-                  <SelectItem value="visualizador">Visualizador</SelectItem>
+                  <SelectItem value="manager">Gerente</SelectItem>
+                  <SelectItem value="seller">Vendedor</SelectItem>
+                  <SelectItem value="viewer">Visualizador</SelectItem>
                 </SelectContent>
               </Select>
             </div>

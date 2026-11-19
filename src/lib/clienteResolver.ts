@@ -1,14 +1,14 @@
 // Helper para resolver o cliente_id ao salvar uma venda/pedido.
 // Estratégia (em ordem):
 //   1) Match por CPF (quando informado) — mais confiável, único por cadastro.
-//   2) Match por nome + telefone — desempata homônimos.
-//   3) Match único por nome.
-//   4) Se múltiplos com o mesmo nome e sem outro critério, retorna null
+//   2) Match por name + telefone — desempata homônimos.
+//   3) Match único por name.
+//   4) Se múltiplos com o mesmo name e sem outro critério, retorna null
 //      (para evitar gravar o cliente errado).
 
 interface ClienteLike {
   id: string;
-  nome: string;
+  name: string;
   cpf?: string | null;
   telefone?: string | null;
 }
@@ -17,7 +17,7 @@ const onlyDigits = (v?: string | null) => (v || '').replace(/\D/g, '');
 
 export function resolveClienteId(
   clientes: ClienteLike[],
-  filtro: { nome?: string | null; cpf?: string | null; telefone?: string | null }
+  filtro: { name?: string | null; cpf?: string | null; telefone?: string | null }
 ): string | null {
   if (!clientes?.length) return null;
 
@@ -27,10 +27,10 @@ export function resolveClienteId(
     if (byCpf) return byCpf.id;
   }
 
-  const nome = (filtro.nome || '').trim().toLowerCase();
-  if (!nome) return null;
+  const name = (filtro.name || '').trim().toLowerCase();
+  if (!name) return null;
 
-  const sameName = clientes.filter(c => (c.nome || '').trim().toLowerCase() === nome);
+  const sameName = clientes.filter(c => (c.name || '').trim().toLowerCase() === name);
   if (sameName.length === 1) return sameName[0].id;
 
   const tel = onlyDigits(filtro.telefone);

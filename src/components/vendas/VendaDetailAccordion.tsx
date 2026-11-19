@@ -7,14 +7,14 @@ import { Package, CreditCard, Truck, ClipboardList, Percent, MessageSquare, Chev
 import { useEmpresa } from '@/hooks/useEmpresa';
 
 interface VendaDetailProps {
-  vendaId: string;
+  saleId: string;
   produtos: string;
-  metodoPagamento: string;
+  paymentMethod: string;
   parcelas: number | null;
   valor: number;
   valorBruto: number | null;
   desconto: number | null;
-  valorFinal: number | null;
+  finalAmount: number | null;
   observacoes: string | null;
   bandeira: string | null;
   valorLiquido: number | null;
@@ -28,13 +28,13 @@ interface ItemVendaDetail {
   subtotal: number;
   produto_nome: string;
   desconto?: number;
-  desconto_tipo?: 'percentual' | 'valor';
+  desconto_tipo?: 'percentual' | 'amount';
   observacao?: string;
 }
 
 interface OperacaoDetail {
   id: string;
-  tipo: string;
+  kind: string;
   status: string;
   data_prevista: string | null;
   data_entrega: string | null;
@@ -71,19 +71,19 @@ const tipoLabels: Record<string, string> = {
 };
 
 export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
-  vendaId,
-  metodoPagamento,
+  saleId,
+  paymentMethod,
   parcelas,
   valor,
   valorBruto,
   desconto,
-  valorFinal,
+  finalAmount,
   observacoes,
   bandeira,
   valorLiquido,
   isAdmin,
 }) => {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const [loading, setLoading] = useState(true);
   const [itens, setItens] = useState<ItemVendaDetail[]>([]);
   const [obsAberta, setObsAberta] = useState<Record<string, boolean>>({});
@@ -95,25 +95,25 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
     const fetchDetails = async () => {
       setLoading(true);
 
-      if (!empresaId) return;
+      if (!companyId) return;
 
       // Fetch all in parallel - all queries filter by empresa context
       const [itensRes, operacaoRes, comissaoRes] = await Promise.all([
         api
-          .from('itens_venda')
+          .from('sale_item')
           .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
-          .eq('venda_id', vendaId),
+          .eq('sale_id', saleId),
         api
-          .from('operacoes')
-          .select('id, tipo, status, data_prevista, data_entrega, data_montagem, observacoes')
-          .eq('venda_id', vendaId)
-          .eq('empresa_id', empresaId)
+          .from('operation')
+          .select('id, kind, status, data_prevista, data_entrega, data_montagem, observacoes')
+          .eq('sale_id', saleId)
+          .eq('company_id', companyId)
           .maybeSingle(),
         api
-          .from('comissoes')
+          .from('commission')
           .select('id, percentual, valor_base, valor_comissao, vendedor_id')
-          .eq('venda_id', vendaId)
-          .eq('empresa_id', empresaId)
+          .eq('sale_id', saleId)
+          .eq('company_id', companyId)
           .maybeSingle(),
       ]);
 
@@ -121,9 +121,9 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       let itensData: any[] = itensRes.data || [];
       if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
         const fallback = await api
-          .from('itens_venda')
+          .from('sale_item')
           .select('produto_id, quantidade, preco_unitario, subtotal')
-          .eq('venda_id', vendaId);
+          .eq('sale_id', saleId);
         itensData = (fallback.data as any[]) || [];
       }
 
@@ -131,18 +131,18 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       if (itensData && itensData.length > 0) {
         const produtoIds = itensData.map((i: any) => i.produto_id);
         const { data: produtosData } = await api
-          .from('produtos')
-          .select('id, nome')
+          .from('product')
+          .select('id, name')
           .in('id', produtoIds);
 
-        const produtoMap = new Map(produtosData?.map((p) => [p.id, p.nome]) || []);
+        const produtoMap = new Map(produtosData?.map((p) => [p.id, p.name]) || []);
         setItens(
           itensData.map((item: any) => ({
             ...item,
             preco_unitario: Number(item.preco_unitario),
             subtotal: Number(item.subtotal),
             desconto: item.desconto != null ? Number(item.desconto) : 0,
-            desconto_tipo: (item.desconto_tipo as 'percentual' | 'valor') || 'percentual',
+            desconto_tipo: (item.desconto_tipo as 'percentual' | 'amount') || 'percentual',
             observacao: item.observacao || '',
             produto_nome: produtoMap.get(item.produto_id) || 'Produto não encontrado',
           }))
@@ -153,20 +153,20 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       if (comissaoRes.data) setComissao(comissaoRes.data as ComissaoDetail);
 
       // Check if month is closed for commission status
-      if (comissaoRes.data && empresaId) {
+      if (comissaoRes.data && companyId) {
         // We'll derive from fechamento_comissao
         const { data: vendaData } = await api
-          .from('vendas')
-          .select('data_venda')
-          .eq('id', vendaId)
+          .from('sale')
+          .select('sold_on')
+          .eq('id', saleId)
           .single();
         if (vendaData) {
           const mes = vendaData.data_venda.substring(0, 7);
           const { data: fechamento } = await api
-            .from('fechamento_comissao')
+            .from('commission_closing')
             .select('id')
-            .eq('empresa_id', empresaId)
-            .eq('mes_referencia', mes)
+            .eq('company_id', companyId)
+            .eq('reference_month', mes)
             .eq('status', 'fechado')
             .maybeSingle();
           setMesFechado(!!fechamento);
@@ -177,7 +177,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
     };
 
     fetchDetails();
-  }, [vendaId, empresaId]);
+  }, [saleId, companyId]);
 
   if (loading) {
     return (
@@ -189,7 +189,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
     );
   }
 
-  const valorParcelaCalc = parcelas && parcelas > 1 ? (valorFinal || valor) / parcelas : null;
+  const valorParcelaCalc = parcelas && parcelas > 1 ? (finalAmount || valor) / parcelas : null;
 
   return (
     <div className="px-4 pb-4 pt-1 space-y-4 animate-in fade-in-0 slide-in-from-top-2 duration-200">
@@ -207,7 +207,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
               const temDesconto = descontoR$ > 0;
               const precoOriginal = item.subtotal + descontoR$; // gross
               const precoFinal = item.subtotal;                  // after discount
-              // Badge label: re-derive % from stored R$ value if tipo === 'percentual'
+              // Badge label: re-derive % from stored R$ value if kind === 'percentual'
               const badgeLabel = temDesconto
                 ? item.desconto_tipo === 'percentual'
                   ? `-${precoOriginal > 0 ? ((descontoR$ / precoOriginal) * 100).toFixed(1).replace(/\.0$/, '') : 0}%`
@@ -287,7 +287,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
                 )}
                 <div className="flex justify-between p-3 text-sm font-bold bg-primary/5">
                   <span>Total</span>
-                  <span className="text-primary">{formatCurrency(valorFinal || valor)}</span>
+                  <span className="text-primary">{formatCurrency(finalAmount || valor)}</span>
                 </div>
               </>
             )}
@@ -304,7 +304,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
         <div className="rounded-lg border p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
           <div>
             <p className="text-xs text-muted-foreground">Forma</p>
-            <p className="font-medium">{metodoPagamento}{bandeira ? ` · ${bandeira}` : ''}</p>
+            <p className="font-medium">{paymentMethod}{bandeira ? ` · ${bandeira}` : ''}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Parcelas</p>
@@ -318,7 +318,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
           )}
           <div>
             <p className="text-xs text-muted-foreground">Total</p>
-            <p className="font-bold text-primary">{formatCurrency(valorFinal || valor)}</p>
+            <p className="font-bold text-primary">{formatCurrency(finalAmount || valor)}</p>
           </div>
           {valorLiquido != null && (
             <div className="col-span-full border-t pt-2 mt-1">
@@ -341,7 +341,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
           <div className="rounded-lg border p-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Tipo</p>
-              <p className="font-medium">{tipoLabels[operacao.tipo] || operacao.tipo}</p>
+              <p className="font-medium">{tipoLabels[operacao.kind] || operacao.kind}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Status</p>

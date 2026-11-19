@@ -149,8 +149,8 @@ export function useImpressora() {
 
   // ── Selecionar impressora ─────────────────────────────────────────────────────
 
-  const selecionarImpressora = useCallback((nome: string) => {
-    setConfig({ impressoraNome: nome });
+  const selecionarImpressora = useCallback((name: string) => {
+    setConfig({ impressoraNome: name });
   }, [setConfig]);
 
   // ── Enviar dados para impressora ──────────────────────────────────────────────

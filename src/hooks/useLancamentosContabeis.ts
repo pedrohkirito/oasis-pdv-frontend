@@ -4,9 +4,9 @@ import { useEmpresa } from './useEmpresa'
 
 export interface ItemLancamento {
   conta_id: string
-  codigo: string
-  nome: string
-  tipo: 'debito' | 'credito'
+  code: string
+  name: string
+  kind: 'debito' | 'credito'
   valor: number
 }
 
@@ -25,15 +25,15 @@ export interface LancamentoContabil {
 
 export interface SaldoPatrimonial {
   conta_id: string
-  codigo: string
-  nome: string
+  code: string
+  name: string
   natureza: 'devedora' | 'credora'
   saldo: number
 }
 
 export interface ItemNovoLancamento {
   conta_id: string
-  tipo: 'debito' | 'credito'
+  kind: 'debito' | 'credito'
   valor: number
 }
 
@@ -53,7 +53,7 @@ export const ORIGEM_LABEL: Record<string, string> = {
 }
 
 export function useLancamentosContabeis() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
 
   const listar = useCallback(async (params: {
     dataIni: string
@@ -62,9 +62,9 @@ export function useLancamentosContabeis() {
     limite?: number
     offset?: number
   }) => {
-    if (!empresaId) return { data: [] as LancamentoContabil[], error: 'Sem empresa selecionada' }
-    const { data, error } = await (api.rpc('listar_lancamentos_contabeis', {
-      p_empresa_id: empresaId,
+    if (!companyId) return { data: [] as LancamentoContabil[], error: 'Sem empresa selecionada' }
+    const { data, error } = await (api.rpc('list_journal_entries', {
+      p_company_id: companyId,
       p_data_ini: params.dataIni,
       p_data_fim: params.dataFim,
       p_origem: params.origem ?? null,
@@ -72,7 +72,7 @@ export function useLancamentosContabeis() {
       p_offset: params.offset ?? 0,
     } as any) as any)
     return { data: (data || []) as LancamentoContabil[], error: error ? error.message as string : null }
-  }, [empresaId])
+  }, [companyId])
 
   const criar = useCallback(async (params: {
     data: string
@@ -80,10 +80,10 @@ export function useLancamentosContabeis() {
     origem: 'manual' | 'abertura' | 'ajuste'
     itens: ItemNovoLancamento[]
   }) => {
-    if (!empresaId) return { id: null, error: 'Sem empresa selecionada' }
-    const { data, error } = await (api.rpc('criar_lancamento_contabil', {
+    if (!companyId) return { id: null, error: 'Sem empresa selecionada' }
+    const { data, error } = await (api.rpc('create_journal_entry', {
       p_header: {
-        empresa_id: empresaId,
+        company_id: companyId,
         data_lancamento: params.data,
         historico: params.historico,
         origem: params.origem,
@@ -91,35 +91,35 @@ export function useLancamentosContabeis() {
       p_itens: params.itens,
     } as any) as any)
     return { id: (data as string | null) ?? null, error: error ? error.message as string : null }
-  }, [empresaId])
+  }, [companyId])
 
-  const estornar = useCallback(async (lancamentoId: string, motivo: string) => {
-    const { data, error } = await (api.rpc('estornar_lancamento_contabil', {
-      p_lancamento_id: lancamentoId,
+  const estornar = useCallback(async (journalEntryId: string, motivo: string) => {
+    const { data, error } = await (api.rpc('reverse_journal_entry', {
+      p_lancamento_id: journalEntryId,
       p_motivo: motivo,
     } as any) as any)
     return { id: (data as string | null) ?? null, error: error ? error.message as string : null }
   }, [])
 
   const saldosPatrimoniais = useCallback(async (data: string) => {
-    if (!empresaId) return { data: [] as SaldoPatrimonial[], error: 'Sem empresa selecionada' }
-    const { data: rows, error } = await (api.rpc('saldos_patrimoniais', {
-      p_empresa_id: empresaId,
+    if (!companyId) return { data: [] as SaldoPatrimonial[], error: 'Sem empresa selecionada' }
+    const { data: rows, error } = await (api.rpc('balance_sheet', {
+      p_company_id: companyId,
       p_data: data,
     } as any) as any)
     return { data: (rows || []) as SaldoPatrimonial[], error: error ? error.message as string : null }
-  }, [empresaId])
+  }, [companyId])
 
   const primeiraVenda = useCallback(async (): Promise<string | null> => {
-    if (!empresaId) return null
+    if (!companyId) return null
     const { data } = await (api
-      .from('vendas')
-      .select('data_venda') as any)
-      .eq('empresa_id', empresaId)
-      .order('data_venda', { ascending: true })
+      .from('sale')
+      .select('sold_on') as any)
+      .eq('company_id', companyId)
+      .order('sold_on', { ascending: true })
       .limit(1)
     return data?.[0]?.data_venda ?? null
-  }, [empresaId])
+  }, [companyId])
 
   return { listar, criar, estornar, saldosPatrimoniais, primeiraVenda }
 }

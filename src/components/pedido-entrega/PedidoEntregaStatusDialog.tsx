@@ -31,13 +31,13 @@ interface Historico {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendaId: string | null;
+  saleId: string | null;
   onStatusUpdated?: () => void;
 }
 
-export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange, vendaId, onStatusUpdated }) => {
+export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange, saleId, onStatusUpdated }) => {
   const { user } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   const [currentStatus, setCurrentStatus] = useState('');
@@ -47,20 +47,20 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open && vendaId && empresaId) {
+    if (open && saleId && companyId) {
       fetchPedido();
     }
-  }, [open, vendaId, empresaId]);
+  }, [open, saleId, companyId]);
 
   const fetchPedido = async () => {
-    if (!vendaId || !empresaId) return;
+    if (!saleId || !companyId) return;
     setLoading(true);
 
     const { data: pedido } = await api
-      .from('pedidos_entrega')
+      .from('delivery_order')
       .select('id, status')
-      .eq('venda_id', vendaId)
-      .eq('empresa_id', empresaId)
+      .eq('sale_id', saleId)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -71,9 +71,9 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
       setNewStatus(pedido.status);
 
       const { data: hist } = await api
-        .from('pedido_entrega_historico')
+        .from('delivery_order_event')
         .select('*')
-        .eq('pedido_id', pedido.id)
+        .eq('purchase_order_id', pedido.id)
         .order('created_at', { ascending: false });
 
       setHistorico((hist as Historico[]) || []);
@@ -86,7 +86,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
     setSaving(true);
 
     const { error: updateErr } = await api
-      .from('pedidos_entrega')
+      .from('delivery_order')
       .update({ status: newStatus })
       .eq('id', pedidoId);
 
@@ -96,7 +96,7 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
       return;
     }
 
-    await api.from('pedido_entrega_historico').insert({
+    await api.from('delivery_order_event').insert({
       pedido_id: pedidoId,
       user_id: user.id,
       status_anterior: currentStatus,

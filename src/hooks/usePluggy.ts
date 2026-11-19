@@ -32,7 +32,7 @@ export function usePluggy() {
   const importarTransacoesPluggy = async (
     itemId: string,
     contaBancariaId: string,
-    empresaId: string,
+    companyId: string,
   ): Promise<{ importadas: number; saldo: number | null; error?: string }> => {
     setImportando(true)
     try {
@@ -40,7 +40,7 @@ export function usePluggy() {
         body: {
           itemId,
           contaId: contaBancariaId,
-          empresaId,
+          companyId,
         },
       })
       if (error) {
@@ -63,8 +63,8 @@ export function usePluggy() {
   const sincronizarTransacoes = async (
     itemId: string,
     contaBancariaId: string,
-    empresaId: string,
-  ) => importarTransacoesPluggy(itemId, contaBancariaId, empresaId)
+    companyId: string,
+  ) => importarTransacoesPluggy(itemId, contaBancariaId, companyId)
 
   return {
     loading,

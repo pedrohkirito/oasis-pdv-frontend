@@ -31,7 +31,7 @@ export interface ItemPedido {
 export interface HistoricoPedido {
   id: string;
   pedido_id: string;
-  empresa_id: string | null;
+  company_id: string | null;
   status_anterior: string | null;
   status_novo: string | null;
   observacao: string | null;
@@ -42,7 +42,7 @@ export interface HistoricoPedido {
 
 export interface PedidoCompra {
   id: string;
-  empresa_id: string;
+  company_id: string;
   numero_pedido: string | null;
   fornecedor_id: string | null;
   fornecedor_nome: string | null;
@@ -72,7 +72,7 @@ export interface NovoPedidoPayload {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePedidosCompra() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { user } = useAuth();
   const location = useLocation();
 
@@ -82,18 +82,18 @@ export function usePedidosCompra() {
   // ── Buscar pedidos ──────────────────────────────────────────────────────────
 
   const buscarPedidos = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
 
     const { data } = await (api as any)
-      .from('pedidos_compra')
+      .from('purchase_order')
       .select('*, pedidos_compra_itens(*)')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false });
 
     setPedidos((data ?? []) as PedidoCompra[]);
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   // ── Registrar histórico ─────────────────────────────────────────────────────
 
@@ -103,14 +103,14 @@ export function usePedidosCompra() {
     statusNovo: string,
     observacao: string = '',
   ) => {
-    await (api as any).from('pedidos_compra_historico').insert({
+    await (api as any).from('purchase_order_event').insert({
       pedido_id: pedidoId,
-      empresa_id: empresaId,
+      company_id: companyId,
       status_anterior: statusAnterior,
       status_novo: statusNovo,
       observacao: observacao || null,
       usuario_id: user?.id ?? null,
-      usuario_nome: user?.user_metadata?.nome ?? user?.email ?? null,
+      usuario_nome: user?.user_metadata?.name ?? user?.email ?? null,
     });
   };
 
@@ -118,9 +118,9 @@ export function usePedidosCompra() {
 
   const criarPedido = async (
     pedido: NovoPedidoPayload,
-    itens: Omit<ItemPedido, 'id' | 'pedido_id' | 'empresa_id' | 'valor_total' | 'created_at'>[],
+    itens: Omit<ItemPedido, 'id' | 'purchase_order_id' | 'company_id' | 'total_amount' | 'created_at'>[],
   ) => {
-    if (!empresaId) return { data: null, error: new Error('Sem empresa') };
+    if (!companyId) return { data: null, error: new Error('Sem empresa') };
 
     const valorTotal = itens.reduce(
       (acc, i) => acc + i.quantidade * i.valor_unitario,
@@ -128,19 +128,19 @@ export function usePedidosCompra() {
     );
 
     const { data, error } = await (api as any)
-      .from('pedidos_compra')
-      .insert({ ...pedido, empresa_id: empresaId, valor_total: valorTotal })
+      .from('purchase_order')
+      .insert({ ...pedido, company_id: companyId, valor_total: valorTotal })
       .select()
       .single();
 
     if (error || !data) return { data: null, error };
 
     if (itens.length > 0) {
-      await (api as any).from('pedidos_compra_itens').insert(
+      await (api as any).from('purchase_order_item').insert(
         itens.map(i => ({
           ...i,
           pedido_id: data.id,
-          empresa_id: empresaId,
+          company_id: companyId,
         })),
       );
     }
@@ -160,7 +160,7 @@ export function usePedidosCompra() {
     const pedido = pedidos.find(p => p.id === pedidoId);
 
     const { error } = await (api as any)
-      .from('pedidos_compra')
+      .from('purchase_order')
       .update({
         status: statusNovo,
         updated_at: new Date().toISOString(),
@@ -183,9 +183,9 @@ export function usePedidosCompra() {
 
   const buscarHistorico = async (pedidoId: string): Promise<HistoricoPedido[]> => {
     const { data } = await (api as any)
-      .from('pedidos_compra_historico')
+      .from('purchase_order_event')
       .select('*')
-      .eq('pedido_id', pedidoId)
+      .eq('purchase_order_id', pedidoId)
       .order('created_at', { ascending: true });
     return (data ?? []) as HistoricoPedido[];
   };
@@ -194,7 +194,7 @@ export function usePedidosCompra() {
 
   const excluirPedido = async (pedidoId: string) => {
     const { error } = await (api as any)
-      .from('pedidos_compra')
+      .from('purchase_order')
       .delete()
       .eq('id', pedidoId);
     if (!error) await buscarPedidos();
@@ -204,14 +204,14 @@ export function usePedidosCompra() {
   // ── Efeito inicial ──────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (empresaId) {
+    if (companyId) {
       setLoading(true);
       setPedidos([]);
       buscarPedidos();
     } else {
       setLoading(false);
     }
-  }, [empresaId, location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [companyId, location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     pedidos,

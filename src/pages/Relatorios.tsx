@@ -221,7 +221,7 @@ const Relatorios = () => {
   };
 
   const { user, loading: authLoading } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { canViewModule } = useUserRole();
   const navigate = useNavigate();
   const [contas, setContas] = useState<ContaPagar[]>([]);
@@ -242,15 +242,15 @@ const Relatorios = () => {
   }, [user, periodo.inicio, periodo.fim]);
 
   const fetchContas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .gte('data_vencimento', periodo.inicio)
-      .lte('data_vencimento', periodo.fim)
-      .order('data_vencimento', { ascending: true });
+      .eq('company_id', companyId)
+      .gte('due_on', periodo.inicio)
+      .lte('due_on', periodo.fim)
+      .order('due_on', { ascending: true });
 
     if (!error) {
       setContas(data || []);
@@ -259,14 +259,14 @@ const Relatorios = () => {
   };
 
   const fetchVendas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data, error } = await api
-      .from('vendas')
+      .from('sale')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .gte('data_venda', periodo.inicio)
-      .lte('data_venda', periodo.fim)
-      .order('data_venda', { ascending: true });
+      .eq('company_id', companyId)
+      .gte('sold_on', periodo.inicio)
+      .lte('sold_on', periodo.fim)
+      .order('sold_on', { ascending: true });
 
     if (!error) {
       setVendas(data || []);
@@ -520,7 +520,7 @@ const Relatorios = () => {
   // Formas de pagamento com percentual
   const totalVendasMetodo = vendasPorMetodo.reduce((s, m) => s + m.value, 0);
   const formasPagamento = vendasPorMetodo.map(m => ({
-    nome: m.name,
+    name: m.name,
     valor: m.value,
     percentual: totalVendasMetodo > 0 ? ((m.value / totalVendasMetodo) * 100).toFixed(1) : '0'
   }));
@@ -618,7 +618,7 @@ const Relatorios = () => {
 
             {/* Pills de período */}
             {(['Este mês', 'Mês anterior', 'Trimestre', 'Este ano', 'Personalizado'] as const).map(label => {
-              const ativo = periodo.label === label;
+              const active = periodo.label === label;
               return (
                 <button
                   key={label}
@@ -627,12 +627,12 @@ const Relatorios = () => {
                     fontSize: '0.8rem',
                     padding: '6px 16px',
                     borderRadius: '20px',
-                    border: ativo ? 'none' : '1px solid rgba(142,95,207,0.2)',
-                    background: ativo
+                    border: active ? 'none' : '1px solid rgba(142,95,207,0.2)',
+                    background: active
                       ? 'linear-gradient(135deg, #8E5FCF, #47118F)'
                       : 'rgba(255,255,255,0.7)',
-                    color: ativo ? '#fff' : '#6B7280',
-                    boxShadow: ativo ? '0 4px 12px rgba(142,95,207,0.3)' : 'none',
+                    color: active ? '#fff' : '#6B7280',
+                    boxShadow: active ? '0 4px 12px rgba(142,95,207,0.3)' : 'none',
                     cursor: 'pointer',
                     fontFamily: 'Gilroy',
                     fontWeight: 600,
@@ -883,21 +883,21 @@ const Relatorios = () => {
                         </p>
                       </div>
 
-                      {/* Seletor de tipo + período */}
+                      {/* Seletor de kind + período */}
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {/* Pills tipo gráfico */}
+                        {/* Pills kind gráfico */}
                         <div style={{ display: 'flex', gap: '4px' }}>
-                          {(['area', 'barras', 'linha'] as const).map(tipo => (
+                          {(['area', 'barras', 'linha'] as const).map(kind => (
                             <button
-                              key={tipo}
-                              onClick={() => setTipoGrafico(tipo)}
+                              key={kind}
+                              onClick={() => setTipoGrafico(kind)}
                               style={{
                                 fontSize: '0.75rem',
                                 padding: '6px 12px',
                                 borderRadius: '8px',
-                                border: tipoGrafico === tipo ? 'none' : '1px solid rgba(142,95,207,0.25)',
-                                background: tipoGrafico === tipo ? '#8E5FCF' : 'transparent',
-                                color: tipoGrafico === tipo ? 'white' : '#8E5FCF',
+                                border: tipoGrafico === kind ? 'none' : '1px solid rgba(142,95,207,0.25)',
+                                background: tipoGrafico === kind ? '#8E5FCF' : 'transparent',
+                                color: tipoGrafico === kind ? 'white' : '#8E5FCF',
                                 cursor: 'pointer',
                                 fontFamily: 'Gilroy',
                                 fontWeight: 600,
@@ -905,7 +905,7 @@ const Relatorios = () => {
                                 textTransform: 'capitalize'
                               }}
                             >
-                              {tipo === 'area' ? 'Área' : tipo === 'barras' ? 'Barras' : 'Linha'}
+                              {kind === 'area' ? 'Área' : kind === 'barras' ? 'Barras' : 'Linha'}
                             </button>
                           ))}
                         </div>
@@ -958,7 +958,7 @@ const Relatorios = () => {
                               <Tooltip content={<TooltipVendas />} />
                               <Area
                                 type="monotone"
-                                dataKey="valor"
+                                dataKey="amount"
                                 stroke="#8E5FCF"
                                 strokeWidth={2.5}
                                 fill="url(#gradVendas)"
@@ -972,7 +972,7 @@ const Relatorios = () => {
                               <XAxis dataKey="periodo" tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Gilroy' }} />
                               <YAxis tick={{ fontSize: 11, fill: '#9CA3AF', fontFamily: 'Gilroy' }} tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
                               <Tooltip content={<TooltipVendas />} />
-                              <Bar dataKey="valor" fill="#8E5FCF" radius={[6, 6, 0, 0]} name="Valor" />
+                              <Bar dataKey="amount" fill="#8E5FCF" radius={[6, 6, 0, 0]} name="Valor" />
                             </BarChart>
                           ) : (
                             <AreaChart data={vendasPorPeriodo}>
@@ -982,7 +982,7 @@ const Relatorios = () => {
                               <Tooltip content={<TooltipVendas />} />
                               <Area
                                 type="monotone"
-                                dataKey="valor"
+                                dataKey="amount"
                                 stroke="#8E5FCF"
                                 strokeWidth={2.5}
                                 fill="none"
@@ -1149,7 +1149,7 @@ const Relatorios = () => {
                                 innerRadius={60}
                                 outerRadius={85}
                                 paddingAngle={3}
-                                dataKey="valor"
+                                dataKey="amount"
                               >
                                 {formasPagamento.map((_, i) => (
                                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -1183,7 +1183,7 @@ const Relatorios = () => {
                           <div>
                             {formasPagamento.map((f, i) => (
                               <div
-                                key={f.nome}
+                                key={f.name}
                                 style={{
                                   display: 'flex',
                                   justifyContent: 'space-between',
@@ -1204,7 +1204,7 @@ const Relatorios = () => {
                                     fontFamily: 'Gilroy',
                                     color: '#4B5563'
                                   }}>
-                                    {f.nome}
+                                    {f.name}
                                   </span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

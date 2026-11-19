@@ -24,8 +24,8 @@ const DEFAULT_CONFIG: EtiquetaConfig = {
 };
 
 export function useEtiquetaConfig() {
-  const { empresaId } = useEmpresa();
-  const storageKey = STORAGE_KEY_PREFIX + (empresaId ?? 'default');
+  const { companyId } = useEmpresa();
+  const storageKey = STORAGE_KEY_PREFIX + (companyId ?? 'default');
 
   const [config, setConfig] = useState<EtiquetaConfig>(() => {
     try {

@@ -297,7 +297,7 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
             {empresaAtiva?.logo_url && (
               <img src={empresaAtiva.logo_url} alt="Logo" style={s.logo} />
             )}
-            <div style={s.nomeEmpresa}>{empresaAtiva?.nome ?? 'Empresa'}</div>
+            <div style={s.nomeEmpresa}>{empresaAtiva?.name ?? 'Empresa'}</div>
             <div style={s.subEmpresa}>
               {/* Campos adicionais podem ser inseridos aqui conforme disponibilidade */}
             </div>

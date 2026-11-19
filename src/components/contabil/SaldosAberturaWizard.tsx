@@ -51,7 +51,7 @@ export function SaldosAberturaWizard({
   const [concluido, setConcluido] = useState(false)
 
   const contasAnaliticas = useMemo(
-    () => contas.filter(c => c.ativo && !c.sintetica).sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true })),
+    () => contas.filter(c => c.active && !c.sintetica).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
     [contas],
   )
 
@@ -69,8 +69,8 @@ export function SaldosAberturaWizard({
   // Contrapartida padrão: Capital Social (3.1), senão a primeira analítica de PL.
   useEffect(() => {
     if (contrapartidaId || contasAnaliticas.length === 0) return
-    const padrao = contasAnaliticas.find(c => c.codigo === '3.1')
-      ?? contasAnaliticas.find(c => c.tipo === 'patrimonio_liquido')
+    const padrao = contasAnaliticas.find(c => c.code === '3.1')
+      ?? contasAnaliticas.find(c => c.kind === 'patrimonio_liquido')
     if (padrao) setContrapartidaId(padrao.id)
   }, [contasAnaliticas, contrapartidaId])
 
@@ -97,24 +97,24 @@ export function SaldosAberturaWizard({
     .filter(x => x.c > 0)
     .map(({ s, c }) => ({
       conta_id: s.conta_id,
-      tipo: (s.natureza === 'devedora' ? 'debito' : 'credito') as 'debito' | 'credito',
+      kind: (s.natureza === 'devedora' ? 'debito' : 'credito') as 'debito' | 'credito',
       valor: deCentavos(c),
     }))
 
-  const somaCent = (tipo: 'debito' | 'credito') =>
-    itensInformados.filter(i => i.tipo === tipo).reduce((s, i) => s + Math.round(i.valor * 100), 0)
+  const somaCent = (kind: 'debito' | 'credito') =>
+    itensInformados.filter(i => i.kind === kind).reduce((s, i) => s + Math.round(i.valor * 100), 0)
 
   const diferenca = somaCent('debito') - somaCent('credito')
   const itensFinais: ItemNovoLancamento[] = [...itensInformados]
   if (diferenca !== 0 && contrapartidaId) {
     itensFinais.push({
       conta_id: contrapartidaId,
-      tipo: diferenca > 0 ? 'credito' : 'debito',
+      kind: diferenca > 0 ? 'credito' : 'debito',
       valor: deCentavos(Math.abs(diferenca)),
     })
   }
-  const totalDebito = itensFinais.filter(i => i.tipo === 'debito').reduce((s, i) => s + Math.round(i.valor * 100), 0)
-  const totalCredito = itensFinais.filter(i => i.tipo === 'credito').reduce((s, i) => s + Math.round(i.valor * 100), 0)
+  const totalDebito = itensFinais.filter(i => i.kind === 'debito').reduce((s, i) => s + Math.round(i.valor * 100), 0)
+  const totalCredito = itensFinais.filter(i => i.kind === 'credito').reduce((s, i) => s + Math.round(i.valor * 100), 0)
   const contaPor = (id: string) => contas.find(c => c.id === id)
 
   const confirmar = async () => {
@@ -167,7 +167,7 @@ export function SaldosAberturaWizard({
               que tinham saldo (valor positivo); em branco = nada a lançar.
             </p>
             {GRUPOS.map(g => {
-              const doGrupo = saldos.filter(s => s.codigo.startsWith(g.prefixo))
+              const doGrupo = saldos.filter(s => s.code.startsWith(g.prefixo))
               if (doGrupo.length === 0) return null
               return (
                 <div key={g.prefixo}>
@@ -178,7 +178,7 @@ export function SaldosAberturaWizard({
                   {doGrupo.map(s => (
                     <div key={s.conta_id} className="grid grid-cols-[1fr_130px_150px] gap-2 items-center py-1.5 border-b border-border/60">
                       <span className="text-sm truncate">
-                        <span className="font-mono text-xs text-muted-foreground mr-2">{s.codigo}</span>{s.nome}
+                        <span className="font-mono text-xs text-muted-foreground mr-2">{s.code}</span>{s.name}
                       </span>
                       <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(s.saldo)}</span>
                       <Input
@@ -211,9 +211,9 @@ export function SaldosAberturaWizard({
                 return (
                   <div key={k} className="grid grid-cols-[1fr_70px_130px] gap-2 px-3 py-1.5 text-sm border-b border-border/60 last:border-0">
                     <span className="truncate">
-                      <span className="font-mono text-xs text-muted-foreground mr-2">{c?.codigo}</span>{c?.nome}
+                      <span className="font-mono text-xs text-muted-foreground mr-2">{c?.code}</span>{c?.name}
                     </span>
-                    <span>{i.tipo === 'debito' ? 'D' : 'C'}</span>
+                    <span>{i.kind === 'debito' ? 'D' : 'C'}</span>
                     <span className="text-right font-mono tabular-nums">{fmtBRL(i.valor)}</span>
                   </div>
                 )

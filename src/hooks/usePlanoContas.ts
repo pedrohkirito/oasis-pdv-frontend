@@ -4,15 +4,15 @@ import { useEmpresa } from './useEmpresa'
 
 export interface ContaPlano {
   id: string
-  empresa_id: string
-  codigo: string
-  nome: string
-  tipo: 'ativo' | 'passivo' | 'patrimonio_liquido' | 'receita' | 'custo' | 'despesa'
+  company_id: string
+  code: string
+  name: string
+  kind: 'active' | 'passivo' | 'patrimonio_liquido' | 'receita' | 'cost' | 'despesa'
   natureza: 'devedora' | 'credora'
   conta_pai_id: string | null
   sintetica: boolean
   padrao: boolean
-  ativo: boolean
+  active: boolean
   created_at: string
   updated_at: string
 }
@@ -25,49 +25,49 @@ export function sugerirProximoCodigo(contas: ContaPlano[], paiId: string): strin
   if (!pai) return ''
 
   const filhos = contas.filter(c => c.conta_pai_id === paiId)
-  const paiDepth = pai.codigo.split('.').length
+  const paiDepth = pai.code.split('.').length
   const padded = paiDepth >= 2
 
   const nums = filhos.map(f => {
-    const ultimoSegmento = f.codigo.split('.').pop() || '0'
+    const ultimoSegmento = f.code.split('.').pop() || '0'
     return parseInt(ultimoSegmento, 10) || 0
   })
 
   const proximo = nums.length > 0 ? Math.max(...nums) + 1 : 1
   const sufixo = padded ? String(proximo).padStart(2, '0') : String(proximo)
-  return `${pai.codigo}.${sufixo}`
+  return `${pai.code}.${sufixo}`
 }
 
 export function usePlanoContas() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [contas, setContas] = useState<ContaPlano[]>([])
   const [loading, setLoading] = useState(true)
 
   const buscarContas = useCallback(async () => {
-    if (!empresaId) return
+    if (!companyId) return
     setLoading(true)
     const { data } = await (api
       .from('plano_contas' as any)
       .select('*') as any)
-      .eq('empresa_id', empresaId)
-      .order('codigo', { ascending: true })
+      .eq('company_id', companyId)
+      .order('code', { ascending: true })
     setContas((data || []) as ContaPlano[])
     setLoading(false)
-  }, [empresaId])
+  }, [companyId])
 
   const criarConta = async (conta: {
-    codigo: string
-    nome: string
-    tipo: string
+    code: string
+    name: string
+    kind: string
     natureza: string
     conta_pai_id: string | null
     sintetica: boolean
   }) => {
-    if (!empresaId) return { data: null, error: 'Sem empresa selecionada' }
+    if (!companyId) return { data: null, error: 'Sem empresa selecionada' }
 
     const { data, error } = await (api
       .from('plano_contas' as any)
-      .insert({ ...conta, empresa_id: empresaId, padrao: false } as any) as any)
+      .insert({ ...conta, company_id: companyId, padrao: false } as any) as any)
       .select()
       .single()
 
@@ -75,7 +75,7 @@ export function usePlanoContas() {
     return { data, error: error ? error.message : null }
   }
 
-  const atualizarConta = async (id: string, updates: { nome?: string; ativo?: boolean }) => {
+  const atualizarConta = async (id: string, updates: { name?: string; active?: boolean }) => {
     const { error } = await (api
       .from('plano_contas' as any)
       .update({ ...updates, updated_at: new Date().toISOString() } as any) as any)
@@ -101,7 +101,7 @@ export function usePlanoContas() {
     const { count } = await (api
       .from('lancamentos_contabeis_itens' as any)
       .select('id', { count: 'exact', head: true }) as any)
-      .eq('conta_id', id)
+      .eq('account_id', id)
 
     if (count && count > 0) {
       return { error: 'Esta conta já possui lançamentos contábeis e não pode ser excluída.' }
@@ -113,8 +113,8 @@ export function usePlanoContas() {
   }
 
   useEffect(() => {
-    if (empresaId) buscarContas()
-  }, [empresaId, buscarContas])
+    if (companyId) buscarContas()
+  }, [companyId, buscarContas])
 
   return {
     contas,

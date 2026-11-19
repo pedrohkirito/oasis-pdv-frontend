@@ -63,15 +63,15 @@ export const DEFAULT_CONFIG: EtiquetaConfig = {
 
 interface ProdutoBD {
   id: string;
-  nome: string;
+  name: string;
   preco: number;
   preco_custo?: number | null;
   estoque_atual?: number | null;
-  codigo?: string | null;
+  code?: string | null;
   ean?: string | null;
   categoria?: string | null;
   unidade_comercial?: string | null;
-  ativo?: boolean | null;
+  active?: boolean | null;
 }
 
 // ─── Estilos base ─────────────────────────────────────────────────────────────
@@ -157,15 +157,15 @@ function Pill({ active, onClick, label }: { active: boolean; onClick: () => void
 
 const STORAGE_PREFIX = 'oasis_etiqueta_config_nova_';
 
-function salvarConfig(empresaId: string, config: ConfigEtiquetaNova) {
+function salvarConfig(companyId: string, config: ConfigEtiquetaNova) {
   try {
-    localStorage.setItem(STORAGE_PREFIX + empresaId, JSON.stringify(config));
+    localStorage.setItem(STORAGE_PREFIX + companyId, JSON.stringify(config));
   } catch { /* silent */ }
 }
 
-function carregarConfig(empresaId: string): ConfigEtiquetaNova {
+function carregarConfig(companyId: string): ConfigEtiquetaNova {
   try {
-    const s = localStorage.getItem(STORAGE_PREFIX + empresaId);
+    const s = localStorage.getItem(STORAGE_PREFIX + companyId);
     if (s) return { ...CONFIG_NOVA_PADRAO, ...JSON.parse(s) };
   } catch { /* silent */ }
   return { ...CONFIG_NOVA_PADRAO };
@@ -175,10 +175,10 @@ function carregarConfig(empresaId: string): ConfigEtiquetaNova {
 
 const PRODUTO_DEMO: ProdutoParaEtiqueta = {
   id: 'demo',
-  nome: 'Camiseta Básica Algodão',
+  name: 'Camiseta Básica Algodão',
   preco: 79.90,
   preco_custo: 32.00,
-  codigo: '000123',
+  code: '000123',
   ean: '7891234567890',
   categoria: 'Roupas',
   unidade_comercial: 'UN',
@@ -219,8 +219,8 @@ function TabProdutos({
 }) {
   const produtosFiltrados = useMemo(() => {
     return produtos.filter(p => {
-      const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        (p.codigo ?? '').toLowerCase().includes(busca.toLowerCase()) ||
+      const matchBusca = p.name.toLowerCase().includes(busca.toLowerCase()) ||
+        (p.code ?? '').toLowerCase().includes(busca.toLowerCase()) ||
         (p.ean ?? '').includes(busca);
       const matchCat = !filtroCategoria || p.categoria === filtroCategoria;
       const matchEstq = filtroEstoque === 'todos' ? true : true; // estoque_atual não disponível no schema
@@ -274,7 +274,7 @@ function TabProdutos({
             <input
               value={busca}
               onChange={e => setBusca(e.target.value)}
-              placeholder="Buscar por nome, código ou EAN…"
+              placeholder="Buscar por name, código ou EAN…"
               style={{ ...inputStyle, paddingLeft: 32 }}
             />
           </div>
@@ -357,11 +357,11 @@ function TabProdutos({
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.nome}
+                    {p.name}
                   </p>
                   <p style={{ margin: '2px 0 0', fontSize: 11, color: '#9CA3AF', fontFamily: 'Gilroy, sans-serif' }}>
-                    {p.codigo ? `SKU: ${p.codigo}` : ''}
-                    {p.codigo && p.categoria ? '  ·  ' : ''}
+                    {p.code ? `SKU: ${p.code}` : ''}
+                    {p.code && p.categoria ? '  ·  ' : ''}
                     {p.categoria ?? ''}
                   </p>
                 </div>
@@ -475,7 +475,7 @@ function TabModelo({
           <p style={{ ...labelSt, marginBottom: 16 }}>Modelos prontos</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {MODELOS_ETIQUETA.map(modelo => {
-              const ativo = config.modeloId === modelo.id;
+              const active = config.modeloId === modelo.id;
               return (
                 <div
                   key={modelo.id}
@@ -483,30 +483,30 @@ function TabModelo({
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
                     padding: 16, borderRadius: 16, cursor: 'pointer',
-                    border: ativo ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.12)',
-                    background: ativo ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.7)',
+                    border: active ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.12)',
+                    background: active ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.7)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
-                    boxShadow: ativo
+                    boxShadow: active
                       ? '0 0 0 3px rgba(142,95,207,0.15)'
                       : '0 2px 8px rgba(0,0,0,0.04)',
                     transition: 'all 0.2s ease', position: 'relative',
                     minHeight: 200, justifyContent: 'space-between',
                   }}
                   onMouseEnter={e => {
-                    if (!ativo) {
+                    if (!active) {
                       (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
                       (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(71,17,143,0.1)';
                     }
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = ativo
+                    (e.currentTarget as HTMLElement).style.boxShadow = active
                       ? '0 0 0 3px rgba(142,95,207,0.15)'
                       : '0 2px 8px rgba(0,0,0,0.04)';
                   }}
                 >
-                  {ativo && (
+                  {active && (
                     <span style={{
                       position: 'absolute', top: 8, right: 8,
                       background: '#8E5FCF', color: '#fff',
@@ -518,8 +518,8 @@ function TabModelo({
                   <ModeloThumbnail modeloId={modelo.id} layout={modelo.layout} />
                   {/* Texto do modelo */}
                   <div style={{ textAlign: 'center', width: '100%' }}>
-                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: ativo ? '#8E5FCF' : '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>
-                      {modelo.nome}
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: active ? '#8E5FCF' : '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>
+                      {modelo.name}
                     </p>
                     <p style={{ margin: '3px 0 0', fontSize: '0.75rem', color: '#9CA3AF', lineHeight: 1.3, fontFamily: 'Gilroy, sans-serif' }}>
                       {modelo.descricao}
@@ -583,8 +583,8 @@ function TabModelo({
         <div style={glass}>
           <p style={{ ...labelSt, marginBottom: 10 }}>Tipo de código de barras</p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-            {(['Code128', 'EAN-13', 'EAN-8', 'Code39', 'QR'] as const).map(tipo => (
-              <Pill key={tipo} active={config.tipoCodigo === tipo} onClick={() => set('tipoCodigo', tipo)} label={tipo} />
+            {(['Code128', 'EAN-13', 'EAN-8', 'Code39', 'QR'] as const).map(kind => (
+              <Pill key={kind} active={config.tipoCodigo === kind} onClick={() => set('tipoCodigo', kind)} label={kind} />
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
@@ -647,11 +647,11 @@ function TabModelo({
           {/* Info */}
           <div style={{ marginTop: 12, textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy, sans-serif' }}>
-              <strong style={{ color: '#8E5FCF' }}>{modeloAtivo.nome}</strong>
+              <strong style={{ color: '#8E5FCF' }}>{modeloAtivo.name}</strong>
               {' · '}{config.largura}×{config.altura}mm
             </p>
             <p style={{ margin: '3px 0 0', fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy, sans-serif' }}>
-              {config.campos.length} campo{config.campos.length !== 1 ? 's' : ''} ativo{config.campos.length !== 1 ? 's' : ''}
+              {config.campos.length} campo{config.campos.length !== 1 ? 's' : ''} active{config.campos.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -837,7 +837,7 @@ function TabConfiguracoes({
         <textarea
           value={config.obsPersonalizada}
           onChange={e => set('obsPersonalizada', e.target.value)}
-          placeholder="Texto livre que aparecerá na etiqueta quando o campo 'obs' estiver ativo…"
+          placeholder="Texto livre que aparecerá na etiqueta quando o campo 'obs' estiver active…"
           rows={3}
           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
         />
@@ -889,7 +889,7 @@ function TabImprimir({
           {[
             { label: 'Produtos', valor: produtosParaImprimir.length },
             { label: 'Etiquetas', valor: totalEtiquetas },
-            { label: 'Modelo', valor: modeloAtivo.nome },
+            { label: 'Modelo', valor: modeloAtivo.name },
             { label: 'Formato', valor: `${config.tipoPapel} · ${config.colunas} col · ${config.formatoSaida}` },
             { label: 'Tamanho', valor: `${config.largura}×${config.altura}mm` },
           ].map(item => (
@@ -996,7 +996,7 @@ function TabImprimir({
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'produtos',    icon: Package,  label: 'Selecionar Produtos' },
+  { id: 'products_summary',    icon: Package,  label: 'Selecionar Produtos' },
   { id: 'modelo',     icon: Palette,  label: 'Modelo de Etiqueta' },
   { id: 'config',     icon: Settings, label: 'Configurações' },
   { id: 'imprimir',   icon: Printer,  label: 'Imprimir' },
@@ -1007,26 +1007,26 @@ type TabId = typeof TABS[number]['id'];
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 
 export default function ConfigEtiquetas() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
-  const storageKey = STORAGE_PREFIX + (empresaId ?? 'default');
+  const storageKey = STORAGE_PREFIX + (companyId ?? 'default');
 
   // Config nova
   const [config, setConfigState] = useState<ConfigEtiquetaNova>(() =>
-    carregarConfig(empresaId ?? 'default'),
+    carregarConfig(companyId ?? 'default'),
   );
 
   useEffect(() => {
-    setConfigState(carregarConfig(empresaId ?? 'default'));
-  }, [empresaId]);
+    setConfigState(carregarConfig(companyId ?? 'default'));
+  }, [companyId]);
 
   function setConfig(c: ConfigEtiquetaNova) {
     setConfigState(c);
-    salvarConfig(empresaId ?? 'default', c);
+    salvarConfig(companyId ?? 'default', c);
   }
 
   // Tab ativa
-  const [tabAtiva, setTabAtiva] = useState<TabId>('produtos');
+  const [tabAtiva, setTabAtiva] = useState<TabId>('products_summary');
 
   // Produtos selecionados: id → quantidade
   const [selecionados, setSelecionados] = useState<Record<string, number>>({});
@@ -1045,20 +1045,20 @@ export default function ConfigEtiquetas() {
 
   // Carrega produtos
   useEffect(() => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoadingProdutos(true);
     api
-      .from('produtos')
-      .select('id, nome, preco, preco_custo:custo, estoque_atual:estoque, codigo, ean, categoria, unidade_comercial, ativo')
-      .eq('empresa_id', empresaId)
-      .eq('tipo', 'produto')
-      .eq('ativo', true)
-      .order('nome')
+      .from('product')
+      .select('id, name, price, preco_custo:cost, estoque_atual:stock, code, ean, category, commercial_unit, active')
+      .eq('company_id', companyId)
+      .eq('kind', 'produto')
+      .eq('active', true)
+      .order('name')
       .then(({ data }) => {
         setProdutos((data as unknown as ProdutoBD[]) ?? []);
         setLoadingProdutos(false);
       });
-  }, [empresaId]);
+  }, [companyId]);
 
   // Categorias únicas
   const categorias = useMemo(() => {
@@ -1066,7 +1066,7 @@ export default function ConfigEtiquetas() {
     return [...set].sort();
   }, [produtos]);
 
-  // Modelo ativo
+  // Modelo active
   const modeloAtivo: ModeloEtiqueta = useMemo(() => {
     return MODELOS_ETIQUETA.find(m => m.id === config.modeloId) ?? MODELOS_ETIQUETA[1];
   }, [config.modeloId]);
@@ -1078,10 +1078,10 @@ export default function ConfigEtiquetas() {
       if (!p) return null;
       return {
         id: p.id,
-        nome: p.nome,
+        name: p.name,
         preco: p.preco,
         preco_custo: p.preco_custo,
-        codigo: p.codigo,
+        code: p.code,
         ean: p.ean,
         categoria: p.categoria,
         unidade_comercial: p.unidade_comercial,
@@ -1098,7 +1098,7 @@ export default function ConfigEtiquetas() {
   const totalEtiquetas = Object.values(selecionados).reduce((s, q) => s + q, 0);
 
   function handleSalvar() {
-    salvarConfig(empresaId ?? 'default', config);
+    salvarConfig(companyId ?? 'default', config);
     toast({ title: 'Configurações salvas', description: 'Layout de etiqueta atualizado com sucesso.' });
   }
 
@@ -1212,7 +1212,7 @@ export default function ConfigEtiquetas() {
               >
                 <Icon style={{ width: 14, height: 14 }} />
                 {tab.label}
-                {tab.id === 'produtos' && Object.keys(selecionados).length > 0 && (
+                {tab.id === 'products_summary' && Object.keys(selecionados).length > 0 && (
                   <span style={{
                     background: ativa ? 'rgba(255,255,255,0.25)' : '#8E5FCF',
                     color: '#fff', fontSize: 10, fontWeight: 700,
@@ -1235,7 +1235,7 @@ export default function ConfigEtiquetas() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {tabAtiva === 'produtos' && (
+            {tabAtiva === 'products_summary' && (
               <TabProdutos
                 produtos={produtos}
                 loading={loadingProdutos}

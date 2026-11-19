@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 type Status =
-  | 'pago' | 'paga' | 'concluido' | 'concluída' | 'concluida' | 'ativo' | 'ativa' | 'active' | 'finalizado'
+  | 'pago' | 'paga' | 'concluido' | 'concluída' | 'concluida' | 'active' | 'ativa' | 'active' | 'finalizado'
   | 'pendente' | 'em_aberto' | 'aberto'
   | 'vencido' | 'vencida' | 'cancelado' | 'cancelada' | 'inativo' | 'inativa' | 'inactive'
   | 'aguardando' | 'processando' | 'em_andamento'
@@ -14,7 +14,7 @@ const statusMap: Record<string, { label: string; className: string }> = {
   concluido:  { label: 'Concluído',  className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   concluída:  { label: 'Concluída',  className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   concluida:  { label: 'Concluída',  className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  ativo:      { label: 'Ativo',      className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  active:      { label: 'Ativo',      className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   ativa:      { label: 'Ativa',      className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   active:     { label: 'Ativo',      className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
   finalizado: { label: 'Finalizado', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },

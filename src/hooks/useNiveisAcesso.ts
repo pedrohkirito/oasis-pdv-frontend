@@ -43,7 +43,7 @@ export const MODULOS_SISTEMA = [
 export type ModuloId = typeof MODULOS_SISTEMA[number]['id'];
 
 export interface PermissaoModulo {
-  modulo: string;
+  module: string;
   can_view: boolean;
   can_create: boolean;
   can_edit: boolean;
@@ -52,8 +52,8 @@ export interface PermissaoModulo {
 
 export interface NivelAcesso {
   id: string;
-  empresa_id: string;
-  nome: string;
+  company_id: string;
+  name: string;
   descricao: string | null;
   is_sistema: boolean;
   created_at: string;
@@ -62,18 +62,18 @@ export interface NivelAcesso {
 }
 
 export interface NivelAcessoInput {
-  nome: string;
+  name: string;
   descricao?: string;
   permissoes: PermissaoModulo[];
 }
 
 export function useNiveisAcesso() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const [niveis, setNiveis] = useState<NivelAcesso[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchNiveis = useCallback(async () => {
-    if (!empresaId) {
+    if (!companyId) {
       setNiveis([]);
       setLoading(false);
       return;
@@ -81,11 +81,11 @@ export function useNiveisAcesso() {
 
     try {
       const { data: niveisData, error: niveisError } = await api
-        .from('niveis_acesso')
+        .from('access_level')
         .select('*')
-        .eq('empresa_id', empresaId)
+        .eq('company_id', companyId)
         .order('is_sistema', { ascending: false })
-        .order('nome');
+        .order('name');
 
       if (niveisError) throw niveisError;
 
@@ -97,9 +97,9 @@ export function useNiveisAcesso() {
 
       const nivelIds = niveisData.map(n => n.id);
       const { data: permData, error: permError } = await api
-        .from('nivel_acesso_permissoes')
+        .from('access_level_permission')
         .select('*')
-        .in('nivel_acesso_id', nivelIds);
+        .in('access_level_id', nivelIds);
 
       if (permError) throw permError;
 
@@ -108,7 +108,7 @@ export function useNiveisAcesso() {
         permissoes: (permData || [])
           .filter(p => p.nivel_acesso_id === nivel.id)
           .map(p => ({
-            modulo: p.modulo,
+            module: p.module,
             can_view: p.can_view,
             can_create: p.can_create,
             can_edit: p.can_edit,
@@ -123,22 +123,22 @@ export function useNiveisAcesso() {
     } finally {
       setLoading(false);
     }
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchNiveis();
   }, [fetchNiveis]);
 
   const createNivel = async (input: NivelAcessoInput): Promise<string | null> => {
-    if (!empresaId) return null;
+    if (!companyId) return null;
 
     try {
       const { data: nivel, error: nivelError } = await api
-        .from('niveis_acesso')
+        .from('access_level')
         .insert({
-          empresa_id: empresaId,
-          nome: input.nome,
-          descricao: input.descricao || null,
+          company_id: companyId,
+          name: input.name,
+          description: input.descricao || null,
         })
         .select()
         .single();
@@ -150,7 +150,7 @@ export function useNiveisAcesso() {
         .filter(p => p.can_view || p.can_create || p.can_edit || p.can_delete)
         .map(p => ({
           nivel_acesso_id: nivel.id,
-          modulo: p.modulo,
+          module: p.module,
           can_view: p.can_view,
           can_create: p.can_create,
           can_edit: p.can_edit,
@@ -159,17 +159,17 @@ export function useNiveisAcesso() {
 
       if (permissoes.length > 0) {
         const { error: permError } = await api
-          .from('nivel_acesso_permissoes')
+          .from('access_level_permission')
           .insert(permissoes);
         if (permError) throw permError;
       }
 
-      toast.success(`Nível "${input.nome}" criado com sucesso!`);
+      toast.success(`Nível "${input.name}" criado com sucesso!`);
       fetchNiveis();
       return nivel.id;
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error('Já existe um nível com este nome nesta empresa');
+        toast.error('Já existe um nível com este name nesta empresa');
       } else {
         toast.error(error.message || 'Erro ao criar nível de acesso');
       }
@@ -180,23 +180,23 @@ export function useNiveisAcesso() {
   const updateNivel = async (id: string, input: NivelAcessoInput): Promise<boolean> => {
     try {
       const { error: nivelError } = await api
-        .from('niveis_acesso')
-        .update({ nome: input.nome, descricao: input.descricao || null })
+        .from('access_level')
+        .update({ name: input.name, description: input.descricao || null })
         .eq('id', id);
 
       if (nivelError) throw nivelError;
 
       // Delete existing permissions and re-insert
       await api
-        .from('nivel_acesso_permissoes')
+        .from('access_level_permission')
         .delete()
-        .eq('nivel_acesso_id', id);
+        .eq('access_level_id', id);
 
       const permissoes = input.permissoes
         .filter(p => p.can_view || p.can_create || p.can_edit || p.can_delete)
         .map(p => ({
           nivel_acesso_id: id,
-          modulo: p.modulo,
+          module: p.module,
           can_view: p.can_view,
           can_create: p.can_create,
           can_edit: p.can_edit,
@@ -205,17 +205,17 @@ export function useNiveisAcesso() {
 
       if (permissoes.length > 0) {
         const { error: permError } = await api
-          .from('nivel_acesso_permissoes')
+          .from('access_level_permission')
           .insert(permissoes);
         if (permError) throw permError;
       }
 
-      toast.success(`Nível "${input.nome}" atualizado com sucesso!`);
+      toast.success(`Nível "${input.name}" atualizado com sucesso!`);
       fetchNiveis();
       return true;
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error('Já existe um nível com este nome nesta empresa');
+        toast.error('Já existe um nível com este name nesta empresa');
       } else {
         toast.error(error.message || 'Erro ao atualizar nível de acesso');
       }
@@ -226,7 +226,7 @@ export function useNiveisAcesso() {
   const deleteNivel = async (id: string): Promise<boolean> => {
     try {
       const { error } = await api
-        .from('niveis_acesso')
+        .from('access_level')
         .delete()
         .eq('id', id);
 

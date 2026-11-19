@@ -6,7 +6,7 @@ import { startOfDay, endOfDay, startOfWeek,
          format } from 'date-fns'
 
 export function useMetas() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [metas, setMetas] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -14,8 +14,8 @@ export function useMetas() {
     const { data } = await (api
       .from('metas' as any)
       .select('*') as any)
-      .eq('empresa_id', empresaId)
-      .eq('ativo', true)
+      .eq('company_id', companyId)
+      .eq('active', true)
       .order('created_at', { ascending: false })
     setMetas(data || [])
     setLoading(false)
@@ -24,7 +24,7 @@ export function useMetas() {
   const criarMeta = async (meta: any) => {
     const { data, error } = await (api
       .from('metas' as any)
-      .insert({ ...meta, empresa_id: empresaId }) as any)
+      .insert({ ...meta, company_id: companyId }) as any)
       .select().single()
     if (!error) buscarMetas()
     return { data, error }
@@ -41,7 +41,7 @@ export function useMetas() {
 
   const excluirMeta = async (id: string) => {
     await (api.from('metas' as any)
-      .update({ ativo: false }) as any).eq('id', id)
+      .update({ active: false }) as any).eq('id', id)
     buscarMetas()
   }
 
@@ -49,14 +49,14 @@ export function useMetas() {
   const buscarProgressoMeta = async (meta: any) => {
     let realizado = 0
 
-    if (meta.tipo === 'categoria' && meta.categoria) {
+    if (meta.kind === 'category' && meta.categoria) {
       // Soma subtotais dos itens de venda cujo produto pertença à categoria da meta,
       // dentro do período. Usa join implícito via PostgREST.
       const { data: itens } = await (api
-        .from('itens_venda')
+        .from('sale_item')
         .select('subtotal, produtos!inner(categoria, empresa_id), vendas!inner(data_venda, empresa_id)') as any)
         .eq('produtos.categoria', meta.categoria)
-        .eq('vendas.empresa_id', empresaId)
+        .eq('vendas.empresa_id', companyId)
         .gte('vendas.data_venda', meta.data_inicio)
         .lte('vendas.data_venda', meta.data_fim)
 
@@ -65,14 +65,14 @@ export function useMetas() {
       )
     } else {
       let query = (api
-        .from('vendas')
+        .from('sale')
         .select('valor, valor_final, vendedor_id, data_venda') as any)
-        .eq('empresa_id', empresaId)
-        .gte('data_venda', meta.data_inicio)
-        .lte('data_venda', meta.data_fim)
+        .eq('company_id', companyId)
+        .gte('sold_on', meta.data_inicio)
+        .lte('sold_on', meta.data_fim)
 
-      if (meta.tipo === 'vendedora' && meta.usuario_id) {
-        query = query.eq('vendedor_id', meta.usuario_id)
+      if (meta.kind === 'vendedora' && meta.usuario_id) {
+        query = query.eq('seller_id', meta.usuario_id)
       }
 
       const { data: vendas } = await query
@@ -120,11 +120,11 @@ export function useMetas() {
   }
 
   useEffect(() => {
-    if (empresaId) {
+    if (companyId) {
       setLoading(true)
       buscarMetas()
     }
-  }, [empresaId])
+  }, [companyId])
 
   return {
     metas, loading,

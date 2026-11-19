@@ -179,9 +179,9 @@ export default function Lancamentos() {
                       {l.itens.map((i, k) => (
                         <div key={k} className="grid grid-cols-[1fr_40px_130px] gap-3 py-0.5 text-sm">
                           <span className="truncate">
-                            <span className="font-mono text-xs text-muted-foreground mr-2">{i.codigo}</span>{i.nome}
+                            <span className="font-mono text-xs text-muted-foreground mr-2">{i.code}</span>{i.name}
                           </span>
-                          <span>{i.tipo === 'debito' ? 'D' : 'C'}</span>
+                          <span>{i.kind === 'debito' ? 'D' : 'C'}</span>
                           <span className="text-right font-mono tabular-nums">{fmtBRL(i.valor)}</span>
                         </div>
                       ))}

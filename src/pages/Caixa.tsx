@@ -36,7 +36,7 @@ interface TotaisVendas {
 
 interface MovimentacaoDia {
   id: string;
-  tipo: 'sangria' | 'suprimento';
+  kind: 'sangria' | 'suprimento';
   valor: number;
   motivo: string | null;
   created_at: string;
@@ -128,7 +128,7 @@ function PageOrbs() {
 
 export default function Caixa() {
   const { sessaoAtiva, loading, abrirCaixa, fecharCaixa, registrarMovimentacao } = useCaixa();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
 
   const [valorAbertura, setValorAbertura] = useState('');
@@ -155,27 +155,27 @@ export default function Caixa() {
   // ── Busca dados do dia ──────────────────────────────────────────────────────
 
   const buscarDados = useCallback(async () => {
-    if (!sessaoAtiva || !empresaId) return;
+    if (!sessaoAtiva || !companyId) return;
     setLoadingDados(true);
 
     const [{ data: vendasData }, { data: movsData }] = await Promise.all([
       api
-        .from('vendas')
+        .from('sale')
         .select('id, created_at, valor, metodo_pagamento, cliente_nome')
-        .eq('empresa_id', empresaId)
+        .eq('company_id', companyId)
         .gte('created_at', sessaoAtiva.aberto_em)
         .order('created_at', { ascending: false }),
       api
-        .from('movimentacoes_caixa')
-        .select('id, tipo, valor, motivo, created_at')
-        .eq('sessao_id', sessaoAtiva.id)
+        .from('cash_movement')
+        .select('id, kind, valor, motivo, created_at')
+        .eq('cash_session_id', sessaoAtiva.id)
         .order('created_at', { ascending: false }),
     ]);
 
     setVendas((vendasData ?? []) as VendaDia[]);
     setMovimentacoes((movsData ?? []) as MovimentacaoDia[]);
     setLoadingDados(false);
-  }, [sessaoAtiva, empresaId]);
+  }, [sessaoAtiva, companyId]);
 
   useEffect(() => {
     if (sessaoAtiva) buscarDados();
@@ -200,11 +200,11 @@ export default function Caixa() {
   );
 
   const totalSangrias = movimentacoes
-    .filter(m => m.tipo === 'sangria')
+    .filter(m => m.kind === 'sangria')
     .reduce((acc, m) => acc + Number(m.valor), 0);
 
   const totalSuprimentos = movimentacoes
-    .filter(m => m.tipo === 'suprimento')
+    .filter(m => m.kind === 'suprimento')
     .reduce((acc, m) => acc + Number(m.valor), 0);
 
   const saldoEstimado =
@@ -391,7 +391,7 @@ export default function Caixa() {
     {
       label: 'Sangrias',
       value: fmtBRL(totalSangrias),
-      sub: `${movimentacoes.filter(m => m.tipo === 'sangria').length} retirada${movimentacoes.filter(m => m.tipo === 'sangria').length !== 1 ? 's' : ''}`,
+      sub: `${movimentacoes.filter(m => m.kind === 'sangria').length} retirada${movimentacoes.filter(m => m.kind === 'sangria').length !== 1 ? 's' : ''}`,
       accentGradient: 'linear-gradient(90deg, #EF4444, #FCA5A5)',
       valueColor: '#EF4444',
       icon: <ArrowDownCircle style={{ width: 16, height: 16, color: '#fff' }} />,
@@ -400,7 +400,7 @@ export default function Caixa() {
     {
       label: 'Suprimentos',
       value: fmtBRL(totalSuprimentos),
-      sub: `${movimentacoes.filter(m => m.tipo === 'suprimento').length} suprimento${movimentacoes.filter(m => m.tipo === 'suprimento').length !== 1 ? 's' : ''}`,
+      sub: `${movimentacoes.filter(m => m.kind === 'suprimento').length} suprimento${movimentacoes.filter(m => m.kind === 'suprimento').length !== 1 ? 's' : ''}`,
       accentGradient: 'linear-gradient(90deg, #10B981, #6EE7B7)',
       valueColor: '#10B981',
       icon: <ArrowUpCircle style={{ width: 16, height: 16, color: '#fff' }} />,
@@ -420,7 +420,7 @@ export default function Caixa() {
   const allMovimentos = [
     ...vendas.map(v => ({
       id: v.id,
-      tipo: 'venda' as const,
+      kind: 'venda' as const,
       descricao: v.cliente_nome ? `${v.cliente_nome}` : 'Venda',
       sub: v.metodo_pagamento ?? '—',
       valor: Number(v.valor),
@@ -429,12 +429,12 @@ export default function Caixa() {
     })),
     ...movimentacoes.map(m => ({
       id: m.id,
-      tipo: m.tipo,
-      descricao: m.tipo === 'sangria' ? 'Sangria' : 'Suprimento',
+      kind: m.kind,
+      descricao: m.kind === 'sangria' ? 'Sangria' : 'Suprimento',
       sub: m.motivo || '—',
       valor: Number(m.valor),
       hora: fmtHora(m.created_at),
-      entrada: m.tipo === 'suprimento',
+      entrada: m.kind === 'suprimento',
     })),
   ].sort((a, b) => b.hora.localeCompare(a.hora));
 
@@ -748,7 +748,7 @@ export default function Caixa() {
                     onMouseLeave={() => setHoveredRow(null)}
                   >
                     <div style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: m.entrada ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', flexShrink: 0 }}>
-                      {iconMap[m.tipo]}
+                      {iconMap[m.kind]}
                     </div>
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, fontFamily: 'Gilroy', color: '#1F2937' }}>
                       {m.descricao}

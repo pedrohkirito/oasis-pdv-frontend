@@ -12,7 +12,7 @@ interface KanbanBoardProps {
   onCardClick: (operacao: Operacao) => void;
   filters: {
     search: string;
-    tipo: string;
+    kind: string;
     fornecedor: string;
     pagamento: string;
   };
@@ -33,7 +33,7 @@ export function KanbanBoard({ operacoes, onStatusChange, onCardClick, filters }:
   const filtered = useMemo(() => {
     return operacoes.filter(op => {
       if (filters.search && !op.cliente_nome.toLowerCase().includes(filters.search.toLowerCase()) && !op.produtos.toLowerCase().includes(filters.search.toLowerCase())) return false;
-      if (filters.tipo && filters.tipo !== 'todos' && op.tipo !== filters.tipo) return false;
+      if (filters.kind && filters.kind !== 'todos' && op.kind !== filters.kind) return false;
       if (filters.fornecedor && op.fornecedor_nome !== filters.fornecedor) return false;
       if (filters.pagamento === 'pendente' && op.status_pagamento !== 'pendente') return false;
       if (filters.pagamento === 'pago' && op.status_pagamento !== 'pago') return false;

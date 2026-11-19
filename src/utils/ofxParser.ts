@@ -1,6 +1,6 @@
 export function parseOFX(conteudo: string) {
   const transacoes: {
-    tipo: 'debito' | 'credito'
+    kind: 'debito' | 'credito'
     valor: number
     descricao: string
     data_movimentacao: string
@@ -25,7 +25,7 @@ export function parseOFX(conteudo: string) {
       return m ? m[1].trim() : ''
     }
 
-    const tipo = getValue('TRNTYPE')
+    const kind = getValue('TRNTYPE')
     const valor = parseFloat(getValue('TRNAMT') || '0')
     const dataStr = getValue('DTPOSTED')
 
@@ -37,7 +37,7 @@ export function parseOFX(conteudo: string) {
     ) : new Date()
 
     transacoes.push({
-      tipo: valor < 0 || tipo === 'DEBIT' ? 'debito' : 'credito',
+      kind: valor < 0 || kind === 'DEBIT' ? 'debito' : 'credito',
       valor: Math.abs(valor),
       descricao: getValue('MEMO') || getValue('NAME'),
       data_movimentacao: data.toISOString().split('T')[0],
@@ -69,7 +69,7 @@ export function parseOFX(conteudo: string) {
           const val = parseFloat(trnAtual.trnamt)
           const ds = trnAtual.dtposted || ''
           transacoes.push({
-            tipo: val < 0 ? 'debito' : 'credito',
+            kind: val < 0 ? 'debito' : 'credito',
             valor: Math.abs(val),
             descricao: trnAtual.memo || '',
             data_movimentacao: ds

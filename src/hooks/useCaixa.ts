@@ -7,7 +7,7 @@ import { useAuth } from './useAuth';
 
 export interface SessaoCaixa {
   id: string;
-  empresa_id: string;
+  company_id: string;
   operador_id: string;
   operador_nome: string | null;
   fechado_por_id: string | null;
@@ -32,8 +32,8 @@ export interface SessaoCaixa {
 export interface MovimentacaoCaixa {
   id: string;
   sessao_id: string;
-  empresa_id: string;
-  tipo: 'sangria' | 'suprimento';
+  company_id: string;
+  kind: 'sangria' | 'suprimento';
   valor: number;
   motivo: string | null;
   operador_id: string;
@@ -57,7 +57,7 @@ export interface ResultadoFechamento {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useCaixa() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { user } = useAuth();
 
   const [sessaoAtiva, setSessaoAtiva] = useState<SessaoCaixa | null>(null);
@@ -66,18 +66,18 @@ export function useCaixa() {
   // ── Busca sessão aberta ──────────────────────────────────────────────────
 
   const buscarSessaoAtiva = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     // Busca a sessão aberta mais recente da empresa.
     // Usamos limit(1) em vez de .maybeSingle() para evitar erro quando,
     // por algum motivo, houver mais de uma sessão "aberto" no banco.
     // O caixa é compartilhado entre todos os usuários da empresa.
     const { data, error } = await api
-      .from('sessoes_caixa')
+      .from('cash_session')
       .select('*')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'aberto')
-      .order('aberto_em', { ascending: false })
+      .order('opened_at', { ascending: false })
       .limit(1);
 
     if (error) {
@@ -87,22 +87,22 @@ export function useCaixa() {
       setSessaoAtiva(((data?.[0] as SessaoCaixa) ?? null));
     }
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   // ── Realtime: mantém a sessão sincronizada entre usuários ────────────────
 
   useEffect(() => {
-    if (!empresaId) return;
+    if (!companyId) return;
 
     const channel = api
-      .channel(`sessoes_caixa_${empresaId}`)
+      .channel(`sessoes_caixa_${companyId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'sessoes_caixa',
-          filter: `empresa_id=eq.${empresaId}`,
+          filter: `empresa_id=eq.${companyId}`,
         },
         () => {
           buscarSessaoAtiva();
@@ -113,19 +113,19 @@ export function useCaixa() {
     return () => {
       api.removeChannel(channel);
     };
-  }, [empresaId, buscarSessaoAtiva]);
+  }, [companyId, buscarSessaoAtiva]);
 
   // ── Abrir caixa ─────────────────────────────────────────────────────────
 
   const abrirCaixa = async (valorAbertura: number) => {
-    if (!empresaId || !user) return { data: null, error: new Error('Não autenticado') };
+    if (!companyId || !user) return { data: null, error: new Error('Não autenticado') };
 
     const { data, error } = await api
-      .from('sessoes_caixa')
+      .from('cash_session')
       .insert({
-        empresa_id: empresaId,
+        company_id: companyId,
         operador_id: user.id,
-        operador_nome: user.user_metadata?.nome ?? user.email ?? null,
+        operador_nome: user.user_metadata?.name ?? user.email ?? null,
         valor_abertura: valorAbertura,
         status: 'aberto',
       })
@@ -139,22 +139,22 @@ export function useCaixa() {
   // ── Registrar sangria ou suprimento ─────────────────────────────────────
 
   const registrarMovimentacao = async (
-    tipo: 'sangria' | 'suprimento',
+    kind: 'sangria' | 'suprimento',
     valor: number,
     motivo: string,
   ) => {
     if (!sessaoAtiva || !user) return { error: new Error('Sem sessão ativa') };
 
     const { error } = await api
-      .from('movimentacoes_caixa')
+      .from('cash_movement')
       .insert({
         sessao_id: sessaoAtiva.id,
-        empresa_id: empresaId,
-        tipo,
+        company_id: companyId,
+        kind,
         valor,
         motivo,
         operador_id: user.id,
-        operador_nome: user.user_metadata?.nome ?? user.email ?? null,
+        operador_nome: user.user_metadata?.name ?? user.email ?? null,
       });
 
     if (!error) await buscarSessaoAtiva();
@@ -167,15 +167,15 @@ export function useCaixa() {
     valorFisicoContado: number,
     observacao: string,
   ): Promise<ResultadoFechamento | { error: Error }> => {
-    if (!sessaoAtiva || !empresaId) return { error: new Error('Sem sessão ativa') };
+    if (!sessaoAtiva || !companyId) return { error: new Error('Sem sessão ativa') };
 
     // Busca vendas registradas durante a sessão (entre abertura e agora).
     // Usa valor_final (com desconto) com fallback para valor.
     const agoraIso = new Date().toISOString();
     const { data: vendas } = await api
-      .from('vendas')
+      .from('sale')
       .select('valor, valor_final, metodo_pagamento')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .gte('created_at', sessaoAtiva.aberto_em)
       .lte('created_at', agoraIso);
 
@@ -198,16 +198,16 @@ export function useCaixa() {
 
     // Busca sangrias e suprimentos da sessão
     const { data: movs } = await api
-      .from('movimentacoes_caixa')
-      .select('tipo, valor')
-      .eq('sessao_id', sessaoAtiva.id);
+      .from('cash_movement')
+      .select('kind, valor')
+      .eq('cash_session_id', sessaoAtiva.id);
 
     const totalSangrias = (movs ?? [])
-      .filter(m => m.tipo === 'sangria')
+      .filter(m => m.kind === 'sangria')
       .reduce((acc, m) => acc + Number(m.valor), 0);
 
     const totalSuprimentos = (movs ?? [])
-      .filter(m => m.tipo === 'suprimento')
+      .filter(m => m.kind === 'suprimento')
       .reduce((acc, m) => acc + Number(m.valor), 0);
 
     // Valor esperado no caixa físico:
@@ -220,10 +220,10 @@ export function useCaixa() {
 
     const quebra = valorFisicoContado - esperado;
 
-    const nomeUsuario = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Operador';
+    const nomeUsuario = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Operador';
 
     const { error } = await api
-      .from('sessoes_caixa')
+      .from('cash_session')
       .update({
         status: 'fechado',
         valor_fechamento_fisico: valorFisicoContado,
@@ -251,8 +251,8 @@ export function useCaixa() {
   // ── Efeito inicial ───────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (empresaId) buscarSessaoAtiva();
-  }, [empresaId, buscarSessaoAtiva]);
+    if (companyId) buscarSessaoAtiva();
+  }, [companyId, buscarSessaoAtiva]);
 
   return {
     sessaoAtiva,

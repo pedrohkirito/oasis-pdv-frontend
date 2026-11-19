@@ -14,10 +14,10 @@ import { api, type Session, type User } from '@/lib/api';
 // Tipos
 // ---------------------------------------------------------------------------
 
-export type AppRole = 'admin' | 'gerente' | 'vendedor' | 'visualizador';
+export type AppRole = 'admin' | 'manager' | 'seller' | 'viewer';
 
 export interface EmpresaContext {
-  empresaId: string;
+  companyId: string;
   role: AppRole;
   userId: string;
 }
@@ -63,9 +63,9 @@ export async function getEmpresaId(): Promise<string | null> {
  * @throws Error se o usuário não estiver autenticado ou sem empresa associada
  */
 export async function requireEmpresaId(): Promise<string> {
-  const empresaId = await getEmpresaId();
+  const companyId = await getEmpresaId();
 
-  if (!empresaId) {
+  if (!companyId) {
     throw new Error(
       'empresa_id não encontrado no JWT. ' +
         'Verifique se o Custom Access Token Hook está configurado e se o usuário ' +
@@ -73,11 +73,11 @@ export async function requireEmpresaId(): Promise<string> {
     );
   }
 
-  return empresaId;
+  return companyId;
 }
 
 /**
- * Retorna o contexto completo da empresa: empresaId + role + userId.
+ * Retorna o contexto completo da empresa: companyId + role + userId.
  * @throws Error se não autenticado ou sem empresa
  */
 export async function getEmpresaContext(): Promise<EmpresaContext> {
@@ -87,18 +87,18 @@ export async function getEmpresaContext(): Promise<EmpresaContext> {
     throw new Error('Usuário não autenticado.');
   }
 
-  const empresaId = getEmpresaIdFromSession(data.session);
+  const companyId = getEmpresaIdFromSession(data.session);
   const role = getEmpresaRoleFromSession(data.session);
 
-  if (!empresaId) {
+  if (!companyId) {
     throw new Error(
       'empresa_id não encontrado no JWT. Configure o Custom Access Token Hook.'
     );
   }
 
   return {
-    empresaId,
-    role: role ?? 'visualizador',
+    companyId,
+    role: role ?? 'viewer',
     userId: data.session.user.id,
   };
 }
@@ -121,12 +121,12 @@ export function isAdmin(session: Session | null): boolean {
 
 export function isAdminOrGerente(session: Session | null): boolean {
   const role = getEmpresaRoleFromSession(session);
-  return role === 'admin' || role === 'gerente';
+  return role === 'admin' || role === 'manager';
 }
 
 export function canWrite(session: Session | null): boolean {
   const role = getEmpresaRoleFromSession(session);
-  return role === 'admin' || role === 'gerente' || role === 'vendedor';
+  return role === 'admin' || role === 'manager' || role === 'seller';
 }
 
 // ---------------------------------------------------------------------------
@@ -135,18 +135,18 @@ export function canWrite(session: Session | null): boolean {
 
 /**
  * Retorna os campos obrigatórios de tenant para inserts.
- * Uso: await api.from('vendas').insert({ ...dados, ...await tenantFields() })
+ * Uso: await api.from('sale').insert({ ...dados, ...await tenantFields() })
  */
-export async function tenantFields(): Promise<{ empresa_id: string; user_id: string }> {
+export async function tenantFields(): Promise<{ company_id: string; user_id: string }> {
   const { data, error } = await api.auth.getSession();
 
   if (error || !data.session) throw new Error('Usuário não autenticado.');
 
-  const empresaId = getEmpresaIdFromSession(data.session);
-  if (!empresaId) throw new Error('empresa_id não disponível no JWT.');
+  const companyId = getEmpresaIdFromSession(data.session);
+  if (!companyId) throw new Error('empresa_id não disponível no JWT.');
 
   return {
-    empresa_id: empresaId,
+    company_id: companyId,
     user_id: data.session.user.id,
   };
 }

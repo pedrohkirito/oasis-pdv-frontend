@@ -37,20 +37,20 @@ import { XmlImportDialog, ProdutoXml, FornecedorXml, DestinatarioXml } from '@/c
 
 interface Fornecedor {
   id: string;
-  nome: string;
+  name: string;
 }
 interface Produto {
   id: string;
   user_id: string;
-  nome: string;
-  codigo: string | null;
+  name: string;
+  code: string | null;
   descricao: string | null;
   preco: number;
   custo: number | null;
   estoque: number | null;
   estoque_minimo: number | null;
   categoria: string | null;
-  ativo: boolean | null;
+  active: boolean | null;
   fornecedor_id: string | null;
   fornecedores: Fornecedor | null;
   ncm: string | null;
@@ -115,7 +115,7 @@ const getEstoqueStatus = (estoque: number | null, estoqueMinimo: number | null) 
 const Produtos = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -144,21 +144,21 @@ const Produtos = () => {
 
   const getCategoriaColor = (categoria: string | null): string => {
     if (!categoria) return FALLBACK_COLORS['Outros'];
-    const cat = categoriasDB.find(c => c.nome === categoria);
+    const cat = categoriasDB.find(c => c.name === categoria);
     if (cat) return cat.cor;
     return FALLBACK_COLORS[categoria] || FALLBACK_COLORS['Outros'];
   };
 
   const [novoProduto, setNovoProduto] = useState({
-    nome: '',
-    codigo: '',
+    name: '',
+    code: '',
     fornecedor_id: '',
     preco: 0,
     custo: 0,
     estoque: 0,
     estoque_minimo: 0,
     categoria: '',
-    ativo: true,
+    active: true,
     ncm: '',
     cfop: '5102',
     origem: '0',
@@ -166,15 +166,15 @@ const Produtos = () => {
     ean: ''
   });
   const [editProduto, setEditProduto] = useState({
-    nome: '',
-    codigo: '',
+    name: '',
+    code: '',
     fornecedor_id: '',
     preco: 0,
     custo: 0,
     estoque: 0,
     estoque_minimo: 0,
     categoria: '',
-    ativo: true,
+    active: true,
     ncm: '',
     cfop: '5102',
     origem: '0',
@@ -193,32 +193,32 @@ const Produtos = () => {
   }, [user, authLoading, navigate]);
 
   const fetchCategoriasDB = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('categorias_produto')
+      .from('product_category')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .eq('tipo', 'produto')
-      .order('nome');
+      .eq('company_id', companyId)
+      .eq('kind', 'produto')
+      .order('name');
     setCategoriasDB(data as CategoriaDB[] || []);
   };
 
   const fetchUltimasVendas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     // Get the most recent sale date for each product via itens_venda
     const { data } = await api
-      .from('itens_venda')
+      .from('sale_item')
       .select('produto_id, venda_id, vendas!inner(data_venda, empresa_id)')
-      .eq('vendas.empresa_id', empresaId)
+      .eq('vendas.empresa_id', companyId)
       .order('created_at', { ascending: false });
 
     if (data) {
       const map: Record<string, string> = {};
       for (const item of data) {
         const prodId = item.produto_id;
-        const dataVenda = (item as any).vendas?.data_venda;
-        if (dataVenda && !map[prodId]) {
-          map[prodId] = dataVenda;
+        const soldOn = (item as any).vendas?.data_venda;
+        if (soldOn && !map[prodId]) {
+          map[prodId] = soldOn;
         }
       }
       setUltimasVendas(map);
@@ -226,22 +226,22 @@ const Produtos = () => {
   };
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchProdutos();
       fetchFornecedores();
       fetchCategoriasDB();
       fetchUltimasVendas();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchFornecedores = async () => {
-    if (!empresaId) return;
-    const { data } = await api.from('fornecedores').select('id, nome').eq('ativo', true).eq('empresa_id', empresaId).order('nome', { ascending: true });
+    if (!companyId) return;
+    const { data } = await api.from('supplier').select('id, name').eq('active', true).eq('company_id', companyId).order('name', { ascending: true });
     setFornecedores(data || []);
   };
 
   const fetchProdutos = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     let allProducts: any[] = [];
     let from = 0;
@@ -249,11 +249,11 @@ const Produtos = () => {
     let hasMore = true;
     while (hasMore) {
       const { data, error } = await api
-        .from('produtos')
-        .select('*, fornecedores(id, nome)')
-        .eq('empresa_id', empresaId)
-        .eq('tipo', 'produto')
-        .order('nome', { ascending: true })
+        .from('product')
+        .select('*, supplier(id, name)')
+        .eq('company_id', companyId)
+        .eq('kind', 'produto')
+        .order('name', { ascending: true })
         .range(from, from + pageSize - 1);
       if (error) {
         toast({ title: "Erro", description: "Erro ao carregar produtos", variant: "destructive" });
@@ -275,9 +275,9 @@ const Produtos = () => {
       const pageSize = 1000;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId).range(from, from + pageSize - 1);
+        const { data } = await api.from('product').select('code').eq('company_id', companyId).range(from, from + pageSize - 1);
         if (data) {
-          allCodigos = allCodigos.concat(data.map(p => p.codigo || '0'));
+          allCodigos = allCodigos.concat(data.map(p => p.code || '0'));
         }
         hasMore = (data?.length || 0) === pageSize;
         from += pageSize;
@@ -294,40 +294,40 @@ const Produtos = () => {
   };
 
   const handleBuscarProduto = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setEanSearching(true);
     setProdutoEncontrado(null);
 
     // 1️⃣ Busca por EAN
     if (eanSearch.trim()) {
       const { data: byEan } = await api
-        .from('produtos')
-        .select('*, fornecedores(id, nome)')
-        .eq('empresa_id', empresaId)
-        .eq('tipo', 'produto')
+        .from('product')
+        .select('*, supplier(id, name)')
+        .eq('company_id', companyId)
+        .eq('kind', 'produto')
         .eq('ean', eanSearch.trim())
         .limit(1);
       if (byEan && byEan.length > 0) {
         setProdutoEncontrado(byEan[0] as unknown as Produto);
         setEanSearching(false);
-        toast({ title: "Produto encontrado!", description: `"${byEan[0].nome}" já cadastrado com este EAN.` });
+        toast({ title: "Produto encontrado!", description: `"${byEan[0].name}" já cadastrado com este EAN.` });
         return;
       }
     }
 
-    // 2️⃣ Busca por nome
-    if (novoProduto.nome.trim()) {
+    // 2️⃣ Busca por name
+    if (novoProduto.name.trim()) {
       const { data: byName } = await api
-        .from('produtos')
-        .select('*, fornecedores(id, nome)')
-        .eq('empresa_id', empresaId)
-        .eq('tipo', 'produto')
-        .ilike('nome', novoProduto.nome.trim())
+        .from('product')
+        .select('*, supplier(id, name)')
+        .eq('company_id', companyId)
+        .eq('kind', 'produto')
+        .ilike('name', novoProduto.name.trim())
         .limit(1);
       if (byName && byName.length > 0) {
         setProdutoEncontrado(byName[0] as unknown as Produto);
         setEanSearching(false);
-        toast({ title: "Produto encontrado!", description: `"${byName[0].nome}" já cadastrado com este nome.` });
+        toast({ title: "Produto encontrado!", description: `"${byName[0].name}" já cadastrado com este name.` });
         return;
       }
     }
@@ -342,24 +342,24 @@ const Produtos = () => {
   };
 
   const handleSalvar = async () => {
-    if (!novoProduto.nome || !novoProduto.preco || !user) {
+    if (!novoProduto.name || !novoProduto.preco || !user) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
-    const codigoFinal = novoProduto.codigo.trim() || await gerarProximoCodigo();
-    const { error } = await api.from('produtos').insert({
+    const codigoFinal = novoProduto.code.trim() || await gerarProximoCodigo();
+    const { error } = await api.from('product').insert({
       user_id: user.id,
-      empresa_id: empresaId,
-      tipo: 'produto',
-      nome: novoProduto.nome,
-      codigo: codigoFinal,
+      company_id: companyId,
+      kind: 'produto',
+      name: novoProduto.name,
+      code: codigoFinal,
       fornecedor_id: novoProduto.fornecedor_id || null,
       preco: novoProduto.preco,
       custo: novoProduto.custo || null,
       estoque: novoProduto.estoque || 0,
       estoque_minimo: novoProduto.estoque_minimo || 0,
       categoria: novoProduto.categoria || 'Outros',
-      ativo: novoProduto.ativo,
+      active: novoProduto.active,
       ncm: novoProduto.ncm || null,
       cfop: novoProduto.cfop || '5102',
       origem: novoProduto.origem || '0',
@@ -377,7 +377,7 @@ const Produtos = () => {
   };
 
   const resetCreateDialog = () => {
-    setNovoProduto({ nome: '', codigo: '', fornecedor_id: '', preco: 0, custo: 0, estoque: 0, estoque_minimo: 0, categoria: '', ativo: true, ncm: '', cfop: '5102', origem: '0', unidade_comercial: 'UN', ean: '' });
+    setNovoProduto({ name: '', code: '', fornecedor_id: '', preco: 0, custo: 0, estoque: 0, estoque_minimo: 0, categoria: '', active: true, ncm: '', cfop: '5102', origem: '0', unidade_comercial: 'UN', ean: '' });
     setEanSearch('');
     setProdutoEncontrado(null);
     setCreateStep('search');
@@ -386,15 +386,15 @@ const Produtos = () => {
   const handleEdit = (produto: Produto) => {
     setEditingProduto(produto);
     setEditProduto({
-      nome: produto.nome,
-      codigo: produto.codigo || '',
+      name: produto.name,
+      code: produto.code || '',
       fornecedor_id: produto.fornecedor_id || '',
       preco: Number(produto.preco),
       custo: Number(produto.custo) || 0,
       estoque: produto.estoque || 0,
       estoque_minimo: produto.estoque_minimo || 0,
       categoria: produto.categoria || '',
-      ativo: produto.ativo ?? true,
+      active: produto.active ?? true,
       ncm: produto.ncm || '',
       cfop: produto.cfop || '5102',
       origem: produto.origem || '0',
@@ -406,27 +406,27 @@ const Produtos = () => {
   };
 
   const handleAtivarVariacoes = async (produto: Produto) => {
-    await api.from('produtos').update({ tem_variacoes: true }).eq('id', produto.id);
+    await api.from('product').update({ tem_variacoes: true }).eq('id', produto.id);
     fetchProdutos();
     setEditingProduto({ ...produto, tem_variacoes: true });
   };
 
   const handleSalvarEdicao = async () => {
-    if (!editingProduto || !editProduto.nome || !editProduto.preco) {
+    if (!editingProduto || !editProduto.name || !editProduto.preco) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
-    const codigoFinal = editProduto.codigo.trim() || await gerarProximoCodigo();
-    const { error } = await api.from('produtos').update({
-      nome: editProduto.nome,
-      codigo: codigoFinal,
+    const codigoFinal = editProduto.code.trim() || await gerarProximoCodigo();
+    const { error } = await api.from('product').update({
+      name: editProduto.name,
+      code: codigoFinal,
       fornecedor_id: editProduto.fornecedor_id || null,
       preco: editProduto.preco,
       custo: editProduto.custo || null,
       estoque: editProduto.estoque || 0,
       estoque_minimo: editProduto.estoque_minimo || 0,
       categoria: editProduto.categoria || 'Outros',
-      ativo: editProduto.ativo,
+      active: editProduto.active,
       ncm: editProduto.ncm || null,
       cfop: editProduto.cfop || '5102',
       origem: editProduto.origem || '0',
@@ -445,7 +445,7 @@ const Produtos = () => {
   const [produtoToDelete, setProdutoToDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    const { error } = await api.from('produtos').delete().eq('id', id);
+    const { error } = await api.from('product').delete().eq('id', id);
     if (error) {
       toast({ title: "Erro", description: "Erro ao excluir produto", variant: "destructive" });
     } else {
@@ -455,7 +455,7 @@ const Produtos = () => {
   };
 
   const handleToggleAtivo = async (produto: Produto) => {
-    const { error } = await api.from('produtos').update({ ativo: !produto.ativo }).eq('id', produto.id);
+    const { error } = await api.from('product').update({ active: !produto.active }).eq('id', produto.id);
     if (error) {
       toast({ title: "Erro", description: "Erro ao atualizar status", variant: "destructive" });
     } else {
@@ -466,19 +466,19 @@ const Produtos = () => {
   const handleDuplicar = async (produto: Produto) => {
     if (!user) return;
     const novoCodigo = await gerarProximoCodigo();
-    const { error } = await api.from('produtos').insert({
+    const { error } = await api.from('product').insert({
       user_id: user.id,
-      empresa_id: empresaId,
-      tipo: 'produto',
-      nome: `${produto.nome} (cópia)`,
-      codigo: novoCodigo,
+      company_id: companyId,
+      kind: 'produto',
+      name: `${produto.name} (cópia)`,
+      code: novoCodigo,
       fornecedor_id: produto.fornecedor_id,
       preco: produto.preco,
       custo: produto.custo,
       estoque: 0,
       estoque_minimo: produto.estoque_minimo || 0,
       categoria: produto.categoria || 'Outros',
-      ativo: true,
+      active: true,
       ncm: produto.ncm,
       cfop: produto.cfop || '5102',
       origem: produto.origem || '0',
@@ -499,7 +499,7 @@ const Produtos = () => {
   // Dados para o gráfico de produtos por fornecedor
   const CHART_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#10b981', '#f97316', '#6366f1', '#84cc16'];
   const produtosPorFornecedor = fornecedores.map((f, index) => ({
-    name: f.nome,
+    name: f.name,
     value: produtos.filter(p => p.fornecedor_id === f.id).length,
     color: CHART_COLORS[index % CHART_COLORS.length]
   })).filter(item => item.value > 0);
@@ -536,16 +536,16 @@ const Produtos = () => {
   };
 
   const parseRows = (headers: string[], rows: string[][]) => {
-    const nomeIndex = findColIndex(headers, ['nome', 'produto', 'descricao', 'descrição', 'description', 'item', 'mercadoria']);
-    const precoIndex = findColIndex(headers, ['preco', 'preço', 'valor', 'price', 'preco_venda', 'preco venda', 'valor venda', 'valor unitario']);
-    const custoIndex = findColIndex(headers, ['custo', 'cost', 'preco_custo', 'preco custo', 'valor custo']);
-    const estoqueIndex = findColIndex(headers, ['estoque', 'quantidade', 'qtd', 'stock', 'qtde', 'quant', 'saldo']);
-    const categoriaIndex = findColIndex(headers, ['categoria', 'category', 'grupo', 'tipo']);
+    const nomeIndex = findColIndex(headers, ['name', 'produto', 'description', 'descrição', 'description', 'item', 'mercadoria']);
+    const precoIndex = findColIndex(headers, ['price', 'preço', 'amount', 'price', 'preco_venda', 'preco venda', 'valor venda', 'valor unitario']);
+    const custoIndex = findColIndex(headers, ['cost', 'cost', 'preco_custo', 'preco custo', 'valor custo']);
+    const estoqueIndex = findColIndex(headers, ['stock', 'quantity', 'qtd', 'stock', 'qtde', 'quant', 'saldo']);
+    const categoriaIndex = findColIndex(headers, ['category', 'category', 'grupo', 'kind']);
     const fornecedorIndex = findColIndex(headers, ['fornecedor', 'supplier', 'fabricante', 'marca']);
-    const codigoIndex = findColIndex(headers, ['codigo', 'código', 'code', 'sku', 'ref', 'referencia', 'referência', 'cod']);
+    const codigoIndex = findColIndex(headers, ['code', 'código', 'code', 'sku', 'ref', 'referencia', 'referência', 'cod']);
 
     if (nomeIndex === -1 || precoIndex === -1) {
-      toast({ title: "Erro", description: "O arquivo deve conter as colunas 'nome' e 'preco'", variant: "destructive" });
+      toast({ title: "Erro", description: "O arquivo deve conter as colunas 'name' e 'price'", variant: "destructive" });
       return;
     }
 
@@ -554,17 +554,17 @@ const Produtos = () => {
 
     for (let i = 0; i < rows.length; i++) {
       const values = rows[i];
-      const nome = values[nomeIndex]?.trim();
+      const name = values[nomeIndex]?.trim();
       const preco = parseNumericValue(values[precoIndex]);
-      if (!nome) { errors.push(`Linha ${i + 2}: Nome do produto é obrigatório`); continue; }
-      if (preco === null || preco <= 0) { errors.push(`Linha ${i + 2}: Preço inválido para "${nome}"`); continue; }
+      if (!name) { errors.push(`Linha ${i + 2}: Nome do produto é obrigatório`); continue; }
+      if (preco === null || preco <= 0) { errors.push(`Linha ${i + 2}: Preço inválido para "${name}"`); continue; }
       const custo = custoIndex !== -1 ? (parseNumericValue(values[custoIndex]) ?? 0) : 0;
       const estoque = estoqueIndex !== -1 ? (parseInt(String(values[estoqueIndex])) || 0) : 0;
       const categoria = categoriaIndex !== -1 ? values[categoriaIndex]?.trim() : 'Outros';
       const fornecedorNome = fornecedorIndex !== -1 ? values[fornecedorIndex]?.trim() : '';
-      const codigo = codigoIndex !== -1 ? values[codigoIndex]?.trim() : '';
-      const fornecedor = fornecedores.find(f => f.nome.toLowerCase() === fornecedorNome?.toLowerCase());
-      parsedProdutos.push({ nome, preco, custo, estoque, categoria: categoria || 'Outros', codigo: codigo || null, fornecedor_id: fornecedor?.id || null, fornecedor_nome: fornecedorNome || null, ativo: true });
+      const code = codigoIndex !== -1 ? values[codigoIndex]?.trim() : '';
+      const fornecedor = fornecedores.find(f => f.name.toLowerCase() === fornecedorNome?.toLowerCase());
+      parsedProdutos.push({ name, preco, custo, estoque, categoria: categoria || 'Outros', code: code || null, fornecedor_id: fornecedor?.id || null, fornecedor_nome: fornecedorNome || null, active: true });
     }
 
     setImportedProdutos(parsedProdutos);
@@ -619,34 +619,34 @@ const Produtos = () => {
     let successCount = 0;
     let errorCount = 0;
     let nextCodeNum = 0;
-    const needsCode = importedProdutos.some(p => !p.codigo);
+    const needsCode = importedProdutos.some(p => !p.code);
     if (needsCode) {
       try {
-        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId);
+        const { data } = await api.from('product').select('code').eq('company_id', companyId);
         let maxNum = 0;
-        if (data) { for (const p of data) { const num = parseInt(p.codigo || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
+        if (data) { for (const p of data) { const num = parseInt(p.code || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
         nextCodeNum = maxNum + 1;
       } catch { nextCodeNum = 1; }
     }
     // O upsert casa por código; um código que já pertence a um serviço não pode
     // ser sobrescrito com dados de produto.
-    const { data: servicosExistentes } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId).eq('tipo', 'servico');
-    const codigosServico = new Set(((servicosExistentes || []) as { codigo: string | null }[]).map(s => s.codigo).filter(Boolean));
+    const { data: servicosExistentes } = await api.from('product').select('code').eq('company_id', companyId).eq('kind', 'servico');
+    const codigosServico = new Set(((servicosExistentes || []) as { code: string | null }[]).map(s => s.code).filter(Boolean));
     for (const produto of importedProdutos) {
-      const codigo = produto.codigo || String(nextCodeNum++).padStart(6, '0');
-      if (codigosServico.has(codigo)) { errorCount++; continue; }
-      const { error } = await api.from('produtos').upsert({
+      const code = produto.code || String(nextCodeNum++).padStart(6, '0');
+      if (codigosServico.has(code)) { errorCount++; continue; }
+      const { error } = await api.from('product').upsert({
         user_id: user.id,
-        empresa_id: empresaId,
-        nome: produto.nome,
-        codigo,
+        company_id: companyId,
+        name: produto.name,
+        code,
         preco: produto.preco,
         custo: produto.custo || null,
         estoque: produto.estoque || 0,
         categoria: produto.categoria || 'Outros',
         fornecedor_id: produto.fornecedor_id,
-        ativo: true
-      }, { onConflict: 'empresa_id,codigo' });
+        active: true
+      }, { onConflict: 'company_id,code' });
       if (error) { errorCount++; } else { successCount++; }
     }
     setImportLoading(false);
@@ -658,17 +658,17 @@ const Produtos = () => {
   };
 
   const handleXmlImport = async (produtosXml: ProdutoXml[], updateExisting: boolean, mergeStock: boolean, fornecedor?: FornecedorXml, destinatario?: DestinatarioXml) => {
-    if (!user || !empresaId) return;
+    if (!user || !companyId) return;
 
     let fornecedorId: string | null = null;
 
-    if (fornecedor && empresaId) {
-      const { data: existing } = await api.from('fornecedores').select('id').eq('empresa_id', empresaId).eq('cnpj', fornecedor.cnpj).maybeSingle();
+    if (fornecedor && companyId) {
+      const { data: existing } = await api.from('supplier').select('id').eq('company_id', companyId).eq('tax_id', fornecedor.cnpj).maybeSingle();
       if (existing) {
         fornecedorId = existing.id;
       } else {
-        const { data: newFornecedor, error: fornError } = await api.from('fornecedores').insert({
-          user_id: user.id, empresa_id: empresaId, nome: fornecedor.nomeFantasia || fornecedor.razaoSocial, razao_social: fornecedor.razaoSocial, cnpj: fornecedor.cnpj, endereco: fornecedor.endereco || null, cidade: fornecedor.cidade || null, estado: fornecedor.estado || null, ativo: true,
+        const { data: newFornecedor, error: fornError } = await api.from('supplier').insert({
+          user_id: user.id, company_id: companyId, name: fornecedor.nomeFantasia || fornecedor.razaoSocial, razao_social: fornecedor.razaoSocial, cnpj: fornecedor.cnpj, endereco: fornecedor.endereco || null, cidade: fornecedor.cidade || null, estado: fornecedor.estado || null, active: true,
         }).select('id').single();
         if (!fornError && newFornecedor) { fornecedorId = newFornecedor.id; fetchFornecedores(); }
       }
@@ -682,9 +682,9 @@ const Produtos = () => {
     let nextCodeNum = 0;
     {
       try {
-        const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId);
+        const { data } = await api.from('product').select('code').eq('company_id', companyId);
         let maxNum = 0;
-        if (data) { for (const p of data) { const num = parseInt(p.codigo || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
+        if (data) { for (const p of data) { const num = parseInt(p.code || '0', 10); if (!isNaN(num) && num > maxNum) maxNum = num; } }
         nextCodeNum = maxNum + 1;
       } catch { nextCodeNum = 1; }
     }
@@ -693,19 +693,19 @@ const Produtos = () => {
       if (produto.isDuplicate && produto.existingProductId) {
         const novoEstoque = (produto.existingStock ?? 0) + Math.floor(produto.quantidade);
         const updateData: Record<string, unknown> = {
-          codigo_fornecedor: produto.codigo || null, ean: produto.ean || null, custo: produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: novoEstoque,
+          codigo_fornecedor: produto.code || null, ean: produto.ean || null, custo: produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: novoEstoque,
         };
         if (produto.precoVenda && produto.precoVenda > 0) updateData.preco = produto.precoVenda;
         if (fornecedorId) updateData.fornecedor_id = fornecedorId;
-        const { error } = await api.from('produtos').update(updateData).eq('id', produto.existingProductId);
+        const { error } = await api.from('product').update(updateData).eq('id', produto.existingProductId);
         if (error) { errorCount++; } else { updateCount++; }
         continue;
       }
 
       const codigoSequencial = String(nextCodeNum).padStart(6, '0');
       nextCodeNum++;
-      const { error } = await api.from('produtos').insert({
-        user_id: user.id, empresa_id: empresaId, tipo: 'produto', nome: produto.nome, codigo: codigoSequencial, codigo_fornecedor: produto.codigo || null, ean: produto.ean || null, custo: produto.valorUnitario, preco: produto.precoVenda || produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: Math.floor(produto.quantidade), fornecedor_id: fornecedorId, ativo: true
+      const { error } = await api.from('product').insert({
+        user_id: user.id, company_id: companyId, kind: 'produto', name: produto.nome, code: codigoSequencial, supplier_code: produto.codigo || null, ean: produto.ean || null, cost: produto.valorUnitario, price: produto.precoVenda || produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', commercial_unit: produto.unidade || 'UN', stock: Math.floor(produto.quantidade), supplier_id: fornecedorId, active: true
       });
       if (error) { errorCount++; } else { successCount++; }
     }
@@ -714,18 +714,18 @@ const Produtos = () => {
 
     // Auto-preencher dados fiscais da empresa com o destinatário do XML
     let fiscalUpdated = false;
-    if (destinatario && empresaId) {
-      const { data: fiscal } = await api.from('empresa_fiscal').select('id, cnpj').eq('empresa_id', empresaId).maybeSingle();
+    if (destinatario && companyId) {
+      const { data: fiscal } = await api.from('company_fiscal_profile').select('id, cnpj').eq('company_id', companyId).maybeSingle();
       if (fiscal) {
         if (fiscal.cnpj === destinatario.cnpj || !fiscal.cnpj) {
-          const { error: fiscalError } = await api.from('empresa_fiscal').update({
+          const { error: fiscalError } = await api.from('company_fiscal_profile').update({
             razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || fiscal.cnpj ? undefined : '', endereco_logradouro: destinatario.logradouro || undefined, endereco_numero: destinatario.numero || undefined, endereco_complemento: destinatario.complemento || undefined, endereco_bairro: destinatario.bairro || undefined, endereco_cidade: destinatario.cidade || undefined, endereco_uf: destinatario.estado || undefined, endereco_cep: destinatario.cep || undefined, endereco_codigo_municipio: destinatario.codigoMunicipio || undefined,
           }).eq('id', fiscal.id);
           if (!fiscalError) fiscalUpdated = true;
         }
       } else {
-        const { error: fiscalError } = await api.from('empresa_fiscal').insert({
-          user_id: user.id, empresa_id: empresaId, cnpj: destinatario.cnpj, razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || '', endereco_logradouro: destinatario.logradouro || '', endereco_numero: destinatario.numero || '', endereco_bairro: destinatario.bairro || '', endereco_cidade: destinatario.cidade || '', endereco_uf: destinatario.estado || '', endereco_cep: destinatario.cep || '', endereco_codigo_municipio: destinatario.codigoMunicipio || '',
+        const { error: fiscalError } = await api.from('company_fiscal_profile').insert({
+          user_id: user.id, company_id: companyId, cnpj: destinatario.cnpj, razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || '', endereco_logradouro: destinatario.logradouro || '', endereco_numero: destinatario.numero || '', endereco_bairro: destinatario.bairro || '', endereco_cidade: destinatario.cidade || '', endereco_uf: destinatario.estado || '', endereco_cep: destinatario.cep || '', endereco_codigo_municipio: destinatario.codigoMunicipio || '',
         });
         if (!fiscalError) fiscalUpdated = true;
       }
@@ -746,21 +746,21 @@ const Produtos = () => {
   // Filtros
   const filteredProdutos = produtos.filter(produto => {
     const searchLower = searchTerm.toLowerCase();
-    const matchSearch = produto.nome.toLowerCase().includes(searchLower) ||
-      produto.fornecedores?.nome?.toLowerCase().includes(searchLower) ||
-      produto.codigo?.toLowerCase().includes(searchLower) ||
+    const matchSearch = produto.name.toLowerCase().includes(searchLower) ||
+      produto.fornecedores?.name?.toLowerCase().includes(searchLower) ||
+      produto.code?.toLowerCase().includes(searchLower) ||
       produto.categoria?.toLowerCase().includes(searchLower);
     const matchCategoria = filterCategoria === 'todos' || produto.categoria === filterCategoria;
     const matchFornecedor = filterFornecedor === 'todos' || produto.fornecedor_id === filterFornecedor;
-    const matchAtivo = filterAtivo === 'todos' || filterAtivo === 'ativo' && produto.ativo || filterAtivo === 'inativo' && !produto.ativo;
+    const matchAtivo = filterAtivo === 'todos' || filterAtivo === 'active' && produto.active || filterAtivo === 'inativo' && !produto.active;
     const matchEstoque = !filterComEstoque || (produto.estoque || 0) > 0;
     return matchSearch && matchCategoria && matchFornecedor && matchAtivo && matchEstoque;
   }).sort((a, b) => {
     switch (sortBy) {
-      case 'nome_asc': return a.nome.localeCompare(b.nome);
-      case 'nome_desc': return b.nome.localeCompare(a.nome);
-      case 'codigo_asc': return parseInt(a.codigo || '0', 10) - parseInt(b.codigo || '0', 10);
-      case 'codigo_desc': return parseInt(b.codigo || '0', 10) - parseInt(a.codigo || '0', 10);
+      case 'nome_asc': return a.name.localeCompare(b.name);
+      case 'nome_desc': return b.name.localeCompare(a.name);
+      case 'codigo_asc': return parseInt(a.code || '0', 10) - parseInt(b.code || '0', 10);
+      case 'codigo_desc': return parseInt(b.code || '0', 10) - parseInt(a.code || '0', 10);
       case 'preco_asc': return a.preco - b.preco;
       case 'preco_desc': return b.preco - a.preco;
       case 'estoque_desc': return (b.estoque ?? 0) - (a.estoque ?? 0);
@@ -774,14 +774,14 @@ const Produtos = () => {
   const categoriasUnicas = [...new Set(produtos.map(p => p.categoria).filter(Boolean))] as string[];
 
   // Dashboard stats
-  const produtosAtivos = produtos.filter(p => p.ativo).length;
-  const produtosSemEstoque = produtos.filter(p => p.ativo && (p.estoque ?? 0) === 0).length;
+  const produtosAtivos = produtos.filter(p => p.active).length;
+  const produtosSemEstoque = produtos.filter(p => p.active && (p.estoque ?? 0) === 0).length;
   const produtosEstoqueBaixo = produtos.filter(p => {
     const min = p.estoque_minimo ?? 0;
     const qty = p.estoque ?? 0;
-    return p.ativo && min > 0 && qty > 0 && qty <= min;
+    return p.active && min > 0 && qty > 0 && qty <= min;
   }).length;
-  const margens = produtos.filter(p => p.ativo && p.custo && Number(p.custo) > 0 && Number(p.preco) > 0).map(p => {
+  const margens = produtos.filter(p => p.active && p.custo && Number(p.custo) > 0 && Number(p.preco) > 0).map(p => {
     const m = calcMargem(Number(p.preco), Number(p.custo));
     return m ? m.percentual : 0;
   });
@@ -848,8 +848,8 @@ const Produtos = () => {
                       <Input id="ean-search" placeholder="Leia ou digite o EAN" value={eanSearch} onChange={e => setEanSearch(e.target.value.replace(/\D/g, ''))} onKeyDown={e => { if (e.key === 'Enter') handleBuscarProduto(); }} autoFocus />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="nome-search">ou Nome do Produto</Label>
-                      <Input id="nome-search" placeholder="Ex: Vestido Floral" value={novoProduto.nome} onChange={e => setNovoProduto({ ...novoProduto, nome: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') handleBuscarProduto(); }} />
+                      <Label htmlFor="name-search">ou Nome do Produto</Label>
+                      <Input id="name-search" placeholder="Ex: Vestido Floral" value={novoProduto.name} onChange={e => setNovoProduto({ ...novoProduto, name: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') handleBuscarProduto(); }} />
                     </div>
 
                     {produtoEncontrado && (
@@ -859,8 +859,8 @@ const Produtos = () => {
                           <span className="font-medium">Produto já cadastrado!</span>
                         </div>
                         <div className="text-sm space-y-1">
-                          <p><span className="text-muted-foreground">Nome:</span> {produtoEncontrado.nome}</p>
-                          <p><span className="text-muted-foreground">Código:</span> {produtoEncontrado.codigo}</p>
+                          <p><span className="text-muted-foreground">Nome:</span> {produtoEncontrado.name}</p>
+                          <p><span className="text-muted-foreground">Código:</span> {produtoEncontrado.code}</p>
                           <p><span className="text-muted-foreground">Preço:</span> {formatCurrency(produtoEncontrado.preco)}</p>
                           <p><span className="text-muted-foreground">Estoque:</span> {produtoEncontrado.estoque ?? 0}</p>
                         </div>
@@ -873,7 +873,7 @@ const Produtos = () => {
 
                     <div className="flex justify-end gap-2 pt-2">
                       <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-                      <Button onClick={handleBuscarProduto} disabled={eanSearching || (!eanSearch.trim() && !novoProduto.nome.trim())}>
+                      <Button onClick={handleBuscarProduto} disabled={eanSearching || (!eanSearch.trim() && !novoProduto.name.trim())}>
                         <Search className="h-4 w-4 mr-2" />
                         {eanSearching ? 'Buscando...' : 'Buscar'}
                       </Button>
@@ -889,12 +889,12 @@ const Produtos = () => {
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="grid gap-2 col-span-2">
-                          <Label htmlFor="nome">Nome do Produto *</Label>
-                          <Input id="nome" placeholder="Ex: Vestido Floral" value={novoProduto.nome} onChange={e => setNovoProduto({ ...novoProduto, nome: e.target.value })} />
+                          <Label htmlFor="name">Nome do Produto *</Label>
+                          <Input id="name" placeholder="Ex: Vestido Floral" value={novoProduto.name} onChange={e => setNovoProduto({ ...novoProduto, name: e.target.value })} />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="codigo">Código</Label>
-                          <Input id="codigo" placeholder="Auto" value={novoProduto.codigo} onChange={e => setNovoProduto({ ...novoProduto, codigo: e.target.value.toUpperCase() })} />
+                          <Label htmlFor="code">Código</Label>
+                          <Input id="code" placeholder="Auto" value={novoProduto.code} onChange={e => setNovoProduto({ ...novoProduto, code: e.target.value.toUpperCase() })} />
                         </div>
                       </div>
                       <div className="grid gap-2">
@@ -908,22 +908,22 @@ const Produtos = () => {
                             <SelectValue placeholder="Selecione o fornecedor" />
                           </SelectTrigger>
                           <SelectContent>
-                            {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                            {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="preco">Preço de Venda *</Label>
-                          <Input id="preco" type="text" inputMode="numeric" placeholder="0,00" value={novoProduto.preco ? novoProduto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'} onChange={e => {
+                          <Label htmlFor="price">Preço de Venda *</Label>
+                          <Input id="price" type="text" inputMode="numeric" placeholder="0,00" value={novoProduto.preco ? novoProduto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'} onChange={e => {
                             const onlyNumbers = e.target.value.replace(/\D/g, '');
                             const numericValue = parseInt(onlyNumbers || '0', 10) / 100;
                             setNovoProduto({ ...novoProduto, preco: numericValue });
                           }} />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="custo">Custo</Label>
-                          <Input id="custo" type="text" inputMode="numeric" placeholder="0,00" value={novoProduto.custo ? novoProduto.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'} onChange={e => {
+                          <Label htmlFor="cost">Custo</Label>
+                          <Input id="cost" type="text" inputMode="numeric" placeholder="0,00" value={novoProduto.custo ? novoProduto.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'} onChange={e => {
                             const onlyNumbers = e.target.value.replace(/\D/g, '');
                             const numericValue = parseInt(onlyNumbers || '0', 10) / 100;
                             setNovoProduto({ ...novoProduto, custo: numericValue });
@@ -942,12 +942,12 @@ const Produtos = () => {
                       })()}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                          <Label htmlFor="estoque">Estoque</Label>
-                          <Input id="estoque" type="number" placeholder="0" value={novoProduto.estoque || ''} onChange={e => setNovoProduto({ ...novoProduto, estoque: parseInt(e.target.value) || 0 })} />
+                          <Label htmlFor="stock">Estoque</Label>
+                          <Input id="stock" type="number" placeholder="0" value={novoProduto.estoque || ''} onChange={e => setNovoProduto({ ...novoProduto, estoque: parseInt(e.target.value) || 0 })} />
                         </div>
                         <div className="grid gap-2">
-                          <Label htmlFor="estoque_minimo">Estoque Mínimo</Label>
-                          <Input id="estoque_minimo" type="number" placeholder="0" value={novoProduto.estoque_minimo || ''} onChange={e => setNovoProduto({ ...novoProduto, estoque_minimo: parseInt(e.target.value) || 0 })} />
+                          <Label htmlFor="minimum_stock">Estoque Mínimo</Label>
+                          <Input id="minimum_stock" type="number" placeholder="0" value={novoProduto.estoque_minimo || ''} onChange={e => setNovoProduto({ ...novoProduto, estoque_minimo: parseInt(e.target.value) || 0 })} />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -958,16 +958,16 @@ const Produtos = () => {
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                             <SelectContent>
-                              {categoriasDB.filter(c => c.ativo).map(c => (
-                                <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                              {categoriasDB.filter(c => c.active).map(c => (
+                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="flex items-end pb-1">
                           <div className="flex items-center gap-2">
-                            <Switch id="ativo" checked={novoProduto.ativo} onCheckedChange={checked => setNovoProduto({ ...novoProduto, ativo: checked })} />
-                            <Label htmlFor="ativo">Ativo</Label>
+                            <Switch id="active" checked={novoProduto.active} onCheckedChange={checked => setNovoProduto({ ...novoProduto, active: checked })} />
+                            <Label htmlFor="active">Ativo</Label>
                           </div>
                         </div>
                       </div>
@@ -1042,7 +1042,7 @@ const Produtos = () => {
           <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
             <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#9CA3AF' }} />
             <input
-              placeholder="Buscar por nome, código ou categoria..."
+              placeholder="Buscar por name, código ou categoria..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', paddingTop: '9px', paddingBottom: '9px', borderRadius: '10px', border: '1.5px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#374151', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
@@ -1066,7 +1066,7 @@ const Produtos = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Status</SelectItem>
-              <SelectItem value="ativo">Ativos</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inativo">Inativos</SelectItem>
             </SelectContent>
           </Select>
@@ -1076,7 +1076,7 @@ const Produtos = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Fornecedor</SelectItem>
-              {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+              {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
@@ -1194,20 +1194,20 @@ const Produtos = () => {
                 const ultimaVenda = ultimasVendas[produto.id];
 
                 return (
-                  <div key={produto.id} className={cn("group flex items-center justify-between p-4 rounded-lg transition-all duration-200", !produto.ativo && "opacity-60")} style={{ border: '1px solid rgba(142,95,207,0.06)', background: 'transparent', cursor: 'default' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(142,95,207,0.04)'; e.currentTarget.style.borderColor = 'rgba(142,95,207,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(142,95,207,0.06)'; }}>
+                  <div key={produto.id} className={cn("group flex items-center justify-between p-4 rounded-lg transition-all duration-200", !produto.active && "opacity-60")} style={{ border: '1px solid rgba(142,95,207,0.06)', background: 'transparent', cursor: 'default' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(142,95,207,0.04)'; e.currentTarget.style.borderColor = 'rgba(142,95,207,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(142,95,207,0.06)'; }}>
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${getCategoriaColor(produto.categoria)}20` }}>
                         <Package className="h-5 w-5" style={{ color: getCategoriaColor(produto.categoria) }} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{produto.nome}</p>
-                          {produto.codigo && (
-                            <Badge variant="secondary" className="text-xs font-mono">{produto.codigo}</Badge>
+                          <p className="font-medium">{produto.name}</p>
+                          {produto.code && (
+                            <Badge variant="secondary" className="text-xs font-mono">{produto.code}</Badge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {produto.fornecedores?.nome || 'Sem fornecedor'}
+                          {produto.fornecedores?.name || 'Sem fornecedor'}
                         </p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                           <span className={cn(
@@ -1319,7 +1319,7 @@ const Produtos = () => {
                 </div>
               ) : editingProduto ? (
                 <GradeVariacoes
-                  produtoId={editingProduto.id}
+                  productId={editingProduto.id}
                   precoBase={editingProduto.preco}
                   precoCustoBase={editingProduto.custo ?? 0}
                 />
@@ -1330,12 +1330,12 @@ const Produtos = () => {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2 col-span-2">
-                <Label htmlFor="edit-nome">Nome do Produto *</Label>
-                <Input id="edit-nome" placeholder="Ex: Vestido Floral" value={editProduto.nome} onChange={e => setEditProduto({ ...editProduto, nome: e.target.value })} />
+                <Label htmlFor="edit-name">Nome do Produto *</Label>
+                <Input id="edit-name" placeholder="Ex: Vestido Floral" value={editProduto.name} onChange={e => setEditProduto({ ...editProduto, name: e.target.value })} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-codigo">Código</Label>
-                <Input id="edit-codigo" placeholder="Auto" value={editProduto.codigo} onChange={e => setEditProduto({ ...editProduto, codigo: e.target.value.toUpperCase() })} />
+                <Label htmlFor="edit-code">Código</Label>
+                <Input id="edit-code" placeholder="Auto" value={editProduto.code} onChange={e => setEditProduto({ ...editProduto, code: e.target.value.toUpperCase() })} />
               </div>
             </div>
             <div className="grid gap-2">
@@ -1343,7 +1343,7 @@ const Produtos = () => {
               <Select value={editProduto.fornecedor_id} onValueChange={value => setEditProduto({ ...editProduto, fornecedor_id: value })}>
                 <SelectTrigger><SelectValue placeholder="Selecione o fornecedor" /></SelectTrigger>
                 <SelectContent>
-                  {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                  {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -1391,8 +1391,8 @@ const Produtos = () => {
               <Select value={editProduto.categoria} onValueChange={value => setEditProduto({ ...editProduto, categoria: value })}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {categoriasDB.filter(c => c.ativo || c.nome === editProduto.categoria).map(c => (
-                    <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                  {categoriasDB.filter(c => c.active || c.name === editProduto.categoria).map(c => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1451,8 +1451,8 @@ const Produtos = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Switch id="edit-ativo" checked={editProduto.ativo} onCheckedChange={checked => setEditProduto({ ...editProduto, ativo: checked })} />
-              <Label htmlFor="edit-ativo">Produto ativo</Label>
+              <Switch id="edit-active" checked={editProduto.active} onCheckedChange={checked => setEditProduto({ ...editProduto, active: checked })} />
+              <Label htmlFor="edit-active">Produto active</Label>
             </div>
           </div>
           <div className="flex justify-end gap-2">
@@ -1520,7 +1520,7 @@ const Produtos = () => {
               <label htmlFor="file-upload" className="cursor-pointer">
                 <FileSpreadsheet className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">Clique para selecionar um arquivo Excel (.xlsx, .xls) ou CSV</p>
-                <p className="text-xs text-muted-foreground mt-1">O arquivo deve conter as colunas: <strong>nome</strong>, <strong>preco</strong> (obrigatórias), custo, estoque, categoria, fornecedor, codigo (opcionais)</p>
+                <p className="text-xs text-muted-foreground mt-1">O arquivo deve conter as colunas: <strong>name</strong>, <strong>preco</strong> (obrigatórias), custo, estoque, categoria, fornecedor, code (opcionais)</p>
               </label>
             </div>
             {importErrors.length > 0 && <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
@@ -1550,7 +1550,7 @@ const Produtos = () => {
                   </thead>
                   <tbody>
                     {importedProdutos.slice(0, 10).map((produto, index) => <tr key={index} className="border-t">
-                      <td className="p-2">{produto.nome}</td>
+                      <td className="p-2">{produto.name}</td>
                       <td className="p-2">{formatCurrency(produto.preco)}</td>
                       <td className="p-2">{produto.estoque}</td>
                       <td className="p-2">{produto.fornecedor_nome || '-'}</td>
@@ -1575,16 +1575,16 @@ const Produtos = () => {
         open={xmlImportDialogOpen}
         onOpenChange={setXmlImportDialogOpen}
         onImport={handleXmlImport}
-        existingCodes={produtos.map(p => p.codigo).filter(Boolean) as string[]}
-        existingProducts={produtos.map(p => ({ id: p.id, codigo: p.codigo, nome: p.nome, ean: (p as any).ean ?? null, codigo_fornecedor: (p as any).codigo_fornecedor ?? null, estoque: p.estoque ?? 0, preco: p.preco ?? 0 }))}
+        existingCodes={produtos.map(p => p.code).filter(Boolean) as string[]}
+        existingProducts={produtos.map(p => ({ id: p.id, code: p.code, name: p.name, ean: (p as any).ean ?? null, codigo_fornecedor: (p as any).codigo_fornecedor ?? null, estoque: p.estoque ?? 0, preco: p.preco ?? 0 }))}
       />
 
       {/* Gerenciar Categorias Dialog */}
-      {empresaId && (
+      {companyId && (
         <GerenciarCategoriasDialog
           open={categoriasDialogOpen}
           onOpenChange={setCategoriasDialogOpen}
-          empresaId={empresaId}
+          companyId={companyId}
           onCategoriasChange={() => { fetchCategoriasDB(); fetchProdutos(); }}
         />
       )}

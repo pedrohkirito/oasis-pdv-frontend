@@ -150,9 +150,9 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
     const carregar = async () => {
       setLoadingHistorico(true);
       const { data } = await (api as any)
-        .from('pedidos_compra_historico')
+        .from('purchase_order_event')
         .select('*')
-        .eq('pedido_id', pedido.id)
+        .eq('purchase_order_id', pedido.id)
         .order('created_at', { ascending: true });
       setHistorico((data ?? []) as HistoricoPedido[]);
       setLoadingHistorico(false);
@@ -189,9 +189,9 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
     setConfirmRecebido(false);
 
     const { data } = await (api as any)
-      .from('pedidos_compra_historico')
+      .from('purchase_order_event')
       .select('*')
-      .eq('pedido_id', pedido.id)
+      .eq('purchase_order_id', pedido.id)
       .order('created_at', { ascending: true });
     setHistorico((data ?? []) as HistoricoPedido[]);
   };

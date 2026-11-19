@@ -9,7 +9,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 
 export function useFinanceiro() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [loading, setLoading] = useState(false)
 
   // 1. VISÃO GERAL — dados do mês atual
@@ -21,27 +21,27 @@ export function useFinanceiro() {
 
     // Vendas do mês
     const { data: vendas } = await api
-      .from('vendas')
+      .from('sale')
       .select('valor_final, data_venda')
-      .eq('empresa_id', empresaId)
-      .gte('data_venda', inicio)
-      .lte('data_venda', fim)
+      .eq('company_id', companyId)
+      .gte('sold_on', inicio)
+      .lte('sold_on', fim)
 
     // Contas a pagar do mês
     const { data: contasPagar } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('valor, status, data_vencimento, data_pagamento')
-      .eq('empresa_id', empresaId)
-      .gte('data_vencimento', inicio)
-      .lte('data_vencimento', fim)
+      .eq('company_id', companyId)
+      .gte('due_on', inicio)
+      .lte('due_on', fim)
 
     // Contas a receber do mês
     const { data: contasReceber } = await api
-      .from('contas_receber')
+      .from('receivable')
       .select('valor, valor_recebido, status, data_vencimento')
-      .eq('empresa_id', empresaId)
-      .gte('data_vencimento', inicio)
-      .lte('data_vencimento', fim)
+      .eq('company_id', companyId)
+      .gte('due_on', inicio)
+      .lte('due_on', fim)
 
     // Cálculos
     const receitaRealizada = vendas?.reduce(
@@ -118,31 +118,31 @@ export function useFinanceiro() {
 
     // Contas a pagar futuras
     const { data: pagarFuturas } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('valor, data_vencimento, descricao, categoria')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .in('status', ['pendente', 'vencido'])
-      .gte('data_vencimento', hojeStr)
-      .lte('data_vencimento', fimStr)
-      .order('data_vencimento')
+      .gte('due_on', hojeStr)
+      .lte('due_on', fimStr)
+      .order('due_on')
 
     // Contas a receber futuras
     const { data: receberFuturas } = await api
-      .from('contas_receber')
+      .from('receivable')
       .select('valor, data_vencimento, descricao, cliente_nome')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .in('status', ['pendente'])
-      .gte('data_vencimento', hojeStr)
-      .lte('data_vencimento', fimStr)
-      .order('data_vencimento')
+      .gte('due_on', hojeStr)
+      .lte('due_on', fimStr)
+      .order('due_on')
 
     // Média diária de vendas (últimos 30 dias)
     const inicioHistorico = format(addDays(hoje, -30), 'yyyy-MM-dd')
     const { data: vendasHistorico } = await api
-      .from('vendas')
-      .select('valor_final')
-      .eq('empresa_id', empresaId)
-      .gte('data_venda', inicioHistorico)
+      .from('sale')
+      .select('final_amount')
+      .eq('company_id', companyId)
+      .gte('sold_on', inicioHistorico)
 
     const mediaDiariaVendas = vendasHistorico?.length
       ? vendasHistorico.reduce(
@@ -240,11 +240,11 @@ export function useFinanceiro() {
 
     // Prazo médio de recebimento
     const { data: recebimentos } = await api
-      .from('contas_receber')
+      .from('receivable')
       .select('created_at, data_recebimento')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'recebido')
-      .not('data_recebimento', 'is', null)
+      .not('received_on', 'is', null)
       .limit(50)
 
     const pmr = recebimentos?.length
@@ -257,11 +257,11 @@ export function useFinanceiro() {
 
     // Prazo médio de pagamento
     const { data: pagamentos } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('created_at, data_pagamento')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'pago')
-      .not('data_pagamento', 'is', null)
+      .not('paid_on', 'is', null)
       .limit(50)
 
     const pmp = pagamentos?.length

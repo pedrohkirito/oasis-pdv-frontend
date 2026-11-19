@@ -10,7 +10,7 @@ import { escapeHtml } from '@/utils/htmlSanitize';
 
 export interface MovimentacaoRelatorio {
   id: string;
-  tipo: 'sangria' | 'suprimento';
+  kind: 'sangria' | 'suprimento';
   valor: number;
   motivo: string | null;
   created_at: string;
@@ -140,32 +140,32 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
         <div className="space-y-2 mb-3 mt-3">
           <div className="linha flex justify-between">
             <span className="label">Data:</span>
-            <span className="valor">{fmtData(dados.aberto_em)}</span>
+            <span className="amount">{fmtData(dados.aberto_em)}</span>
           </div>
           <div className="linha flex justify-between">
             <span className="label">Abertura:</span>
-            <span className="valor">{fmtHora(dados.aberto_em)}</span>
+            <span className="amount">{fmtHora(dados.aberto_em)}</span>
           </div>
           {dados.fechado_em && (
             <div className="linha flex justify-between">
               <span className="label">Fechamento:</span>
-              <span className="valor">{fmtHora(dados.fechado_em)}</span>
+              <span className="amount">{fmtHora(dados.fechado_em)}</span>
             </div>
           )}
           <div className="linha flex justify-between">
             <span className="label">Aberto por:</span>
-            <span className="valor">{dados.operador_nome ?? '—'}</span>
+            <span className="amount">{dados.operador_nome ?? '—'}</span>
           </div>
           {dados.fechado_por_nome && (
             <div className="linha flex justify-between">
               <span className="label">Fechado por:</span>
-              <span className="valor">{dados.fechado_por_nome}</span>
+              <span className="amount">{dados.fechado_por_nome}</span>
             </div>
           )}
           {!dados.fechado_por_nome && dados.fechado_em && (
             <div className="linha flex justify-between">
               <span className="label">Fechado por:</span>
-              <span className="valor">{dados.operador_nome ?? '—'}</span>
+              <span className="amount">{dados.operador_nome ?? '—'}</span>
             </div>
           )}
         </div>
@@ -238,12 +238,12 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
             <div className="space-y-2">
               {dados.movimentacoes.map(m => (
                 <div key={m.id} className="flex justify-between gap-2">
-                  <span className={`text-xs ${m.tipo === 'sangria' ? 'text-red-600' : 'text-green-600'}`}>
-                    {m.tipo === 'sangria' ? '▼' : '▲'} {m.motivo || m.tipo}
+                  <span className={`text-xs ${m.kind === 'sangria' ? 'text-red-600' : 'text-green-600'}`}>
+                    {m.kind === 'sangria' ? '▼' : '▲'} {m.motivo || m.kind}
                     <span className="text-muted-foreground ml-1">({fmtHora(m.created_at)})</span>
                   </span>
-                  <span className={`font-medium text-xs ${m.tipo === 'sangria' ? 'text-red-600' : 'text-green-600'}`}>
-                    {m.tipo === 'sangria' ? '-' : '+'}{fmtBRL(m.valor)}
+                  <span className={`font-medium text-xs ${m.kind === 'sangria' ? 'text-red-600' : 'text-green-600'}`}>
+                    {m.kind === 'sangria' ? '-' : '+'}{fmtBRL(m.valor)}
                   </span>
                 </div>
               ))}

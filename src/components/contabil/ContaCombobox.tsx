@@ -30,26 +30,26 @@ export function ContaCombobox({
           className="w-full justify-between font-normal"
         >
           <span className="truncate">
-            {selecionada ? `${selecionada.codigo} — ${selecionada.nome}` : placeholder}
+            {selecionada ? `${selecionada.code} — ${selecionada.name}` : placeholder}
           </span>
           <ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[320px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar por código ou nome…" />
+          <CommandInput placeholder="Buscar por código ou name…" />
           <CommandList>
             <CommandEmpty>Nenhuma conta encontrada.</CommandEmpty>
             <CommandGroup>
               {contas.map(c => (
                 <CommandItem
                   key={c.id}
-                  value={`${c.codigo} ${c.nome}`}
+                  value={`${c.code} ${c.name}`}
                   onSelect={() => { onChange(c.id); setOpen(false) }}
                 >
                   <Check size={14} className={cn('mr-2', value === c.id ? 'opacity-100' : 'opacity-0')} />
-                  <span className="font-mono text-xs text-muted-foreground mr-2">{c.codigo}</span>
-                  <span className="truncate">{c.nome}</span>
+                  <span className="font-mono text-xs text-muted-foreground mr-2">{c.code}</span>
+                  <span className="truncate">{c.name}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

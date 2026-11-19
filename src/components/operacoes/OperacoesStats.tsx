@@ -25,7 +25,7 @@ export function OperacoesStats({ operacoes }: OperacoesStatsProps) {
       const date = o.data_prevista || o.data_entrega;
       return date && isToday(parseISO(date));
     });
-    const montagensPendentes = operacoes.filter(o => o.tipo?.includes('montagem') && o.status !== 'finalizado');
+    const montagensPendentes = operacoes.filter(o => o.kind?.includes('montagem') && o.status !== 'finalizado');
 
     return {
       total: ativas.length,

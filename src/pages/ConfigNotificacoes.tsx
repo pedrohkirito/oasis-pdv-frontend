@@ -38,12 +38,12 @@ const KEY_PREFIX = 'lafiore-notif-config-';
 // ─── Mock history ─────────────────────────────────────────────────────────────
 
 const MOCK_HISTORY = [
-  { id: 1, data: '28/04 09:14', canal: 'Sistema', tipo: 'Estoque mínimo',       dest: 'Dashboard',         status: 'Enviado',  msg: 'Produto "Camiseta M" abaixo do mínimo' },
-  { id: 2, data: '28/04 08:30', canal: 'E-mail',  tipo: 'Meta diária',          dest: 'loja@email.com',    status: 'Enviado',  msg: 'Meta diária de R$ 1.000 atingida!' },
-  { id: 3, data: '27/04 18:05', canal: 'Sistema', tipo: 'Conta vencendo hoje',  dest: 'Dashboard',         status: 'Enviado',  msg: 'Conta "Fornecedor X" vence hoje' },
-  { id: 4, data: '27/04 14:20', canal: 'WhatsApp',tipo: 'Venda realizada',      dest: '+55 11 99999-0000', status: 'Falhou',   msg: 'Nova venda: R$ 320,00' },
-  { id: 5, data: '27/04 10:00', canal: 'Sistema', tipo: 'Saldo negativo',       dest: 'Dashboard',         status: 'Enviado',  msg: 'Fluxo de caixa negativo detectado' },
-  { id: 6, data: '26/04 16:45', canal: 'E-mail',  tipo: 'Estoque zerado',       dest: 'loja@email.com',    status: 'Pendente', msg: 'Produto "Calça 38" sem estoque' },
+  { id: 1, data: '28/04 09:14', canal: 'Sistema', kind: 'Estoque mínimo',       dest: 'Dashboard',         status: 'Enviado',  msg: 'Produto "Camiseta M" abaixo do mínimo' },
+  { id: 2, data: '28/04 08:30', canal: 'E-mail',  kind: 'Meta diária',          dest: 'loja@email.com',    status: 'Enviado',  msg: 'Meta diária de R$ 1.000 atingida!' },
+  { id: 3, data: '27/04 18:05', canal: 'Sistema', kind: 'Conta vencendo hoje',  dest: 'Dashboard',         status: 'Enviado',  msg: 'Conta "Fornecedor X" vence hoje' },
+  { id: 4, data: '27/04 14:20', canal: 'WhatsApp',kind: 'Venda realizada',      dest: '+55 11 99999-0000', status: 'Falhou',   msg: 'Nova venda: R$ 320,00' },
+  { id: 5, data: '27/04 10:00', canal: 'Sistema', kind: 'Saldo negativo',       dest: 'Dashboard',         status: 'Enviado',  msg: 'Fluxo de caixa negativo detectado' },
+  { id: 6, data: '26/04 16:45', canal: 'E-mail',  kind: 'Estoque zerado',       dest: 'loja@email.com',    status: 'Pendente', msg: 'Produto "Calça 38" sem estoque' },
 ];
 
 // ─── Oasis Toggle ─────────────────────────────────────────────────────────────
@@ -111,9 +111,9 @@ function AlertRow({
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function ConfigNotificacoes() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
-  const storageKey = KEY_PREFIX + (empresaId ?? 'default');
+  const storageKey = KEY_PREFIX + (companyId ?? 'default');
 
   const [cfg, setCfg] = useState<NotifConfig>(() => {
     try {
@@ -420,7 +420,7 @@ export default function ConfigNotificacoes() {
               {sectionTitle(<Package style={{ width: 14, height: 14, color: '#8E5FCF' }} />, 'Estoque')}
 
               <AlertRow
-                id="estoque_minimo" label="Produto com estoque abaixo do mínimo"
+                id="minimum_stock" label="Produto com estoque abaixo do mínimo"
                 desc="Notifica quando o estoque cai abaixo do limite definido"
                 icon={<Package style={{ width: 16, height: 16, color: '#F59E0B' }} />}
                 iconBg="rgba(245,158,11,0.1)"
@@ -453,7 +453,7 @@ export default function ConfigNotificacoes() {
                   </div>
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', background: 'rgba(156,163,175,0.15)', padding: '3px 10px', borderRadius: 99, fontFamily: 'Gilroy, sans-serif' }}>
-                  Sempre ativo
+                  Sempre active
                 </span>
               </div>
             </div>
@@ -677,7 +677,7 @@ export default function ConfigNotificacoes() {
                     {row.canal === 'E-mail' ? <Mail style={{ width: 10, height: 10 }} /> : row.canal === 'WhatsApp' ? <MessageCircle style={{ width: 10, height: 10 }} /> : <Bell style={{ width: 10, height: 10 }} />}
                     {row.canal}
                   </span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{row.tipo}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{row.kind}</span>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontFamily: 'Gilroy, sans-serif', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', paddingRight: 12 }}>
                     {row.msg.length > 40 ? row.msg.slice(0, 40) + '…' : row.msg}
                   </span>

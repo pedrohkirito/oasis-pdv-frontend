@@ -4,15 +4,15 @@ import { useAuth } from './useAuth';
 
 interface Empresa {
   id: string;
-  nome: string;
+  name: string;
   logo_url: string | null;
-  ativo: boolean;
+  active: boolean;
 }
 
 interface EmpresaContextType {
   empresas: Empresa[];
   empresaAtiva: Empresa | null;
-  empresaId: string | null;
+  companyId: string | null;
   loading: boolean;
   empresaSelecionada: boolean;
   setEmpresaAtiva: (empresa: Empresa) => void;
@@ -23,7 +23,7 @@ interface EmpresaContextType {
 const EmpresaContext = createContext<EmpresaContextType>({
   empresas: [],
   empresaAtiva: null,
-  empresaId: null,
+  companyId: null,
   loading: true,
   empresaSelecionada: false,
   setEmpresaAtiva: () => {},
@@ -51,9 +51,9 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
 
     try {
       const { data, error } = await api
-        .from('empresas')
+        .from('company')
         .select('*')
-        .eq('ativo', true);
+        .eq('active', true);
 
       if (error) {
         console.error('Error fetching empresas:', error);
@@ -109,7 +109,7 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
     <EmpresaContext.Provider value={{
       empresas,
       empresaAtiva,
-      empresaId: empresaAtiva?.id ?? null,
+      companyId: empresaAtiva?.id ?? null,
       loading: loading || authLoading,
       empresaSelecionada,
       setEmpresaAtiva,

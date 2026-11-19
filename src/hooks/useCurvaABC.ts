@@ -25,7 +25,7 @@ export function classificarABC<T extends { faturamento: number }>(itens: T[]) {
 }
 
 export function useCurvaABC() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [dados, setDados] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -37,9 +37,9 @@ export function useCurvaABC() {
 
     // Etapa 1 — Busca os IDs das vendas do período
     const { data: vendasDoPeriodo } = await api
-      .from('vendas')
+      .from('sale')
       .select('id')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .gte('created_at', dataInicio)
       .lte('created_at', dataFim)
 
@@ -53,14 +53,14 @@ export function useCurvaABC() {
 
     // Etapa 2 — Busca os itens dessas vendas
     const { data: itens } = await api
-      .from('itens_venda')
+      .from('sale_item')
       .select(`
         quantidade,
         preco_unitario,
         produto_id,
-        produtos(nome, categoria, tipo)
+        product(name, category, kind)
       `)
-      .in('venda_id', idsVendas)
+      .in('sale_id', idsVendas)
 
     // Agrupa por produto
     const porProduto = (itens || []).reduce((acc, item) => {
@@ -68,7 +68,7 @@ export function useCurvaABC() {
       if (!acc[id]) {
         acc[id] = {
           produto_id: id,
-          nome: item.produtos?.nome || 'Produto removido',
+          name: item.produtos?.name || 'Produto removido',
           categoria: item.produtos?.categoria || 'Sem categoria',
           tipo: item.produtos?.tipo === 'servico' ? 'servico' : 'produto',
           quantidade: 0,

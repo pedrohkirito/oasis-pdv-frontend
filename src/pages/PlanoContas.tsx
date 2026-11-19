@@ -27,8 +27,8 @@ import { useToast } from '@/hooks/use-toast'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const TIPO_LABEL: Record<ContaPlano['tipo'], string> = {
-  ativo: 'Ativo',
+const TIPO_LABEL: Record<ContaPlano['kind'], string> = {
+  active: 'Ativo',
   passivo: 'Passivo',
   patrimonio_liquido: 'Patrimônio Líquido',
   receita: 'Receita',
@@ -36,8 +36,8 @@ const TIPO_LABEL: Record<ContaPlano['tipo'], string> = {
   despesa: 'Despesa',
 }
 
-const TIPO_BADGE_CLASS: Record<ContaPlano['tipo'], string> = {
-  ativo: 'border-blue-200 bg-blue-50 text-blue-700',
+const TIPO_BADGE_CLASS: Record<ContaPlano['kind'], string> = {
+  active: 'border-blue-200 bg-blue-50 text-blue-700',
   passivo: 'border-amber-200 bg-amber-50 text-amber-700',
   patrimonio_liquido: 'border-brand/30 bg-brand/10 text-brand-dark',
   receita: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -58,7 +58,7 @@ function useArvore(contas: ContaPlano[]) {
       porPai.get(chave)!.push(c)
     }
     for (const lista of porPai.values()) {
-      lista.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
+      lista.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
     }
     return porPai
   }, [contas])
@@ -95,17 +95,17 @@ function ContaRow({
           ? <Folder size={15} className="text-brand shrink-0" />
           : <FileText size={15} className="text-muted-foreground shrink-0" />}
 
-        <span className="font-mono text-xs text-muted-foreground shrink-0 w-16">{conta.codigo}</span>
-        <span className={`truncate text-sm ${conta.ativo ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
-          {conta.nome}
+        <span className="font-mono text-xs text-muted-foreground shrink-0 w-16">{conta.code}</span>
+        <span className={`truncate text-sm ${conta.active ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+          {conta.name}
         </span>
-        {!conta.ativo && <Badge variant="outline" className="shrink-0 text-xs">Inativa</Badge>}
+        {!conta.active && <Badge variant="outline" className="shrink-0 text-xs">Inativa</Badge>}
         {conta.padrao && <Badge variant="outline" className="shrink-0 text-xs border-brand/30 text-brand">Padrão</Badge>}
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <Badge variant="outline" className={`text-xs ${TIPO_BADGE_CLASS[conta.tipo]}`}>
-          {TIPO_LABEL[conta.tipo]}
+        <Badge variant="outline" className={`text-xs ${TIPO_BADGE_CLASS[conta.kind]}`}>
+          {TIPO_LABEL[conta.kind]}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -155,16 +155,16 @@ function ModalNovaConta({
   open: boolean
   onClose: () => void
   contas: ContaPlano[]
-  onCriar: (dados: { codigo: string; nome: string; tipo: string; natureza: string; conta_pai_id: string; sintetica: boolean }) => Promise<{ error: string | null }>
+  onCriar: (dados: { code: string; name: string; kind: string; natureza: string; conta_pai_id: string; sintetica: boolean }) => Promise<{ error: string | null }>
 }) {
   const { toast } = useToast()
   const [paiId, setPaiId] = useState('')
-  const [codigo, setCodigo] = useState('')
-  const [nome, setNome] = useState('')
+  const [code, setCodigo] = useState('')
+  const [name, setNome] = useState('')
   const [sintetica, setSintetica] = useState(false)
   const [salvando, setSalvando] = useState(false)
 
-  const sinteticasAtivas = contas.filter(c => c.sintetica && c.ativo)
+  const sinteticasAtivas = contas.filter(c => c.sintetica && c.active)
   const pai = contas.find(c => c.id === paiId)
 
   const selecionarPai = (id: string) => {
@@ -181,18 +181,18 @@ function ModalNovaConta({
   }
 
   const handleCriar = async () => {
-    if (!pai || !codigo || !nome) {
-      toast({ title: 'Preencha conta pai, código e nome', variant: 'destructive' })
+    if (!pai || !code || !name) {
+      toast({ title: 'Preencha conta pai, código e name', variant: 'destructive' })
       return
     }
-    if (contas.some(c => c.codigo === codigo)) {
-      toast({ title: 'Código já existe', description: `Já existe uma conta com o código ${codigo}.`, variant: 'destructive' })
+    if (contas.some(c => c.code === code)) {
+      toast({ title: 'Código já existe', description: `Já existe uma conta com o código ${code}.`, variant: 'destructive' })
       return
     }
 
     setSalvando(true)
     const { error } = await onCriar({
-      codigo, nome, tipo: pai.tipo, natureza: pai.natureza, conta_pai_id: pai.id, sintetica,
+      code, name, kind: pai.kind, natureza: pai.natureza, conta_pai_id: pai.id, sintetica,
     })
     setSalvando(false)
 
@@ -218,7 +218,7 @@ function ModalNovaConta({
               <SelectTrigger><SelectValue placeholder="Selecione a conta pai" /></SelectTrigger>
               <SelectContent>
                 {sinteticasAtivas.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.codigo} — {c.nome}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -226,19 +226,19 @@ function ModalNovaConta({
 
           {pai && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline" className={TIPO_BADGE_CLASS[pai.tipo]}>{TIPO_LABEL[pai.tipo]}</Badge>
+              <Badge variant="outline" className={TIPO_BADGE_CLASS[pai.kind]}>{TIPO_LABEL[pai.kind]}</Badge>
               <span>Tipo e natureza herdados da conta pai.</span>
             </div>
           )}
 
           <div>
             <Label>Código</Label>
-            <Input value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="Ex: 1.1.05" />
+            <Input value={code} onChange={e => setCodigo(e.target.value)} placeholder="Ex: 1.1.05" />
           </div>
 
           <div>
             <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Caixa Loja 2" />
+            <Input value={name} onChange={e => setNome(e.target.value)} placeholder="Ex: Caixa Loja 2" />
           </div>
 
           <div className="flex items-center gap-3">
@@ -265,22 +265,22 @@ function ModalEditarConta({
 }: {
   conta: ContaPlano | null
   onClose: () => void
-  onSalvar: (id: string, updates: { nome?: string; ativo?: boolean }) => Promise<{ error: string | null }>
+  onSalvar: (id: string, updates: { name?: string; active?: boolean }) => Promise<{ error: string | null }>
 }) {
   const { toast } = useToast()
-  const [nome, setNome] = useState(conta?.nome ?? '')
-  const [ativo, setAtivo] = useState(conta?.ativo ?? true)
+  const [name, setNome] = useState(conta?.name ?? '')
+  const [active, setAtivo] = useState(conta?.active ?? true)
   const [salvando, setSalvando] = useState(false)
 
   if (!conta) return null
 
   const handleSalvar = async () => {
-    if (!nome) {
-      toast({ title: 'O nome não pode ficar vazio', variant: 'destructive' })
+    if (!name) {
+      toast({ title: 'O name não pode ficar vazio', variant: 'destructive' })
       return
     }
     setSalvando(true)
-    const updates = conta.padrao ? { nome } : { nome, ativo }
+    const updates = conta.padrao ? { name } : { name, active }
     const { error } = await onSalvar(conta.id, updates)
     setSalvando(false)
 
@@ -296,22 +296,22 @@ function ModalEditarConta({
     <Dialog open={!!conta} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar Conta — {conta.codigo}</DialogTitle>
+          <DialogTitle>Editar Conta — {conta.code}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div>
             <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} />
+            <Input value={name} onChange={e => setNome(e.target.value)} />
           </div>
 
           {conta.padrao ? (
             <p className="text-xs text-muted-foreground">
-              Esta é uma conta padrão do sistema — só o nome pode ser alterado.
+              Esta é uma conta padrão do sistema — só o name pode ser alterado.
             </p>
           ) : (
             <div className="flex items-center gap-3">
-              <Switch checked={ativo} onCheckedChange={setAtivo} />
+              <Switch checked={active} onCheckedChange={setAtivo} />
               <Label className="!mb-0">Conta ativa</Label>
             </div>
           )}
@@ -334,14 +334,14 @@ export default function PlanoContas() {
   const { contas, loading, criarConta, atualizarConta, excluirConta } = usePlanoContas()
   const { toast } = useToast()
 
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | ContaPlano['tipo']>('todos')
+  const [filtroTipo, setFiltroTipo] = useState<'todos' | ContaPlano['kind']>('todos')
   const [modalNova, setModalNova] = useState(false)
   const [editando, setEditando] = useState<ContaPlano | null>(null)
   const [excluindo, setExcluindo] = useState<ContaPlano | null>(null)
 
   const contasFiltradas = filtroTipo === 'todos'
     ? contas
-    : contas.filter(c => c.tipo === filtroTipo)
+    : contas.filter(c => c.kind === filtroTipo)
 
   const porPai = useArvore(contasFiltradas)
   const raizes = porPai.get(null) ?? []
@@ -373,9 +373,9 @@ export default function PlanoContas() {
         </Button>
       </div>
 
-      {/* Filtro por tipo */}
+      {/* Filtro por kind */}
       <div className="mb-4 flex items-center gap-3">
-        <Label className="!mb-0 text-xs text-muted-foreground">Filtrar por tipo</Label>
+        <Label className="!mb-0 text-xs text-muted-foreground">Filtrar por kind</Label>
         <Select value={filtroTipo} onValueChange={v => setFiltroTipo(v as typeof filtroTipo)}>
           <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -429,7 +429,7 @@ export default function PlanoContas() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir conta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir "{excluindo?.nome}"? Essa ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{excluindo?.name}"? Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

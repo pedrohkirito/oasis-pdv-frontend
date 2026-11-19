@@ -158,54 +158,54 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
   onSalvo: () => void
 }) {
   const { criarMeta, gerarDatas } = useMetas()
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const { toast } = useToast()
 
   const [passo, setPasso] = useState<1 | 2 | 3>(1)
-  const [tipo,  setTipo]  = useState<'loja' | 'vendedora' | 'categoria' | ''>('')
+  const [kind,  setTipo]  = useState<'loja' | 'vendedora' | 'category' | ''>('')
   const [periodo, setPeriodo]   = useState('mensal')
   const [valor,   setValor]     = useState('')
   const [quantidade, setQtd]    = useState('')
-  const [usuarioId,   setUsuId] = useState('')
+  const [userId,   setUsuId] = useState('')
   const [usuarioNome, setUsuNome] = useState('')
   const [categoria,   setCateg] = useState('')
-  const [usuarios,    setUsuarios] = useState<{ id: string; nome: string }[]>([])
+  const [usuarios,    setUsuarios] = useState<{ id: string; name: string }[]>([])
   const [categorias,  setCategorias] = useState<string[]>([])
   const [salvando,    setSalvando]   = useState(false)
 
   useEffect(() => {
-    if (!open || !empresaId) return
-    api.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } })
+    if (!open || !companyId) return
+    api.functions.invoke('list-users', { method: 'POST', body: { company_id: companyId } })
       .then(({ data, error }) => {
         if (error || !data?.users) return
-        const lista = (data.users as { id: string; nome: string | null; email: string }[])
-          .map(u => ({ id: u.id, nome: u.nome || u.email }))
+        const lista = (data.users as { id: string; name: string | null; email: string }[])
+          .map(u => ({ id: u.id, name: u.name || u.email }))
         setUsuarios(lista)
       })
-    api.from('produtos').select('categoria').eq('empresa_id', empresaId).eq('ativo', true)
+    api.from('product').select('category').eq('company_id', companyId).eq('active', true)
       .then(({ data }) => {
         const cats = [...new Set((data || []).map((p: any) => p.categoria).filter(Boolean))] as string[]
         setCategorias(cats)
       })
-  }, [open, empresaId])
+  }, [open, companyId])
 
   const resetar = () => { setPasso(1); setTipo(''); setPeriodo('mensal'); setValor(''); setQtd(''); setUsuId(''); setUsuNome(''); setCateg('') }
 
   const datas = gerarDatas(periodo)
 
   const confirmar = async () => {
-    if (!tipo || !valor) return
+    if (!kind || !valor) return
     setSalvando(true)
     const meta: any = {
-      tipo,
+      kind,
       periodo,
       valor: parseMaskedValue(valor),
       quantidade: quantidade ? parseInt(quantidade) : null,
       data_inicio: datas.inicio,
       data_fim: datas.fim,
     }
-    if (tipo === 'vendedora') { meta.usuario_id = usuarioId; meta.usuario_nome = usuarioNome }
-    if (tipo === 'categoria') { meta.categoria = categoria }
+    if (kind === 'vendedora') { meta.usuario_id = userId; meta.usuario_nome = usuarioNome }
+    if (kind === 'category') { meta.categoria = categoria }
 
     const { error } = await criarMeta(meta)
     setSalvando(false)
@@ -235,7 +235,7 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
             {[
               { key: 'loja',      Icon: Store,   label: 'Meta da Loja',      desc: 'Faturamento geral da loja' },
               { key: 'vendedora', Icon: User,    label: 'Por Vendedora',      desc: 'Meta individual por usuário' },
-              { key: 'categoria', Icon: Package, label: 'Por Categoria',      desc: 'Meta de categoria de produto' },
+              { key: 'category', Icon: Package, label: 'Por Categoria',      desc: 'Meta de categoria de produto' },
             ].map(({ key, Icon, label, desc }) => (
               <button
                 key={key}
@@ -244,21 +244,21 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
                   display: 'flex', alignItems: 'center', gap: '16px',
                   padding: '16px 20px', borderRadius: '16px', textAlign: 'left',
                   cursor: 'pointer', transition: 'all 0.2s ease',
-                  background: tipo === key ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.8)',
-                  border: tipo === key ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.15)',
-                  boxShadow: tipo === key ? '0 0 0 3px rgba(142,95,207,0.15)' : 'none',
+                  background: kind === key ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.8)',
+                  border: kind === key ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.15)',
+                  boxShadow: kind === key ? '0 0 0 3px rgba(142,95,207,0.15)' : 'none',
                 }}
-                onMouseEnter={e => { if (tipo !== key) { e.currentTarget.style.borderColor = 'rgba(142,95,207,0.4)'; e.currentTarget.style.background = 'rgba(142,95,207,0.03)'; } }}
-                onMouseLeave={e => { if (tipo !== key) { e.currentTarget.style.borderColor = 'rgba(142,95,207,0.15)'; e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; } }}
+                onMouseEnter={e => { if (kind !== key) { e.currentTarget.style.borderColor = 'rgba(142,95,207,0.4)'; e.currentTarget.style.background = 'rgba(142,95,207,0.03)'; } }}
+                onMouseLeave={e => { if (kind !== key) { e.currentTarget.style.borderColor = 'rgba(142,95,207,0.15)'; e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; } }}
               >
-                <div style={{ width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tipo === key ? 'rgba(142,95,207,0.12)' : 'rgba(142,95,207,0.06)', flexShrink: 0 }}>
-                  <Icon size={20} style={{ color: tipo === key ? '#8E5FCF' : '#9CA3AF' }} />
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: kind === key ? 'rgba(142,95,207,0.12)' : 'rgba(142,95,207,0.06)', flexShrink: 0 }}>
+                  <Icon size={20} style={{ color: kind === key ? '#8E5FCF' : '#9CA3AF' }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.9rem', color: tipo === key ? '#8E5FCF' : '#1F2937', marginBottom: '2px' }}>{label}</p>
+                  <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.9rem', color: kind === key ? '#8E5FCF' : '#1F2937', marginBottom: '2px' }}>{label}</p>
                   <p style={{ fontFamily: 'Gilroy', fontSize: '0.8rem', color: '#9CA3AF' }}>{desc}</p>
                 </div>
-                {tipo === key && <Check size={16} style={{ color: '#8E5FCF', flexShrink: 0 }} />}
+                {kind === key && <Check size={16} style={{ color: '#8E5FCF', flexShrink: 0 }} />}
               </button>
             ))}
           </div>
@@ -267,21 +267,21 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
         {/* ── Passo 2 — Detalhes ── */}
         {passo === 2 && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {tipo === 'vendedora' && (
+            {kind === 'vendedora' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <Label style={{ fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.8rem', color: '#374151' }}>Vendedora</Label>
-                <Select value={usuarioId} onValueChange={v => {
+                <Select value={userId} onValueChange={v => {
                   setUsuId(v)
-                  setUsuNome(usuarios.find(u => u.id === v)?.nome || '')
+                  setUsuNome(usuarios.find(u => u.id === v)?.name || '')
                 }}>
                   <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                   <SelectContent>
-                    {usuarios.map(u => <SelectItem key={u.id} value={u.id}>{u.nome}</SelectItem>)}
+                    {usuarios.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
-            {tipo === 'categoria' && (
+            {kind === 'category' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <Label style={{ fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.8rem', color: '#374151' }}>Categoria</Label>
                 <Select value={categoria} onValueChange={setCateg}>
@@ -344,11 +344,11 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
           <div style={{ padding: '20px 24px' }}>
             <div style={{ background: 'rgba(142,95,207,0.06)', border: '1px solid rgba(142,95,207,0.15)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { label: 'Tipo', valor: LABEL_TIPO[tipo] },
+                { label: 'Tipo', valor: LABEL_TIPO[kind] },
                 { label: 'Período', valor: LABEL_PERIODO[periodo] },
                 { label: 'Datas', valor: `${datas.inicio} → ${datas.fim}` },
-                ...(tipo === 'vendedora' && usuarioNome ? [{ label: 'Vendedora', valor: usuarioNome }] : []),
-                ...(tipo === 'categoria' && categoria ? [{ label: 'Categoria', valor: categoria }] : []),
+                ...(kind === 'vendedora' && usuarioNome ? [{ label: 'Vendedora', valor: usuarioNome }] : []),
+                ...(kind === 'category' && categoria ? [{ label: 'Categoria', valor: categoria }] : []),
                 ...(quantidade ? [{ label: 'Qtd. vendas', valor: quantidade }] : []),
               ].map(({ label, valor: val }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -389,8 +389,8 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
             {passo < 3 && (
               <button
                 onClick={() => setPasso(p => (p + 1) as any)}
-                disabled={passo === 1 ? !tipo : !valor}
-                style={{ padding: '9px 20px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #8E5FCF, #47118F)', color: 'white', fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.875rem', cursor: (passo === 1 ? !tipo : !valor) ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(142,95,207,0.4)', opacity: (passo === 1 ? !tipo : !valor) ? 0.6 : 1 }}
+                disabled={passo === 1 ? !kind : !valor}
+                style={{ padding: '9px 20px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #8E5FCF, #47118F)', color: 'white', fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.875rem', cursor: (passo === 1 ? !kind : !valor) ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(142,95,207,0.4)', opacity: (passo === 1 ? !kind : !valor) ? 0.6 : 1 }}
               >
                 Próximo
               </button>
@@ -415,7 +415,7 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
 
 const Metas = () => {
   const { metas, loading, buscarProgressoMeta, excluirMeta, gerarDatas } = useMetas()
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -436,13 +436,13 @@ const Metas = () => {
 
   // Gráfico mensal: realizado dia a dia vs meta proporcional
   useEffect(() => {
-    if (!empresaId) return
+    if (!companyId) return
     const ini = format(startOfMonth(new Date()), 'yyyy-MM-dd')
     const fim = format(endOfMonth(new Date()), 'yyyy-MM-dd')
-    const metaMensal = (metas as any[]).find(m => m.tipo === 'loja' && m.periodo === 'mensal')
+    const metaMensal = (metas as any[]).find(m => m.kind === 'loja' && m.periodo === 'mensal')
 
-    api.from('vendas').select('valor, created_at')
-      .eq('empresa_id', empresaId)
+    api.from('sale').select('valor, created_at')
+      .eq('company_id', companyId)
       .gte('created_at', ini + 'T00:00:00')
       .lte('created_at', fim + 'T23:59:59')
       .then(({ data }) => {
@@ -464,12 +464,12 @@ const Metas = () => {
         })
         setDadosDiarios(grafico)
       })
-  }, [empresaId, metas])
+  }, [companyId, metas])
 
-  // Agrupa progresso por tipo/período
-  const metaLoja    = progressos.filter(p => p.meta.tipo === 'loja')
-  const metaVend    = progressos.filter(p => p.meta.tipo === 'vendedora')
-  const metaCateg   = progressos.filter(p => p.meta.tipo === 'categoria')
+  // Agrupa progresso por kind/período
+  const metaLoja    = progressos.filter(p => p.meta.kind === 'loja')
+  const metaVend    = progressos.filter(p => p.meta.kind === 'vendedora')
+  const metaCateg   = progressos.filter(p => p.meta.kind === 'category')
 
   const metaDiaria  = metaLoja.find(p => p.meta.periodo === 'diario')
   const metaSemanal = metaLoja.find(p => p.meta.periodo === 'semanal')
@@ -478,7 +478,7 @@ const Metas = () => {
   // Histórico
   const historico = useMemo(() => progressos.map(p => ({
     periodo: `${p.meta.data_inicio} → ${p.meta.data_fim}`,
-    tipo: LABEL_TIPO[p.meta.tipo],
+    kind: LABEL_TIPO[p.meta.kind],
     meta: p.meta.valor,
     realizado: p.realizado,
     pct: p.percentual,
@@ -611,7 +611,7 @@ const Metas = () => {
                         const ativas = [...progressos].sort((a, b) => {
                           const ordemTipo: Record<string, number> = { loja: 0, vendedora: 1, categoria: 2 }
                           const ordemPer: Record<string, number> = { diario: 0, semanal: 1, mensal: 2 }
-                          const t = (ordemTipo[a.meta.tipo] ?? 9) - (ordemTipo[b.meta.tipo] ?? 9)
+                          const t = (ordemTipo[a.meta.kind] ?? 9) - (ordemTipo[b.meta.kind] ?? 9)
                           if (t !== 0) return t
                           return (ordemPer[a.meta.periodo] ?? 9) - (ordemPer[b.meta.periodo] ?? 9)
                         }).slice(0, 3)
@@ -619,9 +619,9 @@ const Metas = () => {
                         return slots.map((p, i) => {
                           let titulo = 'Sem meta configurada'
                           if (p) {
-                            if (p.meta.tipo === 'loja') titulo = tituloLojaPeriodo[p.meta.periodo] ?? 'Meta da Loja'
-                            else if (p.meta.tipo === 'vendedora') titulo = `${p.meta.usuario_nome ?? 'Vendedora'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
-                            else if (p.meta.tipo === 'categoria') titulo = `${p.meta.categoria ?? 'Categoria'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
+                            if (p.meta.kind === 'loja') titulo = tituloLojaPeriodo[p.meta.periodo] ?? 'Meta da Loja'
+                            else if (p.meta.kind === 'vendedora') titulo = `${p.meta.usuario_nome ?? 'Vendedora'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
+                            else if (p.meta.kind === 'category') titulo = `${p.meta.categoria ?? 'Categoria'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
                           }
                           return (
                             <CardPeriodo
@@ -691,7 +691,7 @@ const Metas = () => {
                   <p style={{ fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.75rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>Meta da Loja</p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {(['diario', 'semanal', 'mensal'] as const).map(per => {
-                      const p = progressos.find(x => x.meta.tipo === 'loja' && x.meta.periodo === per)
+                      const p = progressos.find(x => x.meta.kind === 'loja' && x.meta.periodo === per)
                       return (
                         <div key={per} style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(142,95,207,0.12)', borderRadius: '16px', padding: '20px', transition: 'all 0.2s' }}>
                           <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>{LABEL_PERIODO[per]}</p>
@@ -836,7 +836,7 @@ const Metas = () => {
                           onMouseLeave={e => { e.currentTarget.style.background = bgRow; }}
                         >
                           <td style={{ padding: '14px 16px', fontFamily: 'Gilroy', fontSize: '0.8rem', color: '#6B7280' }}>{h.periodo}</td>
-                          <td style={{ padding: '14px 16px', fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.875rem', color: '#374151' }}>{h.tipo}</td>
+                          <td style={{ padding: '14px 16px', fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.875rem', color: '#374151' }}>{h.kind}</td>
                           <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#374151' }}>{fmtBRL(h.meta)}</td>
                           <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.875rem', color: '#1F2937' }}>{fmtBRL(h.realizado)}</td>
                           <td style={{ padding: '14px 16px', textAlign: 'right' }}>

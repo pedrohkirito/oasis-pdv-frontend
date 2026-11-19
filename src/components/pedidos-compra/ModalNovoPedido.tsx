@@ -23,8 +23,8 @@ import { cn } from '@/lib/utils';
 
 // ─── Tipos locais ─────────────────────────────────────────────────────────────
 
-interface FornecedorOpt { id: string; nome: string; }
-interface ProdutoOpt  { id: string; nome: string; codigo: string | null; custo: number | null; }
+interface FornecedorOpt { id: string; name: string; }
+interface ProdutoOpt  { id: string; name: string; code: string | null; custo: number | null; }
 
 type ItemForm = {
   produto_id: string | null;
@@ -43,7 +43,7 @@ const fmtBRL = (v: number) =>
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCriado: (pedido: NovoPedidoPayload, itens: Omit<ItemPedido, 'id' | 'pedido_id' | 'empresa_id' | 'valor_total' | 'created_at'>[]) => Promise<any>;
+  onCriado: (pedido: NovoPedidoPayload, itens: Omit<ItemPedido, 'id' | 'purchase_order_id' | 'company_id' | 'total_amount' | 'created_at'>[]) => Promise<any>;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -63,7 +63,7 @@ const inputStyle: React.CSSProperties = {
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
 
   const [passo, setPasso] = useState<1 | 2 | 3>(1);
   const [fornecedores, setFornecedores] = useState<FornecedorOpt[]>([]);
@@ -89,19 +89,19 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    if (!open || !empresaId) return;
+    if (!open || !companyId) return;
     const carregar = async () => {
       setCarregando(true);
       const [{ data: forn }, { data: prod }] = await Promise.all([
-        api.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).order('nome'),
-        api.from('produtos').select('id, nome, codigo, custo').eq('empresa_id', empresaId).eq('tipo', 'produto').eq('ativo', true).order('nome'),
+        api.from('supplier').select('id, name').eq('company_id', companyId).order('name'),
+        api.from('product').select('id, name, code, cost').eq('company_id', companyId).eq('kind', 'produto').eq('active', true).order('name'),
       ]);
       setFornecedores((forn ?? []) as FornecedorOpt[]);
       setProdutos((prod ?? []) as ProdutoOpt[]);
       setCarregando(false);
     };
     carregar();
-  }, [open, empresaId]);
+  }, [open, companyId]);
 
   const resetar = () => {
     setPasso(1);
@@ -126,10 +126,10 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
     setItens(prev => prev.map((item, i) => {
       if (i !== idx) return item;
       const updated = { ...item, [campo]: valor };
-      if (campo === 'produto_id' && typeof valor === 'string') {
+      if (campo === 'product_id' && typeof valor === 'string') {
         const prod = produtos.find(p => p.id === valor);
         if (prod) {
-          updated.produto_nome = prod.nome;
+          updated.produto_nome = prod.name;
           updated.valor_unitario = prod.custo ?? 0;
         }
       }
@@ -226,7 +226,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                   value={form.fornecedor_id ?? ''}
                   onValueChange={v => {
                     const forn = fornecedores.find(f => f.id === v);
-                    setForm(prev => ({ ...prev, fornecedor_id: v || null, fornecedor_nome: forn?.nome ?? null }));
+                    setForm(prev => ({ ...prev, fornecedor_id: v || null, fornecedor_nome: forn?.name ?? null }));
                   }}
                   disabled={carregando}
                 >
@@ -235,7 +235,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     {fornecedores.map(f => (
-                      <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -339,7 +339,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                         <td style={{ padding: '10px 12px' }}>
                           <Select
                             value={item.produto_id ?? ''}
-                            onValueChange={v => atualizarItem(idx, 'produto_id', v || null)}
+                            onValueChange={v => atualizarItem(idx, 'product_id', v || null)}
                           >
                             <SelectTrigger className="h-8 text-xs" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8 }}>
                               <SelectValue placeholder="Selecione..." />
@@ -347,7 +347,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                             <SelectContent>
                               {produtos.map(p => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.codigo ? `[${p.codigo}] ` : ''}{p.nome}
+                                  {p.code ? `[${p.code}] ` : ''}{p.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -356,7 +356,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                             <input
                               placeholder="ou descreva manualmente"
                               value={item.produto_nome}
-                              onChange={e => atualizarItem(idx, 'produto_nome', e.target.value)}
+                              onChange={e => atualizarItem(idx, 'product_name', e.target.value)}
                               style={{ marginTop: 4, width: '100%', padding: '4px 8px', fontSize: 12, border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.7)', outline: 'none', fontFamily: 'inherit', color: '#374151', boxSizing: 'border-box' }}
                             />
                           )}
@@ -366,7 +366,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                             type="number"
                             min="1"
                             value={item.quantidade}
-                            onChange={e => atualizarItem(idx, 'quantidade', Math.max(1, parseInt(e.target.value) || 1))}
+                            onChange={e => atualizarItem(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
                             style={{ width: 56, padding: '5px 6px', fontSize: 12, border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.7)', outline: 'none', textAlign: 'center', fontFamily: 'inherit', color: '#374151' }}
                           />
                         </td>

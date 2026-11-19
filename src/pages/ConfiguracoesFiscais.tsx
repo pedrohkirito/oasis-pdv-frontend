@@ -106,24 +106,24 @@ const sectionTitleStyle: React.CSSProperties = {
 
 export default function ConfiguracoesFiscais() {
   const { user } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("empresa");
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
   const { data: empresaFiscal, isLoading } = useQuery({
-    queryKey: ["empresa-fiscal", empresaId],
+    queryKey: ["empresa-fiscal", companyId],
     queryFn: async () => {
-      if (!empresaId) return null;
+      if (!companyId) return null;
       const { data, error } = await api
-        .from("empresa_fiscal")
+        .from("company_fiscal_profile")
         .select("*")
-        .eq("empresa_id", empresaId)
+        .eq("company_id", companyId)
         .single();
       if (error && error.code !== "PGRST116") throw error;
       return data;
     },
-    enabled: !!user && !!empresaId,
+    enabled: !!user && !!companyId,
   });
 
   const empresaForm = useForm<EmpresaFormData>({
@@ -181,10 +181,10 @@ export default function ConfiguracoesFiscais() {
     mutationFn: async (data: EmpresaFormData) => {
       if (!user) throw new Error("Usuário não autenticado");
       if (empresaFiscal?.id) {
-        const { error } = await api.from("empresa_fiscal").update({ ...data, user_id: user.id }).eq("id", empresaFiscal.id);
+        const { error } = await api.from("company_fiscal_profile").update({ ...data, user_id: user.id }).eq("id", empresaFiscal.id);
         if (error) throw error;
       } else {
-        const { error } = await api.from("empresa_fiscal").insert({
+        const { error } = await api.from("company_fiscal_profile").insert({
           cnpj: data.cnpj, razao_social: data.razao_social, nome_fantasia: data.nome_fantasia || null,
           inscricao_estadual: data.inscricao_estadual, inscricao_municipal: data.inscricao_municipal || null,
           regime_tributario: data.regime_tributario, endereco_logradouro: data.endereco_logradouro,
@@ -192,13 +192,13 @@ export default function ConfiguracoesFiscais() {
           endereco_bairro: data.endereco_bairro, endereco_cidade: data.endereco_cidade,
           endereco_uf: data.endereco_uf, endereco_cep: data.endereco_cep,
           endereco_codigo_municipio: data.endereco_codigo_municipio,
-          user_id: user.id, empresa_id: empresaId,
+          user_id: user.id, company_id: companyId,
         });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", companyId] });
       toast.success("Dados da empresa salvos com sucesso!");
     },
     onError: (error) => { toast.error("Erro ao salvar dados: " + error.message); },
@@ -208,11 +208,11 @@ export default function ConfiguracoesFiscais() {
     mutationFn: async (data: NfceFormData) => {
       if (!user) throw new Error("Usuário não autenticado");
       if (!empresaFiscal?.id) throw new Error("Cadastre os dados da empresa primeiro");
-      const { error } = await api.from("empresa_fiscal").update(data).eq("id", empresaFiscal.id);
+      const { error } = await api.from("company_fiscal_profile").update(data).eq("id", empresaFiscal.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", companyId] });
       toast.success("Configurações de NFC-e salvas com sucesso!");
     },
     onError: (error) => { toast.error("Erro ao salvar configurações: " + error.message); },
@@ -227,7 +227,7 @@ export default function ConfiguracoesFiscais() {
       const testData = {
         empresaFiscal: { ...empresaFiscal, ambiente: "homologacao" },
         venda: { id: null, user_id: user.id, cliente_nome: "CONSUMIDOR TESTE", valor: 1.00, valor_bruto: 1.00, valor_final: 1.00, metodo_pagamento: "dinheiro", observacoes: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" },
-        itens: [{ id: "teste-001", codigo: "TESTE001", nome: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL", ncm: "00000000", cfop: "5102", unidade_comercial: "UN", quantidade: 1, preco_unitario: 1.00, subtotal: 1.00, origem: "0" }],
+        itens: [{ id: "teste-001", code: "TESTE001", name: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL", ncm: "00000000", cfop: "5102", unidade_comercial: "UN", quantidade: 1, preco_unitario: 1.00, subtotal: 1.00, origem: "0" }],
         cliente: null,
       };
       const { data, error } = await api.functions.invoke("becoming-nfce", { body: { action: "emitir", data: testData } });
@@ -238,7 +238,7 @@ export default function ConfiguracoesFiscais() {
       if (data.status === "autorizado" || data.status === "autorizada") {
         setTestResult({ success: true, message: "NFC-e de teste emitida com sucesso!", details: data });
         toast.success("Teste realizado com sucesso! NFC-e emitida em homologação.");
-        queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", empresaId] });
+        queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", companyId] });
       } else if (data.status === "rejeitado" || data.status === "rejeitada") {
         setTestResult({ success: false, message: `NFC-e rejeitada: ${data.motivo_rejeicao || "Verifique os dados fiscais"}`, details: data });
         toast.error("NFC-e rejeitada pela SEFAZ");
@@ -431,7 +431,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="razao_social" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="legal_name" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Razão Social *</label>
                         <FormControl>
@@ -440,7 +440,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="nome_fantasia" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="trade_name" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Nome Fantasia</label>
                         <FormControl>
@@ -486,7 +486,7 @@ export default function ConfiguracoesFiscais() {
                     Endereço
                   </p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16, marginBottom: 16 }}>
-                    <FormField control={empresaForm.control} name="endereco_cep" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_postal_code" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>CEP *</label>
                         <FormControl>
@@ -495,7 +495,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="endereco_logradouro" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_street" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Logradouro *</label>
                         <FormControl>
@@ -506,7 +506,7 @@ export default function ConfiguracoesFiscais() {
                     )} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: 16, marginBottom: 16 }}>
-                    <FormField control={empresaForm.control} name="endereco_numero" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_number" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Número *</label>
                         <FormControl>
@@ -524,7 +524,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="endereco_bairro" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_district" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Bairro *</label>
                         <FormControl>
@@ -535,7 +535,7 @@ export default function ConfiguracoesFiscais() {
                     )} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 16 }}>
-                    <FormField control={empresaForm.control} name="endereco_cidade" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_city" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Cidade *</label>
                         <FormControl>
@@ -544,7 +544,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="endereco_uf" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_state" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>UF *</label>
                         <Select onValueChange={field.onChange} value={field.value}>

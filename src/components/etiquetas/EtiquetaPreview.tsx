@@ -70,7 +70,7 @@ export function EtiquetaPreview({ produto, config, logoUrl, tamanho }: EtiquetaP
       position: 'relative',
     }}>
 
-      {/* Linha superior: logo + nome */}
+      {/* Linha superior: logo + name */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
         {config.mostrar_logo && logoUrl && (
           <img
@@ -107,7 +107,7 @@ export function EtiquetaPreview({ produto, config, logoUrl, tamanho }: EtiquetaP
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
           }}>
-            {produto.nome}
+            {produto.name}
           </span>
         )}
       </div>
@@ -120,11 +120,11 @@ export function EtiquetaPreview({ produto, config, logoUrl, tamanho }: EtiquetaP
       )}
 
       {/* Código de barras simulado */}
-      {config.mostrar_codigo_barras && produto.codigo && (
+      {config.mostrar_codigo_barras && produto.code && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
           <SimulatedBarcode width={width - (tam === 'pequena' ? 20 : 28)} />
           <span style={{ fontSize: 6, color: '#6B7280', letterSpacing: 1 }}>
-            {produto.codigo}
+            {produto.code}
           </span>
         </div>
       )}

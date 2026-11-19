@@ -32,11 +32,11 @@ interface ItemVenda {
   preco_unitario: number;
   subtotal: number;
   desconto?: number;
-  desconto_tipo?: 'percentual' | 'valor';
+  desconto_tipo?: 'percentual' | 'amount';
   observacao?: string;
   produto?: {
-    nome: string;
-    codigo: string | null;
+    name: string;
+    code: string | null;
     categoria: string | null;
   };
 }
@@ -106,11 +106,11 @@ const formatCNPJ = (cnpj: string) => {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendaId: string | null;
+  saleId: string | null;
 }
 
-export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, vendaId }) => {
-  const { empresaId, empresaAtiva } = useEmpresa();
+export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleId }) => {
+  const { companyId, empresaAtiva } = useEmpresa();
   const [pedido, setPedido] = useState<PedidoEntrega | null>(null);
   const [itens, setItens] = useState<ItemVenda[]>([]);
   // Valor dos serviços da venda: não aparecem na lista de entrega, mas compõem o total.
@@ -123,20 +123,20 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open && vendaId && empresaId) {
+    if (open && saleId && companyId) {
       fetchData();
     }
-  }, [open, vendaId, empresaId]);
+  }, [open, saleId, companyId]);
 
   const fetchData = async () => {
-    if (!vendaId || !empresaId) return;
+    if (!saleId || !companyId) return;
     setLoading(true);
 
     const [pedidoRes, itensRes, fiscalRes, vendaRes] = await Promise.all([
-      api.from('pedidos_entrega').select('*').eq('venda_id', vendaId).eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(1).single(),
-      api.from('itens_venda').select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, produtos(nome, codigo, categoria, tipo)').eq('venda_id', vendaId),
-      api.from('empresa_fiscal').select('razao_social, nome_fantasia, cnpj, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf, endereco_cep').eq('empresa_id', empresaId).limit(1).single(),
-      api.from('vendas').select('valor, valor_bruto, desconto, valor_final, metodo_pagamento, parcelas, vendedor, observacoes, data_venda, cliente_nome, cliente_id').eq('id', vendaId).single(),
+      api.from('delivery_order').select('*').eq('sale_id', saleId).eq('company_id', companyId).order('created_at', { ascending: false }).limit(1).single(),
+      api.from('sale_item').select('product_id, quantity, unit_price, subtotal, discount, discount_kind, note, product(name, code, category, kind)').eq('sale_id', saleId),
+      api.from('company_fiscal_profile').select('legal_name, trade_name, tax_id, street, street_number, district, city, state, postal_code').eq('company_id', companyId).limit(1).single(),
+      api.from('sale').select('amount, gross_amount, discount, final_amount, payment_method, installments, seller, notes, sold_on, customer_name, customer_id').eq('id', saleId).single(),
     ]);
 
     if (pedidoRes.data) setPedido(pedidoRes.data as any);
@@ -146,9 +146,9 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
     let usouFallback = false;
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
       const fallback = await api
-        .from('itens_venda')
-        .select('produto_id, quantidade, preco_unitario, subtotal, produtos(nome, codigo, categoria, tipo)')
-        .eq('venda_id', vendaId);
+        .from('sale_item')
+        .select('product_id, quantity, unit_price, subtotal, product(name, code, category, kind)')
+        .eq('sale_id', saleId);
       itensData = (fallback.data as any[]) || [];
       usouFallback = true;
     }
@@ -173,26 +173,26 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
     if (vendaRes.data) setVendaInfo(vendaRes.data as any);
 
     // Fetch full client record: prefer cliente_id (from pedido or venda), fallback to name match
-    const clienteId = (pedidoRes.data as any)?.cliente_id || (vendaRes.data as any)?.cliente_id;
+    const customerId = (pedidoRes.data as any)?.cliente_id || (vendaRes.data as any)?.cliente_id;
     const clienteNome = (pedidoRes.data as any)?.cliente_nome || (vendaRes.data as any)?.cliente_nome;
     const clienteFields = 'cpf, telefone, telefone_adicional, email, endereco, complemento, bairro, cidade, estado, cep, data_nascimento, observacoes';
 
     let cli: any = null;
-    if (clienteId) {
+    if (customerId) {
       const { data } = await api
-        .from('clientes')
+        .from('customer')
         .select(clienteFields)
-        .eq('id', clienteId)
+        .eq('id', customerId)
         .maybeSingle();
       cli = data;
     }
     if (!cli && clienteNome) {
       const { data } = await api
-        .from('clientes')
+        .from('customer')
         .select(clienteFields)
-        .eq('empresa_id', empresaId)
-        .eq('nome', clienteNome)
-        .eq('ativo', true)
+        .eq('company_id', companyId)
+        .eq('name', clienteNome)
+        .eq('active', true)
         .limit(1)
         .maybeSingle();
       cli = data;
@@ -247,7 +247,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
 
   const valorBruto = vendaInfo?.valor_bruto ?? vendaInfo?.valor ?? 0;
   const desconto = vendaInfo?.desconto ?? 0;
-  const valorFinal = vendaInfo?.valor_final ?? vendaInfo?.valor ?? 0;
+  const finalAmount = vendaInfo?.valor_final ?? vendaInfo?.valor ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -286,7 +286,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 32, borderBottom: '3px solid #8E5FCF', marginBottom: 32 }}>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.5px', marginBottom: 8 }}>
-                    {empresaFiscal?.nome_fantasia || empresaFiscal?.razao_social || empresaAtiva?.nome || 'Empresa'}
+                    {empresaFiscal?.nome_fantasia || empresaFiscal?.razao_social || empresaAtiva?.name || 'Empresa'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.8, margin: 0 }}>
                     {empresaFiscal && (
@@ -405,15 +405,15 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
                         return (
                           <React.Fragment key={idx}>
                             <tr style={{ background: rowBg, borderBottom: '1px solid #F3F4F6' }}>
-                              <td style={{ padding: '14px 16px', fontSize: 11, color: '#9CA3AF', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.codigo || '—'}</td>
-                              <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.nome || 'Produto'}</td>
+                              <td style={{ padding: '14px 16px', fontSize: 11, color: '#9CA3AF', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.code || '—'}</td>
+                              <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.name || 'Produto'}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', textAlign: 'center', verticalAlign: 'top' }}>{item.quantidade}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', textAlign: 'center', verticalAlign: 'top' }}>{formatCurrency(Number(item.preco_unitario))}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, textAlign: 'right', fontWeight: 600, color: temDesconto ? '#EF4444' : '#D1D5DB', verticalAlign: 'top' }}>
                                 {temDesconto ? (
                                   <>
                                     <div>{item.desconto_tipo === 'percentual' ? `-${item.desconto}%` : `-${formatCurrency(item.desconto || 0)}`}</div>
-                                    {item.desconto_tipo === 'valor' && (
+                                    {item.desconto_tipo === 'amount' && (
                                       <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 400 }}>
                                         ({pctContexto % 1 === 0 ? pctContexto.toFixed(0) : pctContexto.toFixed(1)}%)
                                       </div>
@@ -473,7 +473,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
                       ))}
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 16px', background: '#8E5FCF' }}>
                         <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>Total Final</span>
-                        <span style={{ color: 'white', fontWeight: 800, fontSize: 16 }}>{formatCurrency(Number(valorFinal))}</span>
+                        <span style={{ color: 'white', fontWeight: 800, fontSize: 16 }}>{formatCurrency(Number(finalAmount))}</span>
                       </div>
                     </div>
                   </div>

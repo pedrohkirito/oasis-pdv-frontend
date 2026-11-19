@@ -28,7 +28,7 @@ interface ComissaoComVenda {
   id: string;
   venda_id: string;
   vendedor_id: string;
-  empresa_id: string | null;
+  company_id: string | null;
   valor_base: number;
   percentual: number;
   valor_comissao: number;
@@ -42,7 +42,7 @@ interface ComissaoComVenda {
 
 interface VendedorInfo {
   id: string;
-  nome: string;
+  name: string;
   email: string;
 }
 
@@ -162,9 +162,9 @@ const glassCard: React.CSSProperties = {
 const Comissoes = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
-  const isAdmin = role === 'admin' || role === 'gerente';
+  const isAdmin = role === 'admin' || role === 'manager';
   const isAdminOnly = role === 'admin';
 
   // Vendedor/visualizador always locked to own ID
@@ -205,17 +205,17 @@ const Comissoes = () => {
   useEffect(() => { setPage(0); }, [selectedVendedor, dateRange]);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       loadAll();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   // Reload paginated data when page/filters change
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchPaginatedComissoes();
     }
-  }, [page, selectedVendedor, dateRange, empresaId]);
+  }, [page, selectedVendedor, dateRange, companyId]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -233,32 +233,32 @@ const Comissoes = () => {
 
   // Build base query with mandatory filters
   const buildVendaIdsQuery = useCallback(async (): Promise<string[]> => {
-    if (!empresaId) return [];
+    if (!companyId) return [];
 
     let query = api
-      .from('vendas')
+      .from('sale')
       .select('id')
-      .eq('empresa_id', empresaId);
+      .eq('company_id', companyId);
 
     const vendedorFilter = getActiveVendedorFilter();
     if (vendedorFilter) {
-      query = query.eq('vendedor_id', vendedorFilter);
+      query = query.eq('seller_id', vendedorFilter);
     }
 
     if (dateRange.from) {
-      query = query.gte('data_venda', format(dateRange.from, 'yyyy-MM-dd'));
+      query = query.gte('sold_on', format(dateRange.from, 'yyyy-MM-dd'));
     }
     if (dateRange.to) {
-      query = query.lte('data_venda', format(dateRange.to, 'yyyy-MM-dd'));
+      query = query.lte('sold_on', format(dateRange.to, 'yyyy-MM-dd'));
     }
 
     const { data } = await query;
     return (data || []).map(v => v.id);
-  }, [empresaId, selectedVendedor, effectiveVendedorFilter, dateRange]);
+  }, [companyId, selectedVendedor, effectiveVendedorFilter, dateRange]);
 
   // Fetch summary totals (all matching, no pagination)
   const fetchSummaryTotals = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
 
     const vendaIds = await buildVendaIdsQuery();
     if (vendaIds.length === 0) {
@@ -274,10 +274,10 @@ const Comissoes = () => {
     for (let i = 0; i < vendaIds.length; i += 100) {
       const chunk = vendaIds.slice(i, i + 100);
       let query = api
-        .from('comissoes')
+        .from('commission')
         .select('valor_base, valor_comissao')
-        .eq('empresa_id', empresaId)
-        .in('venda_id', chunk);
+        .eq('company_id', companyId)
+        .in('sale_id', chunk);
 
       const { data } = await query;
       if (data) allComissoes = allComissoes.concat(data);
@@ -293,7 +293,7 @@ const Comissoes = () => {
 
   // Fetch paginated detail rows
   const fetchPaginatedComissoes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setPageLoading(true);
 
     const vendaIds = await buildVendaIdsQuery();
@@ -309,11 +309,11 @@ const Comissoes = () => {
     const to = from + PAGE_SIZE - 1;
 
     let query = api
-      .from('comissoes')
+      .from('commission')
       .select('*', { count: 'exact' })
-      .eq('empresa_id', empresaId)
-      .in('venda_id', vendaIds)
-      .order('data_calculo', { ascending: false })
+      .eq('company_id', companyId)
+      .in('sale_id', vendaIds)
+      .order('calculated_on', { ascending: false })
       .range(from, to);
 
     const { data, error, count } = await query;
@@ -332,10 +332,10 @@ const Comissoes = () => {
     let vendasMap: Record<string, any> = {};
     if (pageVendaIds.length > 0) {
       const { data: vendas } = await api
-        .from('vendas')
+        .from('sale')
         .select('id, cliente_nome, produtos, data_venda, vendedor')
         .in('id', pageVendaIds)
-        .eq('empresa_id', empresaId);
+        .eq('company_id', companyId);
       if (vendas) {
         vendas.forEach(v => { vendasMap[v.id] = v; });
       }
@@ -355,7 +355,7 @@ const Comissoes = () => {
 
   // Fetch all for chart and ranking (lightweight - only aggregation fields)
   const fetchAllForChartAndRanking = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
 
     const vendaIds = await buildVendaIdsQuery();
     if (vendaIds.length === 0) {
@@ -367,10 +367,10 @@ const Comissoes = () => {
     for (let i = 0; i < vendaIds.length; i += 100) {
       const chunk = vendaIds.slice(i, i + 100);
       const { data } = await api
-        .from('comissoes')
+        .from('commission')
         .select('id, venda_id, vendedor_id, valor_base, percentual, valor_comissao, data_calculo, empresa_id, created_at')
-        .eq('empresa_id', empresaId)
-        .in('venda_id', chunk);
+        .eq('company_id', companyId)
+        .in('sale_id', chunk);
       if (data) allComissoes = allComissoes.concat(data);
     }
 
@@ -380,10 +380,10 @@ const Comissoes = () => {
     for (let i = 0; i < allVendaIds.length; i += 100) {
       const chunk = allVendaIds.slice(i, i + 100);
       const { data: vendas } = await api
-        .from('vendas')
+        .from('sale')
         .select('id, data_venda')
         .in('id', chunk)
-        .eq('empresa_id', empresaId);
+        .eq('company_id', companyId);
       if (vendas) vendas.forEach(v => { vendasMap[v.id] = v; });
     }
 
@@ -396,13 +396,13 @@ const Comissoes = () => {
   };
 
   const fetchMetas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const mesAtual = format(new Date(), 'yyyy-MM');
     const { data } = await api
-      .from('metas_vendedor')
+      .from('seller_goal')
       .select('vendedor_id, valor_meta')
-      .eq('empresa_id', empresaId)
-      .eq('mes_referencia', mesAtual);
+      .eq('company_id', companyId)
+      .eq('reference_month', mesAtual);
 
     const map: Record<string, number> = {};
     (data || []).forEach((m: any) => { map[m.vendedor_id] = Number(m.valor_meta); });
@@ -410,16 +410,16 @@ const Comissoes = () => {
   };
 
   const fetchVendedores = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     try {
       const { data, error } = await api.functions.invoke('list-users', {
-        body: { empresa_id: empresaId },
+        body: { company_id: companyId },
       });
       if (error || !data?.users) return;
       setVendedores(
         data.users.map((u: any) => ({
           id: u.id,
-          nome: u.nome || u.email?.split('@')[0] || 'Sem nome',
+          name: u.name || u.email?.split('@')[0] || 'Sem name',
           email: u.email || '',
         }))
       );
@@ -430,7 +430,7 @@ const Comissoes = () => {
 
   const getVendedorNome = (vendedorId: string) => {
     const v = vendedores.find(v => v.id === vendedorId);
-    if (v) return v.nome;
+    if (v) return v.name;
     const c = comissoes.find(c => c.vendedor_id === vendedorId && c.vendedor_nome);
     if (c?.vendedor_nome) return c.vendedor_nome;
     return vendedorId.substring(0, 8) + '...';
@@ -465,7 +465,7 @@ const Comissoes = () => {
 
   // Reload everything when filters change
   useEffect(() => {
-    if (user && empresaId && !loading) {
+    if (user && companyId && !loading) {
       fetchSummaryTotals();
       fetchAllForChartAndRanking();
     }
@@ -497,8 +497,8 @@ const Comissoes = () => {
     return '#8E5FCF';
   };
 
-  const getInitials = (nome: string) =>
-    nome.split(' ').slice(0, 2).map(n => n[0] || '').join('').toUpperCase() || '?';
+  const getInitials = (name: string) =>
+    name.split(' ').slice(0, 2).map(n => n[0] || '').join('').toUpperCase() || '?';
 
   const kpiCards = [
     {
@@ -690,7 +690,7 @@ const Comissoes = () => {
               <SelectContent>
                 <SelectItem value="todos">Todos os vendedores</SelectItem>
                 {vendedores.map(v => (
-                  <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1111,11 +1111,11 @@ const Comissoes = () => {
         </div>
 
         {/* Meta Config Dialog */}
-        {isAdminOnly && empresaId && (
+        {isAdminOnly && companyId && (
           <MetaConfigDialog
             open={metaDialogOpen}
             onOpenChange={setMetaDialogOpen}
-            empresaId={empresaId}
+            companyId={companyId}
             vendedores={vendedores}
             onSaved={fetchMetas}
           />

@@ -76,11 +76,11 @@ const vendedorColors: Record<string, string> = {
 };
 interface Produto {
   id: string;
-  nome: string;
-  codigo: string | null;
+  name: string;
+  code: string | null;
   preco: number;
   estoque: number | null;
-  ativo: boolean | null;
+  active: boolean | null;
   categoria: string | null;
   tipo?: string;
   recorrente?: boolean;
@@ -94,14 +94,14 @@ interface ItemVenda {
   preco_unitario: number;
   subtotal: number;
   desconto: number;
-  desconto_tipo: 'percentual' | 'valor';
+  desconto_tipo: 'percentual' | 'amount';
   observacao: string;
   obs_aberta: boolean;
   recorrencia_periodos?: number | null;
 }
 interface Cliente {
   id: string;
-  nome: string;
+  name: string;
   telefone: string | null;
   email: string | null;
 }
@@ -141,8 +141,8 @@ const Vendas = ({ autoOpenNova = false }: VendasProps) => {
     loading: authLoading
   } = useAuth();
   const { role } = useUserRole();
-  const isAdmin = role === 'admin' || role === 'gerente' || role === 'vendedor';
-  const { empresaId, empresaAtiva } = useEmpresa();
+  const isAdmin = role === 'admin' || role === 'manager' || role === 'seller';
+  const { companyId, empresaAtiva } = useEmpresa();
   const { imprimirCupomSimples, imprimirDANFE, abrirGaveta, config: impressoraConfig } = useImpressora();
   const navigate = useNavigate();
   const location = useLocation();
@@ -161,7 +161,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [vendedores, setVendedores] = useState<{ id: string; nome: string; email: string }[]>([]);
+  const [vendedores, setVendedores] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingVenda, setEditingVenda] = useState<Venda | null>(null);
   const [emitindoNfce, setEmitindoNfce] = useState<string | null>(null);
@@ -205,8 +205,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const [editProdutoSelecionado, setEditProdutoSelecionado] = useState<string>('');
   const [editQuantidadeProduto, setEditQuantidadeProduto] = useState<number>(1);
 
-  const updateEditItemField = (produtoId: string, updates: Partial<ItemVenda>) => {
-    setEditItensVenda(prev => prev.map(i => i.produto_id === produtoId ? { ...i, ...updates } : i));
+  const updateEditItemField = (productId: string, updates: Partial<ItemVenda>) => {
+    setEditItensVenda(prev => prev.map(i => i.produto_id === productId ? { ...i, ...updates } : i));
   };
   const [novaVenda, setNovaVenda] = useState({
     cliente_nome: '',
@@ -218,8 +218,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     vendedor: '',
     desconto: 0
   });
-  const [descontoTipo, setDescontoTipo] = useState<'valor' | 'percentual'>('valor');
-  const [dataVenda, setDataVenda] = useState<Date>(new Date());
+  const [descontoTipo, setDescontoTipo] = useState<'amount' | 'percentual'>('amount');
+  const [soldOn, setDataVenda] = useState<Date>(new Date());
   
   // Operação automática
   const [operacaoStatus, setOperacaoStatus] = useState<string>('');
@@ -245,7 +245,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     vendedor: '',
     desconto: 0
   });
-  const [editDescontoTipo, setEditDescontoTipo] = useState<'valor' | 'percentual'>('valor');
+  const [editDescontoTipo, setEditDescontoTipo] = useState<'amount' | 'percentual'>('amount');
   const [editDataVenda, setEditDataVenda] = useState<Date>();
   const [mesesFechados, setMesesFechados] = useState<Set<string>>(new Set());
 
@@ -255,7 +255,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
   }, [user, authLoading, navigate]);
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchVendas();
       fetchProdutos();
       fetchClientes();
@@ -265,7 +265,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       fetchVendasComPedido();
       fetchVendedores();
     }
-  }, [user, empresaId, role]);
+  }, [user, companyId, role]);
 
   // Auto-expand venda from navigation state (e.g. from Operacoes Kanban)
   useEffect(() => {
@@ -285,15 +285,15 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   }, [location.state, vendas]);
 
   const fetchVendedores = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     try {
       const { data, error } = await api.functions.invoke('list-users', {
         method: 'POST',
-        body: { empresa_id: empresaId }
+        body: { company_id: companyId }
       });
       if (!error && data?.users) {
-        const lista = (data.users as { id: string; nome: string | null; email: string }[])
-          .map(u => ({ id: u.id, nome: u.nome || u.email, email: u.email }));
+        const lista = (data.users as { id: string; name: string | null; email: string }[])
+          .map(u => ({ id: u.id, name: u.name || u.email, email: u.email }));
         setVendedores(lista);
       }
     } catch (err) {
@@ -302,29 +302,29 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   const fetchMesesFechados = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('fechamento_comissao')
-      .select('mes_referencia')
-      .eq('empresa_id', empresaId)
+      .from('commission_closing')
+      .select('reference_month')
+      .eq('company_id', companyId)
       .eq('status', 'fechado');
     if (data) {
       setMesesFechados(new Set(data.map((d: any) => d.mes_referencia)));
     }
   };
 
-  const isMesFechado = (dataVenda: string) => {
-    const mes = dataVenda.substring(0, 7);
+  const isMesFechado = (soldOn: string) => {
+    const mes = soldOn.substring(0, 7);
     return mesesFechados.has(mes);
   };
 
   const fetchNotasFiscais = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data, error } = await api
-      .from('notas_fiscais')
+      .from('fiscal_document')
       .select('venda_id, status, numero, nuvem_fiscal_id, pdf_url, xml_url')
-      .eq('empresa_id', empresaId)
-      .not('venda_id', 'is', null);
+      .eq('company_id', companyId)
+      .not('sale_id', 'is', null);
     
     if (!error && data) {
       const map = new Map<string, { status: string; numero: number | null; nuvem_fiscal_id: string | null; pdf_url: string | null; xml_url: string | null }>();
@@ -342,12 +342,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   const fetchVendasComOperacao = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data, error } = await api
-      .from('operacoes')
+      .from('operation')
       .select('id, venda_id')
-      .eq('empresa_id', empresaId)
-      .not('venda_id', 'is', null);
+      .eq('company_id', companyId)
+      .not('sale_id', 'is', null);
     if (!error && data) {
       const map = new Map<string, string>();
       data.forEach(o => { if (o.venda_id) map.set(o.venda_id, o.id); });
@@ -356,19 +356,19 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   const fetchVendasComPedido = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data, error } = await api
-      .from('pedidos_entrega')
-      .select('venda_id')
-      .eq('empresa_id', empresaId)
-      .not('venda_id', 'is', null);
+      .from('delivery_order')
+      .select('sale_id')
+      .eq('company_id', companyId)
+      .not('sale_id', 'is', null);
     if (!error && data) {
       setVendasComPedido(new Set(data.map((p: any) => p.venda_id).filter(Boolean)));
     }
   };
 
   const handleCriarOperacaoManual = async () => {
-    if (!vendaParaOperacao || !operacaoManualStatus || !user || !empresaId) return;
+    if (!vendaParaOperacao || !operacaoManualStatus || !user || !companyId) return;
     setCriandoOperacao(true);
 
     const DEFAULT_CHECKLIST = [
@@ -381,16 +381,16 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     ];
 
     const { data: opData, error: opError } = await api
-      .from('operacoes')
+      .from('operation')
       .insert({
-        empresa_id: empresaId,
+        company_id: companyId,
         user_id: user.id,
         venda_id: vendaParaOperacao.id,
         cliente_nome: vendaParaOperacao.cliente_nome,
         cliente_telefone: vendaParaOperacao.cliente_telefone || null,
         cliente_email: vendaParaOperacao.cliente_email || null,
         produtos: vendaParaOperacao.produtos,
-        tipo: operacaoManualTipo,
+        kind: operacaoManualTipo,
         status: operacaoManualStatus,
         status_pagamento: 'pendente',
       } as any)
@@ -409,10 +409,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         titulo,
         ordem: i,
       }));
-      await api.from('operacao_tarefas').insert(tarefas as any);
-      await api.from('operacao_historico').insert({
+      await api.from('operation_task').insert(tarefas as any);
+      await api.from('operation_event').insert({
         operacao_id: opData.id,
-        tipo: 'status_change',
+        kind: 'status_change',
         descricao: 'Operação criada manualmente a partir da venda',
         status_novo: operacaoManualStatus,
         user_id: user.id,
@@ -428,8 +428,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     toast({ title: 'Operação criada com sucesso!' });
   };
 
-  const handleDownloadPdf = async (vendaId: string) => {
-    const nfce = vendasComNfce.get(vendaId);
+  const handleDownloadPdf = async (saleId: string) => {
+    const nfce = vendasComNfce.get(saleId);
     if (!nfce?.pdf_url) {
       toast({
         title: "Erro",
@@ -447,8 +447,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     });
   };
 
-  const handleDownloadXml = async (vendaId: string) => {
-    const nfce = vendasComNfce.get(vendaId);
+  const handleDownloadXml = async (saleId: string) => {
+    const nfce = vendasComNfce.get(saleId);
     if (!nfce?.xml_url) {
       toast({
         title: "Erro",
@@ -489,9 +489,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // (vendasComNfce pode estar desatualizado se a nota foi emitida/reemitida
     // por outro fluxo/aba que não atualizou este estado local).
     const { data: notaAtual, error: notaErr } = await api
-      .from('notas_fiscais')
+      .from('fiscal_document')
       .select('nuvem_fiscal_id, numero, status')
-      .eq('venda_id', vendaParaCancelar)
+      .eq('sale_id', vendaParaCancelar)
       .eq('status', 'autorizada')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -547,17 +547,17 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
   };
 
-  const openCancelDialog = (vendaId: string) => {
-    setVendaParaCancelar(vendaId);
+  const openCancelDialog = (saleId: string) => {
+    setVendaParaCancelar(saleId);
     setMotivoCancelamento('');
     setCancelDialogOpen(true);
   };
   const fetchClientes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const {
       data,
       error
-    } = await api.from('clientes').select('id, nome, telefone, email').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('customer').select('id, name, telefone, email').eq('active', true).eq('company_id', companyId).order('name', {
       ascending: true
     });
     if (!error) {
@@ -565,13 +565,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
   };
   const fetchVendas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
-    let query = api.from('vendas').select('*').eq('empresa_id', empresaId);
-    if (role === 'vendedor' && user) {
-      query = query.eq('vendedor_id', user.id);
+    let query = api.from('sale').select('*').eq('company_id', companyId);
+    if (role === 'seller' && user) {
+      query = query.eq('seller_id', user.id);
     }
-    const { data, error } = await query.order('data_venda', { ascending: false });
+    const { data, error } = await query.order('sold_on', { ascending: false });
     if (error) {
       toast({
         title: "Erro",
@@ -584,11 +584,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setLoading(false);
   };
   const fetchProdutos = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const {
       data,
       error
-    } = await api.from('produtos').select('id, nome, codigo, preco, estoque, ativo, categoria, tipo, recorrente, recorrencia_tipo').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('product').select('id, name, code, price, stock, active, category, kind, recurring, recurrence_kind').eq('active', true).eq('company_id', companyId).order('name', {
       ascending: true
     });
     if (!error) {
@@ -660,7 +660,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     } else {
       setItensVenda([...itensVenda, {
         produto_id: produto.id,
-        produto_nome: produto.nome,
+        produto_nome: produto.name,
         quantidade: quantidadeProduto,
         preco_unitario: Number(produto.preco),
         subtotal: quantidadeProduto * Number(produto.preco),
@@ -675,8 +675,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   // Remover item da venda
-  const handleRemoverItem = (produtoId: string) => {
-    setItensVenda(itensVenda.filter(i => i.produto_id !== produtoId));
+  const handleRemoverItem = (productId: string) => {
+    setItensVenda(itensVenda.filter(i => i.produto_id !== productId));
   };
 
   // Adicionar item à edição
@@ -701,7 +701,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     } else {
       setEditItensVenda([...editItensVenda, {
         produto_id: produto.id,
-        produto_nome: produto.nome,
+        produto_nome: produto.name,
         quantidade: editQuantidadeProduto,
         preco_unitario: Number(produto.preco),
         subtotal: editQuantidadeProduto * Number(produto.preco),
@@ -717,8 +717,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setEditProdutoSelecionado('');
     setEditQuantidadeProduto(1);
   };
-  const handleRemoverItemEdit = (produtoId: string) => {
-    setEditItensVenda(editItensVenda.filter(i => i.produto_id !== produtoId));
+  const handleRemoverItemEdit = (productId: string) => {
+    setEditItensVenda(editItensVenda.filter(i => i.produto_id !== productId));
   };
   const handleSalvar = async () => {
     if (!novaVenda.cliente_nome || itensVenda.length === 0 || !novaVenda.metodo_pagamento || !user) {
@@ -732,7 +732,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Validar se o vendedor selecionado pertence à empresa ativa
     if (novaVenda.vendedor) {
-      const vendedorValido = vendedores.some(v => v.nome === novaVenda.vendedor);
+      const vendedorValido = vendedores.some(v => v.name === novaVenda.vendedor);
       if (!vendedorValido) {
         toast({
           title: "Vendedor inválido para a empresa selecionada.",
@@ -750,27 +750,27 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const valorBruto = valorTotalItens;
     const descontoInput = novaVenda.desconto || 0;
     const desconto = descontoTipo === 'percentual' ? (valorBruto * descontoInput / 100) : descontoInput;
-    const valorFinal = valorBruto - desconto;
+    const finalAmount = valorBruto - desconto;
 
     const {
       data: vendaData,
       error: vendaError
-     } = await api.from('vendas').insert({
+     } = await api.from('sale').insert({
       user_id: user.id,
-      empresa_id: empresaId,
-      cliente_id: resolveClienteId(clientes as any, { nome: novaVenda.cliente_nome, cpf: (novaVenda as any).cliente_cpf, telefone: novaVenda.cliente_telefone }),
+      company_id: companyId,
+      cliente_id: resolveClienteId(clientes as any, { name: novaVenda.cliente_nome, cpf: (novaVenda as any).cliente_cpf, telefone: novaVenda.cliente_telefone }),
       cliente_nome: novaVenda.cliente_nome,
       cliente_telefone: novaVenda.cliente_telefone || null,
       cliente_email: novaVenda.cliente_email || null,
       produtos: produtosDescricao,
-      valor: valorFinal,
+      valor: finalAmount,
       valor_bruto: valorBruto,
       desconto: desconto,
-      valor_final: valorFinal,
-      vendedor_id: vendedores.find(v => v.nome === novaVenda.vendedor)?.id || user.id,
+      valor_final: finalAmount,
+      vendedor_id: vendedores.find(v => v.name === novaVenda.vendedor)?.id || user.id,
       metodo_pagamento: novaVenda.metodo_pagamento,
       parcelas: novaVenda.metodo_pagamento === 'Cartão de Crédito' ? novaVenda.parcelas : 1,
-      data_venda: format(dataVenda, 'yyyy-MM-dd'),
+      data_venda: format(soldOn, 'yyyy-MM-dd'),
       observacoes: novaVenda.observacoes || null,
       vendedor: novaVenda.vendedor || null
     } as any).select().single();
@@ -793,7 +793,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }));
     const {
       error: itensError
-    } = await api.from('itens_venda').insert(itensParaInserir);
+    } = await api.from('sale_item').insert(itensParaInserir);
     if (itensError) {
       toast({
         title: "Aviso",
@@ -814,16 +814,16 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       ];
 
       const { data: opData, error: opError } = await api
-        .from('operacoes')
+        .from('operation')
         .insert({
-          empresa_id: empresaId,
+          company_id: companyId,
           user_id: user.id,
           venda_id: vendaData.id,
           cliente_nome: novaVenda.cliente_nome,
           cliente_telefone: novaVenda.cliente_telefone || null,
           cliente_email: novaVenda.cliente_email || null,
           produtos: produtosDescricao,
-          tipo: operacaoTipo,
+          kind: operacaoTipo,
           status: operacaoStatus,
           status_pagamento: 'pendente',
         } as any)
@@ -837,12 +837,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           titulo,
           ordem: i,
         }));
-        await api.from('operacao_tarefas').insert(tarefas as any);
+        await api.from('operation_task').insert(tarefas as any);
 
         // Add history entry
-        await api.from('operacao_historico').insert({
+        await api.from('operation_event').insert({
           operacao_id: opData.id,
-          tipo: 'status_change',
+          kind: 'status_change',
           descricao: `Operação criada automaticamente a partir da venda`,
           status_novo: operacaoStatus,
           user_id: user.id,
@@ -853,14 +853,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // Auto-generate Pedido de Entrega for all sales
     if (user) {
       // Find client info from clientes table to get address
-      const clienteMatch = clientes.find(c => c.nome === novaVenda.cliente_nome);
+      const clienteMatch = clientes.find(c => c.name === novaVenda.cliente_nome);
       let enderecoEntrega: string | null = null;
       let clienteCpf: string | null = null;
 
       if (clienteMatch) {
         // Fetch full client data with address
         const { data: clienteCompleto } = await api
-          .from('clientes')
+          .from('customer')
           .select('endereco, cidade, estado, cep, cpf')
           .eq('id', clienteMatch.id)
           .single();
@@ -873,12 +873,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       }
 
       const { data: pedidoData, error: pedidoError } = await api
-        .from('pedidos_entrega')
+        .from('delivery_order')
         .insert({
           venda_id: vendaData.id,
-          empresa_id: empresaId,
+          company_id: companyId,
           user_id: user.id,
-          cliente_id: resolveClienteId(clientes as any, { nome: novaVenda.cliente_nome, cpf: clienteCpf, telefone: novaVenda.cliente_telefone }),
+          cliente_id: resolveClienteId(clientes as any, { name: novaVenda.cliente_nome, cpf: clienteCpf, telefone: novaVenda.cliente_telefone }),
           cliente_nome: novaVenda.cliente_nome,
           cliente_telefone: novaVenda.cliente_telefone || null,
           cliente_email: novaVenda.cliente_email || null,
@@ -893,7 +893,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         .single();
 
       if (pedidoData && !pedidoError) {
-        await api.from('pedido_entrega_historico').insert({
+        await api.from('delivery_order_event').insert({
           pedido_id: pedidoData.id,
           user_id: user.id,
           status_novo: 'pendente',
@@ -912,7 +912,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       vendedor: '',
       desconto: 0
     });
-    setDescontoTipo('valor');
+    setDescontoTipo('amount');
     setItensVenda([]);
     setDataVenda(new Date());
     setOperacaoStatus('');
@@ -929,10 +929,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Impressão automática — não bloqueia a finalização da venda
     if (impressoraConfig.imprimirAposVenda && !impressoraConfig.imprimirAposNFCe) {
-      const dadosEmpresa = { nome: empresaAtiva?.nome ?? 'Empresa' };
+      const dadosEmpresa = { name: empresaAtiva?.name ?? 'Empresa' };
       const dadosVenda = {
         numero: vendaData?.id?.slice(-8).toUpperCase() ?? '',
-        data: format(dataVenda, 'dd/MM/yyyy'),
+        data: format(soldOn, 'dd/MM/yyyy'),
         itens: itensVenda,
         subtotal: valorTotalItens,
         desconto: novaVenda.desconto || 0,
@@ -969,21 +969,21 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       return;
     }
     setEditingVenda(venda);
-    setEditDescontoTipo('valor');
+    setEditDescontoTipo('amount');
     const [y, m, d] = venda.data_venda.split('-').map(Number);
     setEditDataVenda(new Date(y, m - 1, d));
 
     // Carregar itens da venda (com fallback se colunas novas não existirem)
     let rawItens: any[] = [];
     const itensRes = await api
-      .from('itens_venda')
-      .select('produto_id, variacao_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, recorrencia_periodos')
-      .eq('venda_id', venda.id);
+      .from('sale_item')
+      .select('product_id, variant_id, quantity, unit_price, subtotal, discount, discount_kind, note, recurrence_periods')
+      .eq('sale_id', venda.id);
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
       const fallback = await api
-        .from('itens_venda')
+        .from('sale_item')
         .select('produto_id, quantidade, preco_unitario, subtotal')
-        .eq('venda_id', venda.id);
+        .eq('sale_id', venda.id);
       rawItens = fallback.data || [];
     } else {
       rawItens = itensRes.data || [];
@@ -1012,12 +1012,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         return {
           produto_id: item.produto_id,
           variacao_id: item.variacao_id ?? null,
-          produto_nome: produto?.nome || 'Produto não encontrado',
+          produto_nome: produto?.name || 'Produto não encontrado',
           quantidade: item.quantidade,
           preco_unitario: Number(item.preco_unitario),
           subtotal: Number(item.subtotal),
           desconto: item.desconto != null ? Number(item.desconto) : 0,
-          desconto_tipo: (item.desconto_tipo as 'percentual' | 'valor') || 'percentual',
+          desconto_tipo: (item.desconto_tipo as 'percentual' | 'amount') || 'percentual',
           observacao: item.observacao || '',
           obs_aberta: false,
           recorrencia_periodos: item.recorrencia_periodos != null ? Number(item.recorrencia_periodos) : null,
@@ -1048,17 +1048,17 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Log changes
     const changes: { campo: string; anterior: string; novo: string }[] = [];
-    if (editVenda.cliente_nome !== editingVenda.cliente_nome) changes.push({ campo: 'cliente_nome', anterior: editingVenda.cliente_nome, novo: editVenda.cliente_nome });
-    if (editVenda.metodo_pagamento !== editingVenda.metodo_pagamento) changes.push({ campo: 'metodo_pagamento', anterior: editingVenda.metodo_pagamento, novo: editVenda.metodo_pagamento });
-    if (format(editDataVenda, 'yyyy-MM-dd') !== editingVenda.data_venda) changes.push({ campo: 'data_venda', anterior: editingVenda.data_venda, novo: format(editDataVenda, 'yyyy-MM-dd') });
-    if (editVenda.vendedor !== (editingVenda.vendedor || '')) changes.push({ campo: 'vendedor', anterior: editingVenda.vendedor || '', novo: editVenda.vendedor });
+    if (editVenda.cliente_nome !== editingVenda.cliente_nome) changes.push({ campo: 'customer_name', anterior: editingVenda.cliente_nome, novo: editVenda.cliente_nome });
+    if (editVenda.metodo_pagamento !== editingVenda.metodo_pagamento) changes.push({ campo: 'payment_method', anterior: editingVenda.metodo_pagamento, novo: editVenda.metodo_pagamento });
+    if (format(editDataVenda, 'yyyy-MM-dd') !== editingVenda.data_venda) changes.push({ campo: 'sold_on', anterior: editingVenda.data_venda, novo: format(editDataVenda, 'yyyy-MM-dd') });
+    if (editVenda.vendedor !== (editingVenda.vendedor || '')) changes.push({ campo: 'seller', anterior: editingVenda.vendedor || '', novo: editVenda.vendedor });
     const newValStr = editValorFinalCalc.toFixed(2);
     const oldValStr = Number(editingVenda.valor).toFixed(2);
-    if (newValStr !== oldValStr) changes.push({ campo: 'valor', anterior: oldValStr, novo: newValStr });
-    if (editVenda.observacoes !== (editingVenda.observacoes || '')) changes.push({ campo: 'observacoes', anterior: editingVenda.observacoes || '', novo: editVenda.observacoes });
+    if (newValStr !== oldValStr) changes.push({ campo: 'amount', anterior: oldValStr, novo: newValStr });
+    if (editVenda.observacoes !== (editingVenda.observacoes || '')) changes.push({ campo: 'notes', anterior: editingVenda.observacoes || '', novo: editVenda.observacoes });
 
-    const { error } = await api.from('vendas').update({
-      cliente_id: resolveClienteId(clientes as any, { nome: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
+    const { error } = await api.from('sale').update({
+      cliente_id: resolveClienteId(clientes as any, { name: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
       cliente_nome: editVenda.cliente_nome,
       cliente_telefone: editVenda.cliente_telefone || null,
       cliente_email: editVenda.cliente_email || null,
@@ -1072,7 +1072,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       data_venda: format(editDataVenda, 'yyyy-MM-dd'),
       observacoes: editVenda.observacoes || null,
       vendedor: editVenda.vendedor || null,
-      vendedor_id: vendedores.find(v => v.nome === editVenda.vendedor)?.id || editingVenda.vendedor_id || null
+      vendedor_id: vendedores.find(v => v.name === editVenda.vendedor)?.id || editingVenda.vendedor_id || null
     } as any).eq('id', editingVenda.id);
 
     if (error) {
@@ -1087,9 +1087,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // Atualizar itens da venda: SEMPRE deletar os antigos e reinserir os novos
     // Isso garante que itens removidos pelo usuário saiam do pedido de entrega também
     const { error: deleteError } = await api
-      .from('itens_venda')
+      .from('sale_item')
       .delete()
-      .eq('venda_id', editingVenda.id);
+      .eq('sale_id', editingVenda.id);
 
     if (deleteError) {
       console.error('Erro ao deletar itens antigos:', deleteError);
@@ -1117,7 +1117,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         };
       });
       let { error: insertError } = await api
-        .from('itens_venda')
+        .from('sale_item')
         .insert(itensParaInserir);
       // Fallback se colunas novas não existirem
       if (insertError && (insertError.code === '42703' || insertError.message?.includes('column'))) {
@@ -1130,7 +1130,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           subtotal: item.subtotal,
           recorrencia_periodos: item.recorrencia_periodos ?? null,
         }));
-        ({ error: insertError } = await api.from('itens_venda').insert(fallback));
+        ({ error: insertError } = await api.from('sale_item').insert(fallback));
       }
 
       if (insertError) {
@@ -1152,23 +1152,23 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         valor_anterior: c.anterior,
         valor_novo: c.novo,
       }));
-      await api.from('venda_alteracoes').insert(logEntries as any);
+      await api.from('sale_change').insert(logEntries as any);
     }
 
     // Sincronizar o Pedido de Entrega com as alterações da venda
     const { data: pedidoExistente } = await api
-      .from('pedidos_entrega')
+      .from('delivery_order')
       .select('id')
-      .eq('venda_id', editingVenda.id)
+      .eq('sale_id', editingVenda.id)
       .limit(1)
       .single();
 
     if (pedidoExistente) {
       // Sempre atualiza os dados do cliente e pagamento no pedido de entrega
       await api
-        .from('pedidos_entrega')
+        .from('delivery_order')
         .update({
-          cliente_id: resolveClienteId(clientes as any, { nome: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
+          cliente_id: resolveClienteId(clientes as any, { name: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
           cliente_nome: editVenda.cliente_nome,
           cliente_telefone: editVenda.cliente_telefone || null,
           cliente_email: editVenda.cliente_email || null,
@@ -1188,64 +1188,64 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       description: "Venda atualizada com sucesso"
     });
   };
-  const handleDelete = async (id: string, dataVenda: string) => {
+  const handleDelete = async (id: string, soldOn: string) => {
     if (!isAdmin) {
       toast({ title: "Acesso negado", description: "Somente administradores podem excluir vendas.", variant: "destructive" });
       return;
     }
-    if (isMesFechado(dataVenda)) {
+    if (isMesFechado(soldOn)) {
       toast({ title: "Período fechado", description: "Este período já foi fechado. Reabra o mês para realizar alterações.", variant: "destructive" });
       return;
     }
     try {
       // 1. Deletar histórico de operações vinculadas
       const { data: operacoesVinculadas } = await api
-        .from('operacoes')
+        .from('operation')
         .select('id')
-        .eq('venda_id', id)
-        .eq('empresa_id', empresaId);
+        .eq('sale_id', id)
+        .eq('company_id', companyId);
 
       if (operacoesVinculadas && operacoesVinculadas.length > 0) {
         const operacaoIds = operacoesVinculadas.map(o => o.id);
-        await api.from('operacao_historico').delete().in('operacao_id', operacaoIds);
-        await api.from('operacao_tarefas').delete().in('operacao_id', operacaoIds);
+        await api.from('operation_event').delete().in('operation_id', operacaoIds);
+        await api.from('operation_task').delete().in('operation_id', operacaoIds);
       }
 
       // 2. Deletar operações vinculadas
-      await api.from('operacoes').delete().eq('venda_id', id);
+      await api.from('operation').delete().eq('sale_id', id);
 
       // 3. Deletar histórico de pedidos de entrega vinculados
       const { data: pedidosVinculados } = await api
-        .from('pedidos_entrega')
+        .from('delivery_order')
         .select('id')
-        .eq('venda_id', id)
-        .eq('empresa_id', empresaId);
+        .eq('sale_id', id)
+        .eq('company_id', companyId);
 
       if (pedidosVinculados && pedidosVinculados.length > 0) {
         const pedidoIds = pedidosVinculados.map(p => p.id);
-        await api.from('pedido_entrega_historico').delete().in('pedido_id', pedidoIds);
+        await api.from('delivery_order_event').delete().in('purchase_order_id', pedidoIds);
       }
 
       // 4. Deletar pedidos de entrega vinculados
-      await api.from('pedidos_entrega').delete().eq('venda_id', id);
+      await api.from('delivery_order').delete().eq('sale_id', id);
 
       // 5. Deletar comissões vinculadas
-      await api.from('comissoes').delete().eq('venda_id', id);
+      await api.from('commission').delete().eq('sale_id', id);
 
       // 6. Deletar alterações de venda
-      await api.from('venda_alteracoes').delete().eq('venda_id', id);
+      await api.from('sale_change').delete().eq('sale_id', id);
 
       // 7. Deletar notas fiscais vinculadas
-      await api.from('notas_fiscais').delete().eq('venda_id', id);
+      await api.from('fiscal_document').delete().eq('sale_id', id);
 
       // 8. Deletar contas a receber geradas pela venda
-      await api.from('contas_receber').delete().eq('venda_id', id);
+      await api.from('receivable').delete().eq('sale_id', id);
 
       // 9. Deletar itens da venda (trigger restaura estoque)
-      await api.from('itens_venda').delete().eq('venda_id', id);
+      await api.from('sale_item').delete().eq('sale_id', id);
 
       // 10. Finalmente, deletar a venda
-      const { error } = await api.from('vendas').delete().eq('id', id);
+      const { error } = await api.from('sale').delete().eq('id', id);
       if (error) throw error;
 
       fetchVendas();
@@ -1320,7 +1320,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     try {
       // Buscar configuração fiscal da empresa
       const { data: empresaFiscal, error: empresaError } = await api
-        .from('empresa_fiscal')
+        .from('company_fiscal_profile')
         .select('*')
         .single();
 
@@ -1330,9 +1330,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // Buscar itens da venda com dados dos produtos
       const { data: itensData, error: itensError } = await api
-        .from('itens_venda')
+        .from('sale_item')
         .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
-        .eq('venda_id', venda.id);
+        .eq('sale_id', venda.id);
       
       if (itensError || !itensData || itensData.length === 0) {
         throw new Error('Não foi possível carregar os itens da venda');
@@ -1341,8 +1341,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       // Buscar dados completos dos produtos
       const produtoIds = itensData.map(item => item.produto_id);
       const { data: produtosData, error: produtosError } = await api
-        .from('produtos')
-        .select('id, nome, codigo, ncm, cfop, origem, unidade_comercial, preco, tipo')
+        .from('product')
+        .select('id, name, code, ncm, cfop, origem, commercial_unit, price, kind')
         .in('id', produtoIds);
 
       // NFC-e só cobre mercadorias: serviços (que exigiriam NFS-e) ficam fora da nota.
@@ -1400,7 +1400,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           throw new Error(`Produto não encontrado: ${item.produto_id}`);
         }
         if (!produto.ncm && !isServico(produto)) {
-          throw new Error(`Produto "${produto.nome}" não possui NCM cadastrado`);
+          throw new Error(`Produto "${produto.name}" não possui NCM cadastrado`);
         }
 
         const peso = baseDescGeral > 0 ? item.subtotalAposItem / baseDescGeral : 0;
@@ -1422,9 +1422,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           servico: isServico(produto),
           id: produto.id,
           produto_id: produto.id,
-          codigo: produto.codigo || produto.id.substring(0, 8),
-          nome: produto.nome,
-          descricao: produto.nome,
+          code: produto.code || produto.id.substring(0, 8),
+          name: produto.name,
+          descricao: produto.name,
           ncm: produto.ncm,
           cfop: produto.cfop || '5102',
           unidade_comercial: produto.unidade_comercial || 'UN',
@@ -1459,7 +1459,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         somaItens: somaFinalConferencia,
         diferencaAjustada: diferenca,
         itens: itens.map(i => ({
-          nome: i.nome,
+          name: i.name,
           bruto: i.quantidade * i.preco_unitario,
           final: i.valor_final_item,
           descPct: i.desconto_percentual
@@ -1470,15 +1470,15 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       let cliente = null;
       if (venda.cliente_nome !== 'Consumidor') {
         const { data: clienteData } = await api
-          .from('clientes')
-          .select('id, nome, cpf, telefone, email, cep, endereco, bairro, complemento')
-          .eq('nome', venda.cliente_nome)
+          .from('customer')
+          .select('id, name, cpf, telefone, email, cep, endereco, bairro, complemento')
+          .eq('name', venda.cliente_nome)
           .maybeSingle();
 
         if (clienteData) {
           cliente = {
             id: clienteData.id,
-            nome: clienteData.nome,
+            name: clienteData.name,
             cpf: clienteData.cpf,
             cep: clienteData.cep,
             endereco: clienteData.endereco,
@@ -1544,11 +1544,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // Impressão automática DANFE — não bloqueia a emissão
       if (impressoraConfig.imprimirAposNFCe) {
-        const dadosEmpresa = { nome: empresaAtiva?.nome ?? 'Empresa' };
+        const dadosEmpresa = { name: empresaAtiva?.name ?? 'Empresa' };
         const itensImpressao = itensData.map(item => {
           const prod = produtosData.find(p => p.id === item.produto_id);
           return {
-            produto_nome: prod?.nome ?? 'Produto',
+            produto_nome: prod?.name ?? 'Produto',
             quantidade: item.quantidade,
             preco_unitario: Number(item.preco_unitario),
             subtotal: Number(item.subtotal),
@@ -1596,13 +1596,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   // Transmitir NFC-e pendente (específico para Becoming)
-  const handleTransmitirNfce = async (vendaId: string) => {
+  const handleTransmitirNfce = async (saleId: string) => {
     // Busca a nota fresca direto do banco em vez de confiar no Map em cache
     // (mesma correção aplicada em handleCancelarNfce).
     const { data: notaAtual, error: notaErr } = await api
-      .from('notas_fiscais')
+      .from('fiscal_document')
       .select('nuvem_fiscal_id')
-      .eq('venda_id', vendaId)
+      .eq('sale_id', saleId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -1630,13 +1630,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
 
     const idNfce = parseInt(match[1]);
-    setTransmitindoNfce(vendaId);
+    setTransmitindoNfce(saleId);
 
     try {
       const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'transmitir',
-          data: { id_nfce: idNfce, venda_id: vendaId }
+          data: { id_nfce: idNfce, venda_id: saleId }
         }
       });
 
@@ -1671,14 +1671,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const matchMetodo = filterMetodo === 'todos' || venda.metodo_pagamento === filterMetodo;
     let matchDateRange = true;
     if (dateRange.from && dateRange.to) {
-      const dataVenda = new Date(venda.data_venda + 'T00:00:00');
-      matchDateRange = isWithinInterval(dataVenda, {
+      const soldOn = new Date(venda.data_venda + 'T00:00:00');
+      matchDateRange = isWithinInterval(soldOn, {
         start: startOfDay(dateRange.from),
         end: endOfDay(dateRange.to)
       });
     } else if (dateRange.from) {
-      const dataVenda = new Date(venda.data_venda + 'T00:00:00');
-      matchDateRange = dataVenda >= startOfDay(dateRange.from);
+      const soldOn = new Date(venda.data_venda + 'T00:00:00');
+      matchDateRange = soldOn >= startOfDay(dateRange.from);
     }
     return matchSearch && matchMetodo && matchDateRange;
   });
@@ -2068,8 +2068,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                           <div className="text-right min-w-[100px]">
                             {(() => {
                               const temDesc = venda.desconto != null && Number(venda.desconto) > 0;
-                              const valorFinal = Number(venda.valor_final ?? venda.valor);
-                              const valorOriginal = temDesc ? valorFinal + Number(venda.desconto) : null;
+                              const finalAmount = Number(venda.valor_final ?? venda.valor);
+                              const valorOriginal = temDesc ? finalAmount + Number(venda.desconto) : null;
                               return (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px', flexWrap: 'wrap' }}>
                                   {temDesc && (
@@ -2078,7 +2078,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                                     </span>
                                   )}
                                   <span className="font-bold text-foreground">
-                                    {formatCurrency(valorFinal)}
+                                    {formatCurrency(finalAmount)}
                                   </span>
                                 </div>
                               );
@@ -2232,14 +2232,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                       {isExpanded && (
                         <div className="border-t">
                           <VendaDetailAccordion
-                            vendaId={venda.id}
+                            saleId={venda.id}
                             produtos={venda.produtos}
-                            metodoPagamento={venda.metodo_pagamento}
+                            paymentMethod={venda.metodo_pagamento}
                             parcelas={venda.parcelas}
                             valor={Number(venda.valor)}
                             valorBruto={venda.valor_bruto ? Number(venda.valor_bruto) : null}
                             desconto={venda.desconto ? Number(venda.desconto) : null}
-                            valorFinal={venda.valor_final ? Number(venda.valor_final) : null}
+                            finalAmount={venda.valor_final ? Number(venda.valor_final) : null}
                             observacoes={venda.observacoes}
                             bandeira={venda.bandeira}
                             valorLiquido={venda.valor_liquido != null ? Number(venda.valor_liquido) : null}
@@ -2285,14 +2285,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
               <Popover open={editClientePopoverOpen} onOpenChange={setEditClientePopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" aria-expanded={editClientePopoverOpen} className="justify-between w-full font-normal">
-                    {editVenda.cliente_nome || "Selecione ou digite o nome do cliente..."}
+                    {editVenda.cliente_nome || "Selecione ou digite o name do cliente..."}
                     <User className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[400px] p-0 z-[200]" align="start">
                   <Command>
                     <CommandInput placeholder="Buscar cliente..." onValueChange={value => {
-                      if (!clientes.find(c => c.nome.toLowerCase() === value.toLowerCase())) {
+                      if (!clientes.find(c => c.name.toLowerCase() === value.toLowerCase())) {
                         setEditVenda({
                           ...editVenda,
                           cliente_nome: value,
@@ -2305,21 +2305,21 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                       <CommandEmpty>
                         <span className="text-muted-foreground">Nenhum cliente encontrado.</span>
                         <br />
-                        <span className="text-xs text-muted-foreground">Digite o nome para editar manualmente.</span>
+                        <span className="text-xs text-muted-foreground">Digite o name para editar manualmente.</span>
                       </CommandEmpty>
                       <CommandGroup heading="Clientes Cadastrados">
-                        {clientes.map(cliente => <CommandItem key={cliente.id} value={cliente.nome} onSelect={() => {
+                        {clientes.map(cliente => <CommandItem key={cliente.id} value={cliente.name} onSelect={() => {
                           setEditVenda({
                             ...editVenda,
-                            cliente_nome: cliente.nome,
+                            cliente_nome: cliente.name,
                             cliente_telefone: cliente.telefone || '',
                             cliente_email: cliente.email || ''
                           });
                           setEditClientePopoverOpen(false);
                         }}>
-                            <Check className={cn("mr-2 h-4 w-4", editVenda.cliente_nome === cliente.nome ? "opacity-100" : "opacity-0")} />
+                            <Check className={cn("mr-2 h-4 w-4", editVenda.cliente_nome === cliente.name ? "opacity-100" : "opacity-0")} />
                             <div className="flex flex-col">
-                              <span>{cliente.nome}</span>
+                              <span>{cliente.name}</span>
                               {cliente.telefone && <span className="text-xs text-muted-foreground">{cliente.telefone}</span>}
                             </div>
                           </CommandItem>)}
@@ -2357,7 +2357,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                   <SelectContent>
                     {produtos.map(p => <SelectItem key={p.id} value={p.id}>
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span>{p.nome}{isServico(p) ? ' · Serviço' : ''}</span>
+                          <span>{p.name}{isServico(p) ? ' · Serviço' : ''}</span>
                           <span className="text-muted-foreground text-xs">
                             {formatCurrency(Number(p.preco))}{sufixoRecorrencia(p)}
                           </span>
@@ -2421,10 +2421,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                                   background: item.desconto_tipo === 'percentual' ? '#8E5FCF' : 'transparent',
                                   color: item.desconto_tipo === 'percentual' ? 'white' : '#8E5FCF',
                                   border: 'none', cursor: 'pointer', lineHeight: 1 }}>%</button>
-                              <button type="button" onClick={() => updateEditItemField(item.produto_id, { desconto_tipo: 'valor' })}
+                              <button type="button" onClick={() => updateEditItemField(item.produto_id, { desconto_tipo: 'amount' })}
                                 style={{ padding: '3px 7px', fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 700,
-                                  background: item.desconto_tipo === 'valor' ? '#8E5FCF' : 'transparent',
-                                  color: item.desconto_tipo === 'valor' ? 'white' : '#8E5FCF',
+                                  background: item.desconto_tipo === 'amount' ? '#8E5FCF' : 'transparent',
+                                  color: item.desconto_tipo === 'amount' ? 'white' : '#8E5FCF',
                                   border: 'none', cursor: 'pointer', lineHeight: 1 }}>R$</button>
                             </div>
                             <input
@@ -2520,7 +2520,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
               <div className="flex items-center justify-between">
                 <Label>Desconto</Label>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className={cn("cursor-pointer px-2 py-0.5 rounded", editDescontoTipo === 'valor' ? "bg-primary text-primary-foreground" : "text-muted-foreground")} onClick={() => setEditDescontoTipo('valor')}>R$</span>
+                  <span className={cn("cursor-pointer px-2 py-0.5 rounded", editDescontoTipo === 'amount' ? "bg-primary text-primary-foreground" : "text-muted-foreground")} onClick={() => setEditDescontoTipo('amount')}>R$</span>
                   <span className={cn("cursor-pointer px-2 py-0.5 rounded", editDescontoTipo === 'percentual' ? "bg-primary text-primary-foreground" : "text-muted-foreground")} onClick={() => setEditDescontoTipo('percentual')}>%</span>
                 </div>
               </div>
@@ -2601,7 +2601,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                     <SelectItem value="_none" disabled>Nenhum vendedor cadastrado</SelectItem>
                   ) : (
                     vendedores.map(v => (
-                      <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>
+                      <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                     ))
                   )}
                 </SelectContent>
@@ -2771,12 +2771,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       <PedidoEntregaDialog
         open={pedidoDialogOpen}
         onOpenChange={setPedidoDialogOpen}
-        vendaId={vendaParaPedido}
+        saleId={vendaParaPedido}
       />
       <PedidoEntregaStatusDialog
         open={pedidoStatusDialogOpen}
         onOpenChange={setPedidoStatusDialogOpen}
-        vendaId={vendaParaPedido}
+        saleId={vendaParaPedido}
         onStatusUpdated={fetchVendasComPedido}
       />
     </div>

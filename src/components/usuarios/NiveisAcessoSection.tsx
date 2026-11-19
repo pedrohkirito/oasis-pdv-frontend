@@ -149,7 +149,7 @@ export function NiveisAcessoSection() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
-                        {nivel.nome}
+                        {nivel.name}
                         {nivel.is_sistema && (
                           <Badge variant="secondary" className="text-xs">Sistema</Badge>
                         )}
@@ -208,7 +208,7 @@ export function NiveisAcessoSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir nível de acesso</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o nível <strong>"{nivelToDelete?.nome}"</strong>?
+              Tem certeza que deseja excluir o nível <strong>"{nivelToDelete?.name}"</strong>?
               Usuários vinculados a este nível perderão suas permissões customizadas e voltarão ao nível padrão.
             </AlertDialogDescription>
           </AlertDialogHeader>

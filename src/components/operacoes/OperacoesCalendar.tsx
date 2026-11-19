@@ -92,10 +92,10 @@ export function OperacoesCalendar({ operacoes, onCardClick }: OperacoesCalendarP
                       className={cn(
                         'w-full text-left px-1 py-0.5 rounded text-[10px] truncate flex items-center gap-0.5',
                         'hover:opacity-80 transition-opacity',
-                        op.tipo === 'entrega_montagem' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                        op.kind === 'entrega_montagem' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
                       )}
                     >
-                      {op.tipo === 'entrega_montagem' ? <Wrench className="h-2.5 w-2.5 shrink-0" /> : <Truck className="h-2.5 w-2.5 shrink-0" />}
+                      {op.kind === 'entrega_montagem' ? <Wrench className="h-2.5 w-2.5 shrink-0" /> : <Truck className="h-2.5 w-2.5 shrink-0" />}
                       <span className="truncate">{op.cliente_nome}</span>
                     </button>
                   ))}

@@ -22,7 +22,7 @@ const sections = [
   { label: 'Serviços', icon: Wrench, to: '/servicos', keywords: ['servico', 'serviço', 'montagem', 'manutencao', 'recorrente'] },
   { label: 'Clientes', icon: UserCircle, to: '/clientes', keywords: ['cliente', 'consumidor', 'cpf'] },
   { label: 'Contas a Pagar', icon: FileText, to: '/contas-a-pagar', keywords: ['conta', 'despesa', 'pagamento', 'boleto'] },
-  { label: 'Fornecedores', icon: Users, to: '/fornecedores', keywords: ['fornecedor', 'cnpj', 'compra'] },
+  { label: 'Fornecedores', icon: Users, to: '/fornecedores', keywords: ['fornecedor', 'tax_id', 'compra'] },
   { label: 'Notas Fiscais', icon: FileText, to: '/notas-fiscais', keywords: ['nota', 'nfce', 'fiscal', 'cupom'] },
   { label: 'Relatórios', icon: BarChart3, to: '/relatorios', keywords: ['relatorio', 'grafico', 'analise'] },
   { label: 'Config. Fiscais', icon: Settings, to: '/configuracoes-fiscais', keywords: ['configuracao', 'fiscal', 'certificado'] },

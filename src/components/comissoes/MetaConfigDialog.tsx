@@ -15,19 +15,19 @@ import { ptBR } from 'date-fns/locale';
 
 interface VendedorInfo {
   id: string;
-  nome: string;
+  name: string;
 }
 
 interface MetaConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  empresaId: string;
+  companyId: string;
   vendedores: VendedorInfo[];
   onSaved: () => void;
 }
 
 const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
-  open, onOpenChange, empresaId, vendedores, onSaved,
+  open, onOpenChange, companyId, vendedores, onSaved,
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,11 +53,11 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
   const loadMeta = async () => {
     setLoading(true);
     const { data } = await api
-      .from('metas_vendedor')
-      .select('valor_meta')
-      .eq('empresa_id', empresaId)
-      .eq('vendedor_id', selectedVendedor)
-      .eq('mes_referencia', selectedMes)
+      .from('seller_goal')
+      .select('goal_amount')
+      .eq('company_id', companyId)
+      .eq('seller_id', selectedVendedor)
+      .eq('reference_month', selectedMes)
       .maybeSingle();
 
     setValorMeta(data ? String(data.valor_meta) : '');
@@ -75,10 +75,10 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
     setSaving(true);
 
     const { error } = await api
-      .from('metas_vendedor')
+      .from('seller_goal')
       .upsert(
         {
-          empresa_id: empresaId,
+          company_id: companyId,
           vendedor_id: selectedVendedor,
           mes_referencia: selectedMes,
           valor_meta: valor,
@@ -119,7 +119,7 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {vendedores.map(v => (
-                  <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

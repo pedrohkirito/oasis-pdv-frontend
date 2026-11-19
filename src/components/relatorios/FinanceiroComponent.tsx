@@ -132,9 +132,9 @@ interface Dados {
   // Comparativo 6 meses
   comparativo: { mes: string; receita: number; despesas: number; resultado: number }[];
   // Formas pagamento
-  formas: { nome: string; valor: number; custoTaxa: number; taxaPerc: number }[];
+  formas: { name: string; valor: number; custoTaxa: number; taxaPerc: number }[];
   // Insights
-  insights: { tipo: 'positivo' | 'atencao' | 'critico' | 'oportunidade' | 'tendencia'; titulo: string; corpo: string }[];
+  insights: { kind: 'positivo' | 'atencao' | 'critico' | 'oportunidade' | 'tendencia'; titulo: string; corpo: string }[];
 }
 
 const dadosVazios: Dados = {
@@ -163,51 +163,51 @@ function gerarInsights(d: Dados): Dados['insights'] {
 
   if (d.margemLiquida > 0) {
     if (d.margemLiquida >= 20) {
-      list.push({ tipo: 'positivo', titulo: 'Margem saudável', corpo: `Margem líquida de ${fmtPct(d.margemLiquida)} está em bom nível. Continue monitorando as despesas.` });
+      list.push({ kind: 'positivo', titulo: 'Margem saudável', corpo: `Margem líquida de ${fmtPct(d.margemLiquida)} está em bom nível. Continue monitorando as despesas.` });
     } else if (d.margemLiquida < 5) {
-      list.push({ tipo: 'critico', titulo: 'Margem crítica', corpo: `Margem líquida de apenas ${fmtPct(d.margemLiquida)}. Revise urgentemente as despesas ou estratégia de precificação.` });
+      list.push({ kind: 'critico', titulo: 'Margem crítica', corpo: `Margem líquida de apenas ${fmtPct(d.margemLiquida)}. Revise urgentemente as despesas ou estratégia de precificação.` });
     }
   }
   if (d.inadimplencia > 15) {
-    list.push({ tipo: 'critico', titulo: 'Alta inadimplência', corpo: `${fmtPct(d.inadimplencia)} das contas a receber estão vencidas (${fmt(d.totalVencido)}). Acione a cobrança imediatamente.` });
+    list.push({ kind: 'critico', titulo: 'Alta inadimplência', corpo: `${fmtPct(d.inadimplencia)} das contas a receber estão vencidas (${fmt(d.totalVencido)}). Acione a cobrança imediatamente.` });
   } else if (d.inadimplencia > 5) {
-    list.push({ tipo: 'atencao', titulo: 'Inadimplência em atenção', corpo: `${fmtPct(d.inadimplencia)} de inadimplência (${fmt(d.totalVencido)}). Acompanhe de perto o recebimento.` });
+    list.push({ kind: 'atencao', titulo: 'Inadimplência em atenção', corpo: `${fmtPct(d.inadimplencia)} de inadimplência (${fmt(d.totalVencido)}). Acompanhe de perto o recebimento.` });
   }
   if (d.taxaDesconto > 15) {
     const ganho = d.receitaBruta * (d.taxaDesconto - 10) / 100;
-    list.push({ tipo: 'oportunidade', titulo: 'Política de desconto elevada', corpo: `Taxa de desconto média de ${fmtPct(d.taxaDesconto)}. Reduzir para 10% geraria mais ${fmt(ganho)} de receita.` });
+    list.push({ kind: 'oportunidade', titulo: 'Política de desconto elevada', corpo: `Taxa de desconto média de ${fmtPct(d.taxaDesconto)}. Reduzir para 10% geraria mais ${fmt(ganho)} de receita.` });
   }
   if (d.resultado < 0) {
-    list.push({ tipo: 'critico', titulo: 'Resultado negativo', corpo: `O período fechou com prejuízo de ${fmt(Math.abs(d.resultado))}. Revise despesas e busque aumentar receita.` });
+    list.push({ kind: 'critico', titulo: 'Resultado negativo', corpo: `O período fechou com prejuízo de ${fmt(Math.abs(d.resultado))}. Revise despesas e busque aumentar receita.` });
   }
   if (d.receitaAnterior > 0 && d.receitaLiquida > d.receitaAnterior * 1.05) {
-    list.push({ tipo: 'positivo', titulo: 'Crescimento de receita', corpo: `Receita cresceu ${fmtPct((d.receitaLiquida/d.receitaAnterior - 1)*100)} vs. período anterior. Tendência positiva!` });
+    list.push({ kind: 'positivo', titulo: 'Crescimento de receita', corpo: `Receita cresceu ${fmtPct((d.receitaLiquida/d.receitaAnterior - 1)*100)} vs. período anterior. Tendência positiva!` });
   }
   if (d.despesasAnterior > 0 && d.despesasPagas > d.despesasAnterior * 1.1 && d.receitaLiquida <= d.receitaAnterior * 1.05) {
-    list.push({ tipo: 'atencao', titulo: 'Despesas crescendo mais rápido', corpo: `Despesas subiram ${fmtPct((d.despesasPagas/d.despesasAnterior-1)*100)} enquanto a receita cresceu menos. Risco de compressão de margem.` });
+    list.push({ kind: 'atencao', titulo: 'Despesas crescendo mais rápido', corpo: `Despesas subiram ${fmtPct((d.despesasPagas/d.despesasAnterior-1)*100)} enquanto a receita cresceu menos. Risco de compressão de margem.` });
   }
   if (d.custoComissoes > 0 && d.receitaLiquida > 0) {
     const pct = (d.custoComissoes / d.receitaLiquida) * 100;
     if (pct > 10) {
-      list.push({ tipo: 'atencao', titulo: 'Comissões elevadas', corpo: `Comissões representam ${fmtPct(pct)} da receita líquida. Avalie a estrutura de remuneração variável.` });
+      list.push({ kind: 'atencao', titulo: 'Comissões elevadas', corpo: `Comissões representam ${fmtPct(pct)} da receita líquida. Avalie a estrutura de remuneração variável.` });
     }
   }
   if (list.length === 0) {
-    list.push({ tipo: 'positivo', titulo: 'Sem alertas críticos', corpo: 'Os indicadores financeiros do período estão dentro dos parâmetros normais. Continue acompanhando regularmente.' });
+    list.push({ kind: 'positivo', titulo: 'Sem alertas críticos', corpo: 'Os indicadores financeiros do período estão dentro dos parâmetros normais. Continue acompanhando regularmente.' });
   }
   return list;
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInicio: string; dataFim: string }) {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
 
   const [loading, setLoading] = useState(true);
   const [dados, setDados]     = useState<Dados>(dadosVazios);
 
   // ── Fetch principal ─────────────────────────────────────────────────────────
   const fetchDados = async () => {
-    if (!empresaId || !dataInicio || !dataFim) return;
+    if (!companyId || !dataInicio || !dataFim) return;
     setLoading(true);
 
     const inicio = new Date(dataInicio + 'T00:00:00');
@@ -229,26 +229,26 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       { data: taxas      },
       { data: comissoes  },
     ] = await Promise.all([
-      api.from('vendas').select('valor_final,valor,valor_bruto,desconto,data_venda,metodo_pagamento')
-        .eq('empresa_id', empresaId).gte('data_venda', inicioStr).lte('data_venda', fimStr),
-      api.from('vendas').select('valor_final,valor')
-        .eq('empresa_id', empresaId).gte('data_venda', iniAntStr).lte('data_venda', fimAntStr),
-      api.from('contas_pagar').select('valor,categoria,data_pagamento,data_vencimento,status')
-        .eq('empresa_id', empresaId).eq('status', 'pago')
-        .gte('data_pagamento', inicioStr).lte('data_pagamento', fimStr),
-      api.from('contas_pagar').select('valor')
-        .eq('empresa_id', empresaId).eq('status', 'pago')
-        .gte('data_pagamento', iniAntStr).lte('data_pagamento', fimAntStr),
-      api.from('contas_receber').select('id,cliente_nome,valor,valor_recebido,data_vencimento,data_recebimento,status')
-        .eq('empresa_id', empresaId).order('data_vencimento', { ascending: true }),
-      (api as any).from('taxas_pagamento').select('metodo_pagamento,taxa_percentual,parcelas,bandeira')
-        .eq('empresa_id', empresaId).eq('parcelas', 0),
-      (api as any).from('comissoes').select('valor_comissao,status').eq('empresa_id', empresaId)
+      api.from('sale').select('valor_final,valor,valor_bruto,desconto,data_venda,metodo_pagamento')
+        .eq('company_id', companyId).gte('sold_on', inicioStr).lte('sold_on', fimStr),
+      api.from('sale').select('valor_final,valor')
+        .eq('company_id', companyId).gte('sold_on', iniAntStr).lte('sold_on', fimAntStr),
+      api.from('payable').select('valor,categoria,data_pagamento,data_vencimento,status')
+        .eq('company_id', companyId).eq('status', 'pago')
+        .gte('paid_on', inicioStr).lte('paid_on', fimStr),
+      api.from('payable').select('amount')
+        .eq('company_id', companyId).eq('status', 'pago')
+        .gte('paid_on', iniAntStr).lte('paid_on', fimAntStr),
+      api.from('receivable').select('id,cliente_nome,valor,valor_recebido,data_vencimento,data_recebimento,status')
+        .eq('company_id', companyId).order('due_on', { ascending: true }),
+      (api as any).from('payment_fee').select('metodo_pagamento,taxa_percentual,parcelas,bandeira')
+        .eq('company_id', companyId).eq('parcelas', 0),
+      (api as any).from('commission').select('valor_comissao,status').eq('company_id', companyId)
         .eq('status', 'pago').gte('created_at', inicioStr).lte('created_at', fimStr + 'T23:59:59'),
     ]);
 
     const vs    = (vendas     || []) as VendaRow[];
-    const vsAnt = (vendasAnt  || []) as Pick<VendaRow,'valor_final'|'valor'>[];
+    const vsAnt = (vendasAnt  || []) as Pick<VendaRow,'final_amount'|'amount'>[];
     const cps   = (contas     || []) as ContaPagarRow[];
     const cpsAnt= (contasAnt  || []) as { valor: number }[];
     const crs   = (receber    || []) as ContaReceberRow[];
@@ -341,14 +341,14 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       .slice(0, 5);
 
     // ── Comparativo 6 meses ───────────────────────────────────────────────────
-    const { data: v6 } = await api.from('vendas')
+    const { data: v6 } = await api.from('sale')
       .select('valor_final,valor,data_venda')
-      .eq('empresa_id', empresaId)
-      .gte('data_venda', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
-    const { data: c6 } = await api.from('contas_pagar')
+      .eq('company_id', companyId)
+      .gte('sold_on', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
+    const { data: c6 } = await api.from('payable')
       .select('valor,data_pagamento')
-      .eq('empresa_id', empresaId).eq('status', 'pago')
-      .gte('data_pagamento', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
+      .eq('company_id', companyId).eq('status', 'pago')
+      .gte('paid_on', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
 
     const comparativo = Array.from({ length: 6 }, (_, i) => {
       const mes = subMonths(new Date(), 5 - i);
@@ -366,10 +366,10 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
     vs.forEach(v => { formaMap[v.metodo_pagamento] = (formaMap[v.metodo_pagamento] || 0) + (Number(v.valor_final) || 0); });
     const formas = Object.entries(formaMap)
       .sort((a,b) => b[1]-a[1])
-      .map(([nome, valor]) => {
-        const tx = txs.find(t => t.metodo_pagamento === nome && t.parcelas === 0);
+      .map(([name, valor]) => {
+        const tx = txs.find(t => t.metodo_pagamento === name && t.parcelas === 0);
         const taxaPerc = tx ? Number(tx.taxa_percentual) : 0;
-        return { nome, valor, taxaPerc, custoTaxa: valor * taxaPerc / 100 };
+        return { name, valor, taxaPerc, custoTaxa: valor * taxaPerc / 100 };
       });
 
     // ── Montar e gerar insights ───────────────────────────────────────────────
@@ -387,7 +387,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchDados(); }, [empresaId, dataInicio, dataFim]);
+  useEffect(() => { fetchDados(); }, [companyId, dataInicio, dataFim]);
 
   // ── Exportar CSV ───────────────────────────────────────────────────────────
   const exportarCSV = () => {
@@ -717,7 +717,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
                   <XAxis type="number" tick={{ fontSize: 10, fill: C.cinza, fontFamily: 'Gilroy' }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
                   <YAxis type="category" dataKey="faixa" tick={{ fontSize: 10, fill: '#374151', fontFamily: 'Gilroy' }} axisLine={false} tickLine={false} width={80} />
                   <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ fontFamily: 'Gilroy', borderRadius: 12 }} />
-                  <Bar dataKey="valor" name="Valor" radius={[0,4,4,0]}>
+                  <Bar dataKey="amount" name="Valor" radius={[0,4,4,0]}>
                     {dados.aging.map((a, i) => <Cell key={i} fill={a.color} />)}
                   </Bar>
                 </BarChart>
@@ -852,11 +852,11 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
               <BarChart data={dados.formas} layout="vertical" margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10, fill: C.cinza, fontFamily: 'Gilroy' }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="nome" tick={{ fontSize: 10, fill: '#374151', fontFamily: 'Gilroy' }} axisLine={false} tickLine={false} width={100} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#374151', fontFamily: 'Gilroy' }} axisLine={false} tickLine={false} width={100} />
                 <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ fontFamily: 'Gilroy', borderRadius: 12 }} />
-                <Bar dataKey="valor" name="Valor" radius={[0,4,4,0]}>
+                <Bar dataKey="amount" name="Valor" radius={[0,4,4,0]}>
                   {dados.formas.map((f, i) => {
-                    const cor = f.nome === 'PIX' || f.nome === 'Dinheiro' ? C.verde : f.nome === 'Cartão de Débito' ? C.azul : f.taxaPerc > 2 ? C.ambar : C.roxo;
+                    const cor = f.name === 'PIX' || f.name === 'Dinheiro' ? C.verde : f.name === 'Cartão de Débito' ? C.azul : f.taxaPerc > 2 ? C.ambar : C.roxo;
                     return <Cell key={i} fill={cor} />;
                   })}
                 </Bar>
@@ -873,8 +873,8 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
                 </thead>
                 <tbody>
                   {dados.formas.map(f => (
-                    <tr key={f.nome}>
-                      <td style={{ padding: '6px 8px', color: '#374151', fontWeight: 600 }}>{f.nome}</td>
+                    <tr key={f.name}>
+                      <td style={{ padding: '6px 8px', color: '#374151', fontWeight: 600 }}>{f.name}</td>
                       <td style={{ padding: '6px 8px', textAlign: 'right', color: '#374151' }}>{fmt(f.valor)}</td>
                       <td style={{ padding: '6px 8px', textAlign: 'right', color: f.taxaPerc > 0 ? C.ambar : C.verde }}>{f.taxaPerc > 0 ? fmtPct(f.taxaPerc) : '—'}</td>
                       <td style={{ padding: '6px 8px', textAlign: 'right', color: f.custoTaxa > 0 ? C.verm : C.verde, fontWeight: 700 }}>{f.custoTaxa > 0 ? `-${fmt(f.custoTaxa)}` : 'Sem taxa'}</td>
@@ -912,7 +912,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>
             {dados.insights.map((ins, i) => {
-              const s = insightStyle[ins.tipo] ?? insightStyle.tendencia;
+              const s = insightStyle[ins.kind] ?? insightStyle.tendencia;
               return (
                 <div key={i} style={{ background: s.bg, border: `1px solid ${s.border}22`, borderLeft: `4px solid ${s.border}`, borderRadius: 12, padding: '12px 14px' }}>
                   <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Gilroy', color: s.color, margin: '0 0 4px' }}>

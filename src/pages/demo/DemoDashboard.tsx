@@ -92,10 +92,10 @@ const CHART_DATA = [
 ];
 
 const OPERACOES = [
-  { cliente: 'João Silva',   tipo: 'Entrega Agendada', status: 'pendente'      },
-  { cliente: 'Maria Santos', tipo: 'Montagem',          status: 'em_andamento'  },
-  { cliente: 'Pedro Costa',  tipo: 'Entrega Agendada', status: 'atrasado'      },
-  { cliente: 'Ana Oliveira', tipo: 'Instalação',        status: 'pendente'      },
+  { cliente: 'João Silva',   kind: 'Entrega Agendada', status: 'pendente'      },
+  { cliente: 'Maria Santos', kind: 'Montagem',          status: 'em_andamento'  },
+  { cliente: 'Pedro Costa',  kind: 'Entrega Agendada', status: 'atrasado'      },
+  { cliente: 'Ana Oliveira', kind: 'Instalação',        status: 'pendente'      },
 ];
 
 const CONTAS_VENCENDO = [
@@ -396,7 +396,7 @@ export default function DemoDashboard() {
                         <Truck className="h-3 w-3 text-text-secondary shrink-0" />
                         <p className="text-sm font-medium truncate">{op.cliente}</p>
                       </div>
-                      <p className="text-xs text-text-secondary truncate ml-[18px]">{op.tipo}</p>
+                      <p className="text-xs text-text-secondary truncate ml-[18px]">{op.kind}</p>
                     </div>
                     <OperacaoStatusBadge status={op.status} />
                   </div>

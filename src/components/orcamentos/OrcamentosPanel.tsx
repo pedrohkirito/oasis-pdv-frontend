@@ -520,19 +520,19 @@ export function OrcamentosPanel() {
         {/* Pills de status */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
           {(['todos', ...TODOS_STATUS] as const).map(s => {
-            const ativo = filtroStatus === s
+            const active = filtroStatus === s
             return (
               <button
                 key={s}
                 onClick={() => setFiltroStatus(s)}
                 style={{
-                  background: ativo ? 'linear-gradient(135deg, #8E5FCF, #47118F)' : 'transparent',
-                  color: ativo ? 'white' : '#6B7280',
-                  border: ativo ? 'none' : '1px solid rgba(142,95,207,0.2)',
+                  background: active ? 'linear-gradient(135deg, #8E5FCF, #47118F)' : 'transparent',
+                  color: active ? 'white' : '#6B7280',
+                  border: active ? 'none' : '1px solid rgba(142,95,207,0.2)',
                   borderRadius: 20, padding: '6px 16px',
                   fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.8rem',
                   cursor: 'pointer', transition: 'all 0.2s ease',
-                  boxShadow: ativo ? '0 4px 12px rgba(142,95,207,0.3)' : 'none',
+                  boxShadow: active ? '0 4px 12px rgba(142,95,207,0.3)' : 'none',
                 }}
               >
                 {s === 'todos' ? 'Todos' : STATUS_CONFIG[s].label}

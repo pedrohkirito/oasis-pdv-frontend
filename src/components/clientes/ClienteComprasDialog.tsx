@@ -21,42 +21,42 @@ interface Venda {
     quantidade: number;
     preco_unitario: number;
     subtotal: number;
-    produtos: { nome: string } | null;
+    produtos: { name: string } | null;
   }[];
 }
 
 interface ClienteComprasDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clienteId: string;
+  customerId: string;
   clienteNome: string;
 }
 
-export function ClienteComprasDialog({ open, onOpenChange, clienteId, clienteNome }: ClienteComprasDialogProps) {
-  const { empresaId } = useEmpresa();
+export function ClienteComprasDialog({ open, onOpenChange, customerId, clienteNome }: ClienteComprasDialogProps) {
+  const { companyId } = useEmpresa();
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && clienteNome && empresaId) {
+    if (open && clienteNome && companyId) {
       fetchVendas();
     }
-  }, [open, clienteNome, empresaId]);
+  }, [open, clienteNome, companyId]);
 
   const fetchVendas = async () => {
     setLoading(true);
     const { data, error } = await (api as any)
-      .from('vendas')
+      .from('sale')
       .select(`
         id, data_venda, valor, valor_final, desconto, metodo_pagamento, produtos,
         itens_venda (
           id, quantidade, preco_unitario, subtotal,
-          produtos:produto_id ( nome )
+          produtos:produto_id ( name )
         )
       `)
-      .eq('empresa_id', empresaId!)
-      .eq('cliente_nome', clienteNome)
-      .order('data_venda', { ascending: false });
+      .eq('company_id', companyId!)
+      .eq('customer_name', clienteNome)
+      .order('sold_on', { ascending: false });
 
     if (!error && data) {
       setVendas(data as Venda[]);
@@ -126,7 +126,7 @@ export function ClienteComprasDialog({ open, onOpenChange, clienteId, clienteNom
                       {venda.itens_venda.map((item) => (
                         <div key={item.id} className="flex justify-between text-xs text-muted-foreground">
                           <span>
-                            {item.quantidade}x {(item.produtos as any)?.nome || 'Produto'}
+                            {item.quantidade}x {(item.produtos as any)?.name || 'Produto'}
                           </span>
                           <span>{formatCurrency(item.subtotal)}</span>
                         </div>

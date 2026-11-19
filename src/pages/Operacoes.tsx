@@ -34,7 +34,7 @@ export default function Operacoes() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
-    tipo: 'todos',
+    kind: 'todos',
     fornecedor: '',
     pagamento: 'todos',
   });
@@ -171,7 +171,7 @@ export default function Operacoes() {
             exit={{ opacity: 0, height: 0 }}
             style={{ ...glassCard, padding: '12px 16px', marginTop: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}
           >
-            <Select value={filters.tipo} onValueChange={v => setFilters(f => ({ ...f, tipo: v }))}>
+            <Select value={filters.kind} onValueChange={v => setFilters(f => ({ ...f, kind: v }))}>
               <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os tipos</SelectItem>
@@ -200,7 +200,7 @@ export default function Operacoes() {
             )}
 
             <button
-              onClick={() => setFilters({ search: '', tipo: 'todos', fornecedor: '', pagamento: 'todos' })}
+              onClick={() => setFilters({ search: '', kind: 'todos', fornecedor: '', pagamento: 'todos' })}
               style={{ fontSize: 12, color: '#8E5FCF', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, padding: '4px 8px', borderRadius: 6 }}
             >
               Limpar filtros

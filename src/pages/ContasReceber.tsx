@@ -120,19 +120,19 @@ function gerarDatas(base: string, qtd: number, periodicidade: 'mensal' | 'quinze
 
 export default function ContasReceber() {
   const { toast } = useToast();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { contas, loading, criarConta, editarConta, receberConta, cancelarConta, excluirConta, buscarContas } = useContasReceber();
 
-  const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
+  const [clientes, setClientes] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
-    if (!empresaId) return;
+    if (!companyId) return;
     api
-      .from('clientes')
-      .select('id, nome')
-      .eq('empresa_id', empresaId)
-      .order('nome')
+      .from('customer')
+      .select('id, name')
+      .eq('company_id', companyId)
+      .order('name')
       .then(({ data }) => setClientes(data || []));
-  }, [empresaId]);
+  }, [companyId]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -242,7 +242,7 @@ export default function ContasReceber() {
   const handleCriar = async () => {
     const nomeCliente = clienteNaoCadastrado
       ? novaConta.clienteInput
-      : clientes.find(c => c.id === novaConta.cliente_id)?.nome || novaConta.clienteInput;
+      : clientes.find(c => c.id === novaConta.cliente_id)?.name || novaConta.clienteInput;
 
     if (!novaConta.descricao || !novaConta.valor || !novaConta.data_vencimento) {
       toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' });
@@ -253,7 +253,7 @@ export default function ContasReceber() {
       const datas = gerarDatas(novaConta.data_vencimento, numParcelas, periodicidade);
       const valorParcela = Number(novaConta.valor) / numParcelas;
       const inserts = datas.map((data, i) => ({
-        empresa_id: empresaId,
+        company_id: companyId,
         descricao: `${novaConta.descricao} (Parcela ${i + 1}/${numParcelas})`,
         cliente_id: clienteNaoCadastrado ? null : (novaConta.cliente_id || null),
         cliente_nome: nomeCliente || null,
@@ -265,7 +265,7 @@ export default function ContasReceber() {
         total_parcelas: numParcelas,
         observacoes: novaConta.observacoes || null,
       }));
-      const { error } = await api.from('contas_receber').insert(inserts);
+      const { error } = await api.from('receivable').insert(inserts);
       if (error) {
         toast({ title: 'Erro ao criar parcelas', description: error.message, variant: 'destructive' });
       } else {
@@ -881,7 +881,7 @@ export default function ContasReceber() {
                     <Select value={novaConta.cliente_id} onValueChange={v => setNovaConta(p => ({ ...p, cliente_id: v }))}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Selecione ou busque..." /></SelectTrigger>
                       <SelectContent>
-                        {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                        {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

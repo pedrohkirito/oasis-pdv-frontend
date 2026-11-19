@@ -36,7 +36,7 @@ const CATEGORY_MAPPINGS = {
   ],
   'Moradia': [
     'aluguel', 'condominio', 'iptu', 'luz', 'energia', 'agua', 'gas',
-    'internet', 'telefone', 'net', 'vivo', 'oi', 'tim', 'claro',
+    'internet', 'phone', 'net', 'vivo', 'oi', 'tim', 'claro',
     'construcao', 'reforma', 'material construcao'
   ],
   'Educação': [

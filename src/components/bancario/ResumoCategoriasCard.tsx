@@ -24,25 +24,25 @@ function corCategoria(cat: string) {
   return COR_CATEGORIA[cat] || '#9CA3AF'
 }
 
-export function ResumoCategoriasCard({ empresaId }: { empresaId: string }) {
+export function ResumoCategoriasCard({ companyId }: { companyId: string }) {
   const hoje = new Date()
   const iniMes = format(startOfMonth(hoje), 'yyyy-MM-dd')
   const fimMes = format(endOfMonth(hoje), 'yyyy-MM-dd')
   const mesLabel = format(hoje, 'MMMM/yyyy', { locale: ptBR })
     .replace(/^\w/, c => c.toUpperCase())
 
-  const [categorias, setCategorias] = useState<{ nome: string; total: number }[]>([])
+  const [categorias, setCategorias] = useState<{ name: string; total: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!empresaId) return
+    if (!companyId) return
     const buscar = async () => {
       setLoading(true)
       const { data } = await (api
         .from('movimentacoes_bancarias' as any)
-        .select('categoria, valor, tipo') as any)
-        .eq('empresa_id', empresaId)
-        .eq('tipo', 'debito')
+        .select('categoria, valor, kind') as any)
+        .eq('company_id', companyId)
+        .eq('kind', 'debito')
         .gte('data_movimentacao', iniMes)
         .lte('data_movimentacao', fimMes)
 
@@ -53,14 +53,14 @@ export function ResumoCategoriasCard({ empresaId }: { empresaId: string }) {
       }
 
       const lista = Object.entries(agrupado)
-        .map(([nome, total]) => ({ nome, total }))
+        .map(([name, total]) => ({ name, total }))
         .sort((a, b) => b.total - a.total)
 
       setCategorias(lista)
       setLoading(false)
     }
     buscar()
-  }, [empresaId, iniMes, fimMes])
+  }, [companyId, iniMes, fimMes])
 
   const totalGeral = categorias.reduce((s, c) => s + c.total, 0)
 
@@ -78,16 +78,16 @@ export function ResumoCategoriasCard({ empresaId }: { empresaId: string }) {
           <div className="space-y-3">
             {categorias.map(cat => {
               const pct = totalGeral > 0 ? Math.round((cat.total / totalGeral) * 100) : 0
-              const cor = corCategoria(cat.nome)
+              const cor = corCategoria(cat.name)
               return (
-                <div key={cat.nome} className="flex items-center gap-3">
+                <div key={cat.name} className="flex items-center gap-3">
                   <div
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ background: cor }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-sm truncate">{cat.nome}</span>
+                      <span className="text-sm truncate">{cat.name}</span>
                       <span className="text-sm font-semibold ml-3 shrink-0">{fmtBRL(cat.total)}</span>
                     </div>
                     <div className="flex items-center gap-2">

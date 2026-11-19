@@ -119,7 +119,7 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
             {operacao.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
           </span>
           <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '2px 8px', background: 'rgba(142,95,207,0.08)', border: '1px solid rgba(142,95,207,0.2)', color: '#8E5FCF', display: 'flex', alignItems: 'center', gap: 3 }}>
-            {operacao.tipo === 'entrega_montagem' ? (
+            {operacao.kind === 'entrega_montagem' ? (
               <><Wrench style={{ width: 9, height: 9 }} /> Entrega + Montagem</>
             ) : (
               <><Truck style={{ width: 9, height: 9 }} /> Entrega</>
@@ -186,7 +186,7 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
             setTimeout(() => { suppressClickRef.current = false; }, 400);
           }
         }}
-        vendaId={operacao.venda_id}
+        saleId={operacao.venda_id}
       />
     )}
     </>

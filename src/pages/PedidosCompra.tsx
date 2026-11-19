@@ -381,7 +381,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export default function PedidosCompra() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { pedidos, loading, atualizarStatus, excluirPedido, criarPedido } = usePedidosCompra();
 
   const [view, setView] = useState<'kanban' | 'tabela'>('kanban');
@@ -460,7 +460,7 @@ export default function PedidosCompra() {
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────────
 
-  if (!empresaId) return (
+  if (!companyId) return (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
     </div>

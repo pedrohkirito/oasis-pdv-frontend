@@ -1119,19 +1119,19 @@ function SocialProof() {
   const depoimentos = [
     {
       iniciais: 'MS',
-      nome: 'Maria S.',
+      name: 'Maria S.',
       empresa: 'Loja de roupas, SP',
       texto: 'Antes eu usava planilha e perdia horas. Com o Oasis, fecho o caixa em segundos.',
     },
     {
       iniciais: 'CM',
-      nome: 'Carlos M.',
+      name: 'Carlos M.',
       empresa: 'Mercadinho, MG',
       texto: 'A emissão de NFC-e integrada ao PDV mudou completamente minha rotina.',
     },
     {
       iniciais: 'AL',
-      nome: 'Ana L.',
+      name: 'Ana L.',
       empresa: 'Papelaria, PR',
       texto: 'Finalmente sei o que vence essa semana. Nunca mais paguei multa de fornecedor.',
     },
@@ -1190,14 +1190,14 @@ function SocialProof() {
         {/* Depoimentos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {depoimentos.map((d, i) => (
-            <FadeIn key={d.nome} delay={0.1 + i * 0.1}>
+            <FadeIn key={d.name} delay={0.1 + i * 0.1}>
               <TiltCard className="flex flex-col gap-4" style={{ ...glass.light, borderRadius: '20px', padding: '28px', transition: 'all 0.3s ease' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#8E5FCF] text-white flex items-center justify-center text-sm font-bold shrink-0 select-none">
                     {d.iniciais}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#1F2937]">{d.nome}</p>
+                    <p className="text-sm font-semibold text-[#1F2937]">{d.name}</p>
                     <p className="text-xs text-[#6B7280]">{d.empresa}</p>
                   </div>
                 </div>
@@ -1224,7 +1224,7 @@ function Planos() {
 
   const planos = [
     {
-      nome: 'Essencial',
+      name: 'Essencial',
       desc: 'Para quem está começando',
       mensal: 110,
       anual: 99,
@@ -1240,7 +1240,7 @@ function Planos() {
       ],
     },
     {
-      nome: 'Profissional',
+      name: 'Profissional',
       desc: 'O favorito dos nossos clientes',
       mensal: 399,
       anual: 349,
@@ -1255,7 +1255,7 @@ function Planos() {
       ],
     },
     {
-      nome: 'Premium',
+      name: 'Premium',
       desc: 'Para quem quer o máximo',
       mensal: 599,
       anual: 549,
@@ -1318,7 +1318,7 @@ function Planos() {
             return p.destaque ? (
               /* Card destaque */
               <motion.div
-                key={p.nome}
+                key={p.name}
                 className="flex flex-col gap-6"
                 style={{ ...glass.purple, borderRadius: '24px', padding: '36px', transform: 'scale(1.04)', position: 'relative', overflow: 'hidden' }}
                 animate={{ boxShadow: [
@@ -1337,7 +1337,7 @@ function Planos() {
                 }} />
                 <div className="flex items-start justify-between" style={{ position: 'relative', zIndex: 1 }}>
                   <div>
-                    <p className="text-lg font-bold text-white">{p.nome}</p>
+                    <p className="text-lg font-bold text-white">{p.name}</p>
                     <p className="text-sm text-white/70 mt-0.5">{p.desc}</p>
                   </div>
                   <span
@@ -1375,12 +1375,12 @@ function Planos() {
             ) : (
               /* Card normal */
               <TiltCard
-                key={p.nome}
+                key={p.name}
                 className="flex flex-col gap-6 transition-all duration-300"
                 style={{ ...glass.light, borderRadius: '24px', padding: '36px' }}
               >
                 <div>
-                  <p className="text-lg font-bold text-[#1F2937]">{p.nome}</p>
+                  <p className="text-lg font-bold text-[#1F2937]">{p.name}</p>
                   <p className="text-sm text-[#6B7280] mt-0.5">{p.desc}</p>
                 </div>
                 <div>
@@ -1436,7 +1436,7 @@ const faqs = [
   },
   {
     q: 'Posso cancelar quando quiser?',
-    a: 'Sim, sem multa e sem burocracia. Seu acesso fica ativo até o fim do período pago.',
+    a: 'Sim, sem multa e sem burocracia. Seu acesso fica active até o fim do período pago.',
   },
   {
     q: 'O sistema funciona no celular?',

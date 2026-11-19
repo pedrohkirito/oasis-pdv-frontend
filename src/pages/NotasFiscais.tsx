@@ -19,7 +19,7 @@ interface NotaFiscal {
   id: string;
   user_id: string;
   venda_id: string | null;
-  tipo: string;
+  kind: string;
   numero: number;
   serie: number;
   chave_acesso: string | null;
@@ -263,7 +263,7 @@ function NotaRow({ nota, formatCurrency, onVerDetalhes, onDownload, onCancelar, 
 const NotasFiscais = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
 
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
@@ -305,28 +305,28 @@ const NotasFiscais = () => {
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchEmpresaFiscal();
       fetchInutilizacoes();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchEmpresaFiscal = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('empresa_fiscal')
+      .from('company_fiscal_profile')
       .select('*')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .single();
     setEmpresaFiscal(data);
   };
 
   const fetchInutilizacoes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('inutilizacoes_nfce')
+      .from('nfce_voiding')
       .select('*')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .order('data_inutilizacao', { ascending: false });
     setInutilizacoes(data || []);
   };
@@ -370,9 +370,9 @@ const NotasFiscais = () => {
     setLoadingVenda(true);
     try {
       if (nota.venda_id) {
-        const { data: venda } = await api.from('vendas').select('*').eq('id', nota.venda_id).eq('empresa_id', empresaId).single();
+        const { data: venda } = await api.from('sale').select('*').eq('id', nota.venda_id).eq('company_id', companyId).single();
         setVendaOriginal(venda);
-        const { data: itens } = await api.from('itens_venda').select('*, produtos(*)').eq('venda_id', nota.venda_id);
+        const { data: itens } = await api.from('sale_item').select('*, produtos(*)').eq('sale_id', nota.venda_id);
         setItensVenda(itens || []);
       }
     } catch (error) {
@@ -398,8 +398,8 @@ const NotasFiscais = () => {
       const totalProdutos = Math.round(itensProduto.reduce((acc, i) => acc + Number(i.subtotal), 0) * 100) / 100;
       const itensFormatados = itensProduto.map(item => ({
         id: item.produto_id,
-        codigo: item.produtos?.codigo || item.produto_id,
-        nome: item.produtos?.nome || 'Produto',
+        code: item.produtos?.code || item.produto_id,
+        name: item.produtos?.name || 'Produto',
         ncm: item.produtos?.ncm || '00000000',
         cfop: item.produtos?.cfop || '5102',
         unidade_comercial: item.produtos?.unidade_comercial || 'UN',
@@ -417,13 +417,13 @@ const NotasFiscais = () => {
               ? { ...vendaOriginal, user_id: user?.id, valor: totalProdutos, valor_final: totalProdutos, valor_bruto: totalProdutos, desconto_geral: 0 }
               : { ...vendaOriginal, user_id: user?.id },
             itens: itensFormatados,
-            cliente: notaParaReemitir.cliente_cpf ? { cpf: notaParaReemitir.cliente_cpf, nome: notaParaReemitir.cliente_nome } : null,
+            cliente: notaParaReemitir.cliente_cpf ? { cpf: notaParaReemitir.cliente_cpf, name: notaParaReemitir.cliente_nome } : null,
           }
         }
       });
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
-      await api.from('notas_fiscais').update({ motivo_rejeicao: `${notaParaReemitir.motivo_rejeicao} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
+      await api.from('fiscal_document').update({ motivo_rejeicao: `${notaParaReemitir.motivo_rejeicao} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
       toast({ title: "NFC-e Reemitida", description: `Nova NFC-e emitida com sucesso! Número: ${data.infNFe?.ide?.nNF || empresaFiscal.numero_nfce}` });
       setReemitirDialogOpen(false);
       setNotaParaReemitir(null); setVendaOriginal(null); setItensVenda([]);
@@ -440,16 +440,16 @@ const NotasFiscais = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && empresaId) fetchNotas();
-  }, [user, empresaId]);
+    if (user && companyId) fetchNotas();
+  }, [user, companyId]);
 
   const fetchNotas = async () => {
     setLoading(true);
     const { data, error } = await api
-      .from('notas_fiscais')
+      .from('fiscal_document')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .order('data_emissao', { ascending: false });
+      .eq('company_id', companyId)
+      .order('issued_at', { ascending: false });
     if (error) {
       toast({ title: "Erro", description: "Erro ao carregar notas fiscais", variant: "destructive" });
     } else {
@@ -504,26 +504,26 @@ const NotasFiscais = () => {
     }
   };
 
-  const handleDownload = async (nota: NotaFiscal, tipo: 'pdf' | 'xml') => {
-    setBaixando(`${nota.id}-${tipo}`);
+  const handleDownload = async (nota: NotaFiscal, kind: 'pdf' | 'xml') => {
+    setBaixando(`${nota.id}-${kind}`);
     try {
       const { data, error } = await api.functions.invoke('becoming-nfce', {
-        body: { action: tipo === 'pdf' ? 'download_pdf' : 'download_xml', nota_id: nota.id }
+        body: { action: kind === 'pdf' ? 'download_pdf' : 'download_xml', nota_id: nota.id }
       });
       if (error) throw new Error(error.message);
-      if (!data.success) throw new Error(data.error || `Erro ao baixar ${tipo.toUpperCase()}`);
+      if (!data.success) throw new Error(data.error || `Erro ao baixar ${kind.toUpperCase()}`);
       if (data.url) {
         window.open(data.url, '_blank');
       } else if (data.content) {
-        const blob = new Blob([Uint8Array.from(atob(data.content), c => c.charCodeAt(0))], { type: tipo === 'pdf' ? 'application/pdf' : 'application/xml' });
+        const blob = new Blob([Uint8Array.from(atob(data.content), c => c.charCodeAt(0))], { type: kind === 'pdf' ? 'application/pdf' : 'application/xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `NFCe_${nota.numero}_${nota.serie}.${tipo}`;
+        a.href = url; a.download = `NFCe_${nota.numero}_${nota.serie}.${kind}`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
     } catch (error: any) {
-      toast({ title: `Erro ao baixar ${tipo.toUpperCase()}`, description: error.message || 'Erro desconhecido', variant: "destructive" });
+      toast({ title: `Erro ao baixar ${kind.toUpperCase()}`, description: error.message || 'Erro desconhecido', variant: "destructive" });
     } finally {
       setBaixando(null);
     }
@@ -1130,7 +1130,7 @@ const NotasFiscais = () => {
                             </div>
                             {itensVenda.map((item, idx) => (
                               <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 90px', padding: '8px 12px', gap: 8, borderTop: '1px solid rgba(142,95,207,0.06)' }}>
-                                <span style={{ fontSize: '0.8rem', color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{item.produtos?.nome || 'Produto'}</span>
+                                <span style={{ fontSize: '0.8rem', color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{item.produtos?.name || 'Produto'}</span>
                                 <span style={{ fontSize: '0.8rem', color: '#6B7280', textAlign: 'center', fontFamily: 'Gilroy, sans-serif' }}>{item.quantidade}</span>
                                 <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1F2937', textAlign: 'right', fontFamily: 'Gilroy, sans-serif' }}>
                                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.subtotal)}

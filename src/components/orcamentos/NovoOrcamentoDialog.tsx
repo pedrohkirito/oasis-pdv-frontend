@@ -15,8 +15,8 @@ import { isServico, labelRecorrencia, sufixoRecorrencia } from '@/lib/servicos'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Cliente { id: string; nome: string; telefone: string | null; email: string | null }
-interface Produto  { id: string; nome: string; preco: number; estoque: number | null; codigo: string | null; tipo?: string; recorrente?: boolean; recorrencia_tipo?: string | null }
+interface Cliente { id: string; name: string; phone: string | null; email: string | null }
+interface Produto  { id: string; name: string; price: number; stock: number | null; code: string | null; kind?: string; recurring?: boolean; recurrence_kind?: string | null }
 
 interface ItemOrcamento {
   _key: string
@@ -54,7 +54,7 @@ const novaLinha = (): ItemOrcamento => ({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcamento }: NovoOrcamentoDialogProps) {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [produtos, setProdutos]   = useState<Produto[]>([])
@@ -65,7 +65,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
   const [clienteNome,      setClienteNome]      = useState('')
   const [clienteEmail,     setClienteEmail]     = useState('')
   const [clienteTelefone,  setClienteTelefone]  = useState('')
-  const [clienteId,        setClienteId]        = useState<string | null>(null)
+  const [customerId,        setClienteId]        = useState<string | null>(null)
   const [validade,         setValidade]         = useState(format(addDays(new Date(), 30), 'yyyy-MM-dd'))
   const [condicao,         setCondicao]         = useState('')
   const [observacoes,      setObservacoes]      = useState('')
@@ -75,8 +75,8 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!open || !empresaId) return
-    api.from('clientes').select('id, nome, telefone, email').eq('empresa_id', empresaId).eq('ativo', true).order('nome')
+    if (!open || !companyId) return
+    api.from('customer').select('id, name, telefone, email').eq('company_id', companyId).eq('active', true).order('name')
       .then(({ data }) => setClientes(data || []))
     // Paginated product fetch to handle >1000 products
     const fetchAllProducts = async () => {
@@ -85,7 +85,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
       const pageSize = 1000;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await api.from('produtos').select('id, nome, preco, estoque, codigo, tipo, recorrente, recorrencia_tipo').eq('empresa_id', empresaId).eq('ativo', true).order('nome').range(from, from + pageSize - 1);
+        const { data } = await api.from('product').select('id, name, price, stock, code, kind, recurring, recurrence_kind').eq('company_id', companyId).eq('active', true).order('name').range(from, from + pageSize - 1);
         all = all.concat(data || []);
         hasMore = (data?.length || 0) === pageSize;
         from += pageSize;
@@ -93,7 +93,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
       setProdutos(all);
     }
     fetchAllProducts()
-  }, [open, empresaId])
+  }, [open, companyId])
 
   // ── Cálculos ───────────────────────────────────────────────────────────────
 
@@ -114,12 +114,12 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
     }))
   }
 
-  const selecionarProduto = (key: string, produtoId: string) => {
-    const p = produtos.find(x => x.id === produtoId)
+  const selecionarProduto = (key: string, productId: string) => {
+    const p = produtos.find(x => x.id === productId)
     if (!p) return
     atualizarItem(key, {
       produto_id: p.id,
-      produto_nome: p.nome,
+      produto_nome: p.name,
       preco_unitario: p.preco,
       // Serviço recorrente: a periodicidade vai para o PDF pela coluna de variação.
       ...(isServico(p) && p.recorrente ? { variacao: `Cobrança ${labelRecorrencia(p.recorrencia_tipo).toLowerCase()}` } : {}),
@@ -149,7 +149,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
 
     setSalvando(true)
     const orcamento = {
-      cliente_id: clienteId,
+      cliente_id: customerId,
       cliente_nome: clienteNome,
       cliente_email: clienteEmail || null,
       cliente_telefone: clienteTelefone || null,
@@ -239,7 +239,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
                   <Popover open={clientePopover} onOpenChange={setClientePopover} modal>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="justify-between font-normal w-full" style={{ fontFamily: 'Gilroy', borderColor: 'rgba(142,95,207,0.2)' }}>
-                        {clienteNome || 'Selecione ou digite o nome…'}
+                        {clienteNome || 'Selecione ou digite o name…'}
                         <User className="ml-2 h-4 w-4 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -251,17 +251,17 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
                           onValueChange={v => { setClienteNome(v); setClienteId(null) }}
                         />
                         <CommandList>
-                          <CommandEmpty>Nenhum cliente encontrado. Digite para usar o nome informado.</CommandEmpty>
+                          <CommandEmpty>Nenhum cliente encontrado. Digite para usar o name informado.</CommandEmpty>
                           <CommandGroup>
-                            {clientes.filter(c => c.nome.toLowerCase().includes(clienteNome.toLowerCase())).slice(0, 20).map(c => (
+                            {clientes.filter(c => c.name.toLowerCase().includes(clienteNome.toLowerCase())).slice(0, 20).map(c => (
                               <CommandItem key={c.id} onSelect={() => {
-                                setClienteNome(c.nome)
+                                setClienteNome(c.name)
                                 setClienteId(c.id)
                                 setClienteEmail(c.email ?? '')
                                 setClienteTelefone(c.telefone ?? '')
                                 setClientePopover(false)
                               }}>
-                                {c.nome}
+                                {c.name}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -531,10 +531,10 @@ function ItemRow({
                 <CommandEmpty>Nenhum encontrado.</CommandEmpty>
                 <CommandGroup>
                   {produtos.slice(0, 30).map(p => (
-                    <CommandItem key={p.id} value={`${p.codigo || ''} ${p.nome}`} onSelect={() => { onSelectProduto(p.id); setPop(false) }}>
+                    <CommandItem key={p.id} value={`${p.code || ''} ${p.name}`} onSelect={() => { onSelectProduto(p.id); setPop(false) }}>
                       <div className="flex items-center gap-2 flex-1">
-                        {p.codigo && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.codigo}</span>}
-                        <span>{p.nome}</span>
+                        {p.code && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.code}</span>}
+                        <span>{p.name}</span>
                         {isServico(p) && <span className="text-[10px] uppercase tracking-wide text-sky-700 bg-sky-500/10 px-1.5 py-0.5 rounded">Serviço</span>}
                       </div>
                       <span className="text-xs text-muted-foreground ml-2">{p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}{sufixoRecorrencia(p)}</span>

@@ -13,9 +13,9 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
 
 interface ProdutoXml {
-  codigo: string;
+  code: string;
   ean: string;
-  nome: string;
+  name: string;
   ncm: string;
   cfop: string;
   unidade: string;
@@ -64,7 +64,7 @@ interface XmlImportDialogProps {
   onOpenChange: (open: boolean) => void;
   onImport: (produtos: ProdutoXml[], updateExisting: boolean, mergeStock: boolean, fornecedor?: FornecedorXml, destinatario?: DestinatarioXml) => Promise<void>;
   existingCodes: string[];
-  existingProducts: { id: string; codigo: string | null; nome: string; ean: string | null; codigo_fornecedor: string | null; estoque: number | null; preco: number | null }[];
+  existingProducts: { id: string; code: string | null; name: string; ean: string | null; codigo_fornecedor: string | null; estoque: number | null; preco: number | null }[];
 }
 
 const parseXmlNFe = (xmlContent: string): { produtos: ProdutoXml[]; fornecedor?: FornecedorXml; destinatario?: DestinatarioXml } => {
@@ -148,9 +148,9 @@ const parseXmlNFe = (xmlContent: string): { produtos: ProdutoXml[]; fornecedor?:
       return el?.textContent?.trim() || '';
     };
 
-    const codigo = getTextContent(prod, 'cProd');
+    const code = getTextContent(prod, 'cProd');
     const ean = getTextContent(prod, 'cEAN') || getTextContent(prod, 'cEANTrib') || '';
-    const nome = getTextContent(prod, 'xProd');
+    const name = getTextContent(prod, 'xProd');
     const ncm = getTextContent(prod, 'NCM');
     const cfop = getTextContent(prod, 'CFOP');
     const unidade = getTextContent(prod, 'uCom') || getTextContent(prod, 'uTrib') || 'UN';
@@ -167,11 +167,11 @@ const parseXmlNFe = (xmlContent: string): { produtos: ProdutoXml[]; fornecedor?:
       }
     }
 
-    if (nome) {
+    if (name) {
       produtos.push({
-        codigo,
+        code,
         ean: ean && ean !== 'SEM GTIN' ? ean : '',
-        nome,
+        name,
         ncm,
         cfop,
         unidade: unidade.toUpperCase(),
@@ -202,7 +202,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
   const [updateExisting, setUpdateExisting] = useState(false);
   const [mergeStock, setMergeStock] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ codigo: '', nome: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
+  const [editForm, setEditForm] = useState({ code: '', name: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
   const [fornecedorXml, setFornecedorXml] = useState<FornecedorXml | undefined>(undefined);
   const [destinatarioXml, setDestinatarioXml] = useState<DestinatarioXml | undefined>(undefined);
   const checkDuplicates = useCallback((parsedProdutos: ProdutoXml[]) => {
@@ -216,14 +216,14 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
     let nextCodeCounter = maxCode;
 
     return parsedProdutos.map(produto => {
-      // Detectar duplicados: EAN > codigo_fornecedor (cProd) > nome
+      // Detectar duplicados: EAN > codigo_fornecedor (cProd) > name
       const existingProduct = existingProducts.find(ep => {
         // Match by EAN first (if both have EAN)
         if (produto.ean && ep.ean && produto.ean === ep.ean) return true;
         // Match by codigo_fornecedor (cProd from XML)
-        if (produto.codigo && ep.codigo_fornecedor && produto.codigo === ep.codigo_fornecedor) return true;
+        if (produto.code && ep.codigo_fornecedor && produto.code === ep.codigo_fornecedor) return true;
         // Fallback: match by name
-        if (ep.nome && produto.nome && ep.nome.toLowerCase().trim() === produto.nome.toLowerCase().trim()) return true;
+        if (ep.name && produto.name && ep.name.toLowerCase().trim() === produto.name.toLowerCase().trim()) return true;
         return false;
       });
 
@@ -239,7 +239,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
         existingProductId: existingProduct?.id,
         existingStock: existingProduct?.estoque ?? 0,
         existingPreco: existingProduct?.preco ?? 0,
-        existingCodigo: existingProduct?.codigo ?? null,
+        existingCodigo: existingProduct?.code ?? null,
         predictedCodigo,
         precoVenda: existingProduct?.preco ?? 0,
         selected: true
@@ -300,8 +300,8 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
     e.stopPropagation();
     const produto = produtos[index];
     setEditForm({
-      codigo: produto.codigo,
-      nome: produto.nome,
+      code: produto.code,
+      name: produto.name,
       valorUnitario: produto.valorUnitario.toString(),
       precoVenda: produto.precoVenda.toString(),
       ncm: produto.ncm,
@@ -314,7 +314,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingIndex(null);
-    setEditForm({ codigo: '', nome: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
+    setEditForm({ code: '', name: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
   };
 
   const saveEditing = (e: React.MouseEvent) => {
@@ -325,8 +325,8 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
       i === editingIndex 
         ? { 
             ...p, 
-            codigo: editForm.codigo || p.codigo,
-            nome: editForm.nome || p.nome,
+            code: editForm.code || p.code,
+            name: editForm.name || p.name,
             valorUnitario: parseFloat(editForm.valorUnitario) || p.valorUnitario,
             precoVenda: parseFloat(editForm.precoVenda) || p.precoVenda,
             ncm: editForm.ncm,
@@ -336,7 +336,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
         : p
     ));
     setEditingIndex(null);
-    setEditForm({ codigo: '', nome: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
+    setEditForm({ code: '', name: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
   };
 
   const handleImport = async () => {
@@ -365,7 +365,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
     setUpdateExisting(false);
     setMergeStock(false);
     setEditingIndex(null);
-    setEditForm({ codigo: '', nome: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
+    setEditForm({ code: '', name: '', valorUnitario: '', precoVenda: '', ncm: '', cfop: '', unidade: '' });
     setFornecedorXml(undefined);
     setDestinatarioXml(undefined);
     onOpenChange(false);
@@ -560,8 +560,8 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
                               <div>
                                 <Label className="text-xs">Código</Label>
                                 <Input 
-                                  value={editForm.codigo}
-                                  onChange={(e) => setEditForm(prev => ({ ...prev, codigo: e.target.value }))}
+                                  value={editForm.code}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, code: e.target.value }))}
                                   className="h-8 text-sm"
                                 />
                               </div>
@@ -577,8 +577,8 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
                               <div className="col-span-2">
                                 <Label className="text-xs">Nome</Label>
                                 <Input 
-                                  value={editForm.nome}
-                                  onChange={(e) => setEditForm(prev => ({ ...prev, nome: e.target.value }))}
+                                  value={editForm.name}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                                   className="h-8 text-sm"
                                 />
                               </div>
@@ -639,7 +639,7 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <p className="font-medium text-sm truncate">{produto.nome}</p>
+                                  <p className="font-medium text-sm truncate">{produto.name}</p>
                                   {produto.isDuplicate && (
                                     <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-100 text-xs shrink-0">
                                       <AlertTriangle className="h-3 w-3 mr-1" />
@@ -691,9 +691,9 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
                                     Cód: {produto.predictedCodigo}
                                   </Badge>
                                 ) : null}
-                                {!produto.isDuplicate && produto.codigo && (
+                                {!produto.isDuplicate && produto.code && (
                                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                                    Cód. Fornecedor: {produto.codigo}
+                                    Cód. Fornecedor: {produto.code}
                                   </Badge>
                                 )}
                                 {produto.ncm && (

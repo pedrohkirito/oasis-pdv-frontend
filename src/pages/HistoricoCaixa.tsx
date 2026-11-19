@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface SessaoFechada extends DadosRelatorio {
-  empresa_id: string;
+  company_id: string;
   status: string;
   created_at: string;
 }
@@ -80,7 +80,7 @@ const labelStyle: React.CSSProperties = {
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function HistoricoCaixa() {
-  const { empresaId, empresaAtiva } = useEmpresa();
+  const { companyId, empresaAtiva } = useEmpresa();
   const { role } = useUserRole();
   const isAdmin = role === 'admin';
 
@@ -113,24 +113,24 @@ export default function HistoricoCaixa() {
   // ── Busca sessões fechadas ────────────────────────────────────────────────
 
   const buscarSessoes = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
 
     const inicioISO = new Date(dataInicio + 'T00:00:00').toISOString();
     const fimISO    = new Date(dataFim   + 'T23:59:59').toISOString();
 
     const { data } = await api
-      .from('sessoes_caixa')
+      .from('cash_session')
       .select('*')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'fechado')
-      .gte('aberto_em', inicioISO)
-      .lte('aberto_em', fimISO)
-      .order('aberto_em', { ascending: false });
+      .gte('opened_at', inicioISO)
+      .lte('opened_at', fimISO)
+      .order('opened_at', { ascending: false });
 
     setSessoes((data ?? []) as SessaoFechada[]);
     setLoading(false);
-  }, [empresaId, dataInicio, dataFim]);
+  }, [companyId, dataInicio, dataFim]);
 
   useEffect(() => {
     buscarSessoes();
@@ -144,14 +144,14 @@ export default function HistoricoCaixa() {
 
     const [{ data: movs }, { data: vendas }] = await Promise.all([
       api
-        .from('movimentacoes_caixa')
-        .select('id, tipo, valor, motivo, created_at')
-        .eq('sessao_id', sessao.id)
+        .from('cash_movement')
+        .select('id, kind, valor, motivo, created_at')
+        .eq('cash_session_id', sessao.id)
         .order('created_at', { ascending: true }),
       api
-        .from('vendas')
+        .from('sale')
         .select('valor, metodo_pagamento')
-        .eq('empresa_id', sessao.empresa_id)
+        .eq('company_id', sessao.empresa_id)
         .gte('created_at', sessao.aberto_em)
         .lte('created_at', sessao.fechado_em ?? new Date().toISOString()),
     ]);
@@ -218,7 +218,7 @@ export default function HistoricoCaixa() {
       editForm.total_pix;
 
     const { error } = await api
-      .from('sessoes_caixa')
+      .from('cash_session')
       .update({
         valor_abertura: editForm.valor_abertura,
         valor_fechamento_fisico: editForm.valor_fechamento_fisico,
@@ -739,7 +739,7 @@ export default function HistoricoCaixa() {
             ) : sessaoSelecionada ? (
               <RelatorioCaixa
                 dados={sessaoSelecionada}
-                empresaNome={empresaAtiva?.nome ?? 'Empresa'}
+                empresaNome={empresaAtiva?.name ?? 'Empresa'}
               />
             ) : null}
           </div>

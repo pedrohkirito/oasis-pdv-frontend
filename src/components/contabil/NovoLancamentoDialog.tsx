@@ -21,13 +21,13 @@ import {
 interface Linha {
   key: number
   conta_id: string
-  tipo: 'debito' | 'credito'
+  kind: 'debito' | 'credito'
   valor: string
 }
 
 let contadorLinhas = 0
-const novaLinha = (tipo: 'debito' | 'credito'): Linha => ({
-  key: ++contadorLinhas, conta_id: '', tipo, valor: '',
+const novaLinha = (kind: 'debito' | 'credito'): Linha => ({
+  key: ++contadorLinhas, conta_id: '', kind, valor: '',
 })
 
 export function NovoLancamentoDialog({
@@ -45,15 +45,15 @@ export function NovoLancamentoDialog({
   const [salvando, setSalvando] = useState(false)
 
   const contasAnaliticas = useMemo(
-    () => contas.filter(c => c.ativo && !c.sintetica).sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true })),
+    () => contas.filter(c => c.active && !c.sintetica).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
     [contas],
   )
 
   const atualizar = (key: number, patch: Partial<Linha>) =>
     setLinhas(ls => ls.map(l => (l.key === key ? { ...l, ...patch } : l)))
 
-  const totalDebito = linhas.filter(l => l.tipo === 'debito').reduce((s, l) => s + paraCentavos(l.valor), 0)
-  const totalCredito = linhas.filter(l => l.tipo === 'credito').reduce((s, l) => s + paraCentavos(l.valor), 0)
+  const totalDebito = linhas.filter(l => l.kind === 'debito').reduce((s, l) => s + paraCentavos(l.valor), 0)
+  const totalCredito = linhas.filter(l => l.kind === 'credito').reduce((s, l) => s + paraCentavos(l.valor), 0)
   const diferenca = totalDebito - totalCredito
 
   const linhasValidas = linhas.filter(l => l.conta_id && paraCentavos(l.valor) > 0)
@@ -73,7 +73,7 @@ export function NovoLancamentoDialog({
     const { error } = await onSalvar({
       data,
       historico: historico.trim(),
-      itens: linhas.map(l => ({ conta_id: l.conta_id, tipo: l.tipo, valor: deCentavos(paraCentavos(l.valor)) })),
+      itens: linhas.map(l => ({ conta_id: l.conta_id, kind: l.kind, valor: deCentavos(paraCentavos(l.valor)) })),
     })
     setSalvando(false)
     if (error) {
@@ -109,7 +109,7 @@ export function NovoLancamentoDialog({
           {linhas.map(l => (
             <div key={l.key} className="grid grid-cols-[1fr_130px_130px_36px] gap-2 items-center">
               <ContaCombobox contas={contasAnaliticas} value={l.conta_id} onChange={id => atualizar(l.key, { conta_id: id })} />
-              <Select value={l.tipo} onValueChange={v => atualizar(l.key, { tipo: v as Linha['tipo'] })}>
+              <Select value={l.kind} onValueChange={v => atualizar(l.key, { kind: v as Linha['kind'] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="debito">Débito</SelectItem>

@@ -32,7 +32,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface Cliente {
   id: string;
   user_id: string;
-  nome: string;
+  name: string;
   cpf: string | null;
   telefone: string | null;
   telefone_adicional: string | null;
@@ -45,13 +45,13 @@ interface Cliente {
   estado: string | null;
   cep: string | null;
   observacoes: string | null;
-  ativo: boolean | null;
+  active: boolean | null;
   created_at: string;
   updated_at: string;
 }
 
 interface ImportedCliente {
-  nome: string;
+  name: string;
   cpf?: string;
   telefone?: string;
   email?: string;
@@ -147,17 +147,17 @@ function ClienteRow({ cliente, onEdit, onDelete }: {
             color: 'white', fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.875rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {cliente.nome.charAt(0).toUpperCase()}
+            {cliente.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex items-center gap-2">
             <button
               onClick={() => setComprasOpen(true)}
               className="text-sm font-semibold truncate text-left hover:text-primary hover:underline transition-colors cursor-pointer"
             >
-              {cliente.nome}
+              {cliente.name}
             </button>
-            <Badge variant={cliente.ativo !== false ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0">
-              {cliente.ativo !== false ? 'Ativo' : 'Inativo'}
+            <Badge variant={cliente.active !== false ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 shrink-0">
+              {cliente.active !== false ? 'Ativo' : 'Inativo'}
             </Badge>
           </div>
         </div>
@@ -174,7 +174,7 @@ function ClienteRow({ cliente, onEdit, onDelete }: {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza que deseja excluir "{cliente.nome}"? Essa ação não pode ser desfeita.
+                    Tem certeza que deseja excluir "{cliente.name}"? Essa ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -250,8 +250,8 @@ function ClienteRow({ cliente, onEdit, onDelete }: {
       <ClienteComprasDialog
         open={comprasOpen}
         onOpenChange={setComprasOpen}
-        clienteId={cliente.id}
-        clienteNome={cliente.nome}
+        customerId={cliente.id}
+        clienteNome={cliente.name}
       />
     </div>
   );
@@ -260,7 +260,7 @@ function ClienteRow({ cliente, onEdit, onDelete }: {
 const Clientes = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -279,7 +279,7 @@ const Clientes = () => {
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
   
   const [novoCliente, setNovoCliente] = useState({
-    nome: '',
+    name: '',
     cpf: '',
     telefone: '',
     telefone_adicional: '',
@@ -296,7 +296,7 @@ const Clientes = () => {
   });
 
   const [editCliente, setEditCliente] = useState({
-    nome: '',
+    name: '',
     cpf: '',
     telefone: '',
     telefone_adicional: '',
@@ -375,19 +375,19 @@ const Clientes = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchClientes();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchClientes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
-      .from('clientes')
+      .from('customer')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .order('nome', { ascending: true });
+      .eq('company_id', companyId)
+      .order('name', { ascending: true });
     
     if (error) {
       handleApiError(error, "Erro ao carregar clientes");
@@ -398,10 +398,10 @@ const Clientes = () => {
   };
 
   const handleSalvar = async () => {
-    if (!novoCliente.nome || !user) {
+    if (!novoCliente.name || !user) {
       toast({
         title: "Erro",
-        description: "O nome do cliente é obrigatório",
+        description: "O name do cliente é obrigatório",
         variant: "destructive"
       });
       return;
@@ -423,10 +423,10 @@ const Clientes = () => {
       ? `${novoCliente.endereco}, ${novoCliente.numero}` 
       : novoCliente.endereco;
 
-    const { error } = await api.from('clientes').insert({
+    const { error } = await api.from('customer').insert({
       user_id: user.id,
-      empresa_id: empresaId,
-      nome: novoCliente.nome,
+      company_id: companyId,
+      name: novoCliente.name,
       cpf: novoCliente.cpf || null,
       telefone: novoCliente.telefone || null,
       telefone_adicional: novoCliente.telefone_adicional || null,
@@ -445,7 +445,7 @@ const Clientes = () => {
       handleApiError(error, "Erro ao cadastrar cliente");
     } else {
       setNovoCliente({
-        nome: '',
+        name: '',
         cpf: '',
         telefone: '',
         telefone_adicional: '',
@@ -472,7 +472,7 @@ const Clientes = () => {
   const handleEdit = (cliente: Cliente) => {
     setEditingCliente(cliente);
     setEditCliente({
-      nome: cliente.nome,
+      name: cliente.name,
       cpf: cliente.cpf || '',
       telefone: cliente.telefone || '',
       telefone_adicional: cliente.telefone_adicional || '',
@@ -491,10 +491,10 @@ const Clientes = () => {
   };
 
   const handleSalvarEdicao = async () => {
-    if (!editingCliente || !editCliente.nome) {
+    if (!editingCliente || !editCliente.name) {
       toast({
         title: "Erro",
-        description: "O nome do cliente é obrigatório",
+        description: "O name do cliente é obrigatório",
         variant: "destructive"
       });
       return;
@@ -516,8 +516,8 @@ const Clientes = () => {
       ? `${editCliente.endereco}, ${editCliente.numero}` 
       : editCliente.endereco;
 
-    const { error } = await api.from('clientes').update({
-      nome: editCliente.nome,
+    const { error } = await api.from('customer').update({
+      name: editCliente.name,
       cpf: editCliente.cpf || null,
       telefone: editCliente.telefone || null,
       telefone_adicional: editCliente.telefone_adicional || null,
@@ -546,7 +546,7 @@ const Clientes = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await api.from('clientes').delete().eq('id', id);
+    const { error } = await api.from('customer').delete().eq('id', id);
     if (error) {
       handleApiError(error, "Erro ao excluir cliente");
     } else {
@@ -582,17 +582,17 @@ const Clientes = () => {
       const headers = lines[0].split(separator).map(h => h.trim().toLowerCase().replace(/"/g, ''));
       
       // Mapear colunas
-      const nomeIndex = headers.findIndex(h => h.includes('nome'));
-      const cpfIndex = headers.findIndex(h => h.includes('cpf'));
-      const telefoneIndex = headers.findIndex(h => h.includes('telefone') || h.includes('celular') || h.includes('fone'));
+      const nomeIndex = headers.findIndex(h => h.includes('name'));
+      const cpfIndex = headers.findIndex(h => h.includes('tax_id'));
+      const telefoneIndex = headers.findIndex(h => h.includes('phone') || h.includes('celular') || h.includes('fone'));
       const emailIndex = headers.findIndex(h => h.includes('email') || h.includes('e-mail'));
-      const enderecoIndex = headers.findIndex(h => h.includes('endereco') || h.includes('endereço'));
-      const cidadeIndex = headers.findIndex(h => h.includes('cidade'));
-      const estadoIndex = headers.findIndex(h => h.includes('estado') || h.includes('uf'));
-      const cepIndex = headers.findIndex(h => h.includes('cep'));
+      const enderecoIndex = headers.findIndex(h => h.includes('street') || h.includes('endereço'));
+      const cidadeIndex = headers.findIndex(h => h.includes('city'));
+      const estadoIndex = headers.findIndex(h => h.includes('state') || h.includes('uf'));
+      const cepIndex = headers.findIndex(h => h.includes('postal_code'));
 
       if (nomeIndex === -1) {
-        setImportErrors(['A coluna "nome" é obrigatória no arquivo']);
+        setImportErrors(['A coluna "name" é obrigatória no arquivo']);
         setImportLoading(false);
         return;
       }
@@ -602,9 +602,9 @@ const Clientes = () => {
 
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(separator).map(v => v.trim().replace(/"/g, ''));
-        const nome = values[nomeIndex];
+        const name = values[nomeIndex];
         
-        if (!nome) {
+        if (!name) {
           errors.push(`Linha ${i + 1}: Nome vazio, ignorada`);
           continue;
         }
@@ -613,11 +613,11 @@ const Clientes = () => {
         
         // Validar CPF se tiver 11 dígitos
         if (cpf && cpf.replace(/\D/g, '').length === 11 && !validateCPF(cpf)) {
-          errors.push(`Linha ${i + 1}: CPF inválido para "${nome}"`);
+          errors.push(`Linha ${i + 1}: CPF inválido para "${name}"`);
         }
 
         importados.push({
-          nome,
+          name,
           cpf,
           telefone: telefoneIndex >= 0 ? formatPhone(values[telefoneIndex] || '') : '',
           email: emailIndex >= 0 ? values[emailIndex] : '',
@@ -652,8 +652,8 @@ const Clientes = () => {
 
     const clientesParaInserir = clientesValidos.map(c => ({
       user_id: user.id,
-      empresa_id: empresaId,
-      nome: c.nome,
+      company_id: companyId,
+      name: c.name,
       cpf: c.cpf || null,
       telefone: c.telefone || null,
       email: c.email || null,
@@ -663,7 +663,7 @@ const Clientes = () => {
       cep: c.cep || null
     }));
 
-    const { error } = await api.from('clientes').insert(clientesParaInserir);
+    const { error } = await api.from('customer').insert(clientesParaInserir);
 
     if (error) {
       toast({
@@ -687,7 +687,7 @@ const Clientes = () => {
 
   const filteredClientes = clientes.filter(cliente => {
     const searchLower = searchTerm.toLowerCase();
-    return cliente.nome.toLowerCase().includes(searchLower) ||
+    return cliente.name.toLowerCase().includes(searchLower) ||
            (cliente.email && cliente.email.toLowerCase().includes(searchLower)) ||
            (cliente.telefone && cliente.telefone.includes(searchTerm)) ||
            (cliente.cpf && cliente.cpf.includes(searchTerm));
@@ -784,7 +784,7 @@ const Clientes = () => {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      O arquivo deve conter uma coluna "nome" (obrigatória). Colunas opcionais: cpf, telefone, email, endereco, cidade, estado, cep.
+                      O arquivo deve conter uma coluna "name" (obrigatória). Colunas opcionais: cpf, telefone, email, endereco, cidade, estado, cep.
                     </p>
                   </div>
 
@@ -830,7 +830,7 @@ const Clientes = () => {
                           <TableBody>
                             {importedClientes.slice(0, 10).map((c, i) => (
                               <TableRow key={i}>
-                                <TableCell className="text-sm">{c.nome}</TableCell>
+                                <TableCell className="text-sm">{c.name}</TableCell>
                                 <TableCell className="text-sm">{c.cpf || '-'}</TableCell>
                                 <TableCell className="text-sm">{c.telefone || '-'}</TableCell>
                                 <TableCell className="text-sm">{c.email || '-'}</TableCell>
@@ -899,12 +899,12 @@ const Clientes = () => {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="nome">Nome Completo *</Label>
+                  <Label htmlFor="name">Nome Completo *</Label>
                   <Input 
-                    id="nome" 
+                    id="name" 
                     placeholder="Nome do cliente" 
-                    value={novoCliente.nome} 
-                    onChange={e => setNovoCliente({ ...novoCliente, nome: e.target.value })} 
+                    value={novoCliente.name} 
+                    onChange={e => setNovoCliente({ ...novoCliente, name: e.target.value })} 
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -1064,7 +1064,7 @@ const Clientes = () => {
           <div className="relative" style={{ maxWidth: '480px' }}>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#9CA3AF' }} />
             <input
-              placeholder="Buscar por nome, e-mail, telefone ou CPF..."
+              placeholder="Buscar por name, e-mail, telefone ou CPF..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               style={{
@@ -1103,7 +1103,7 @@ const Clientes = () => {
             },
             {
               label: 'Clientes Ativos',
-              value: String(clientes.filter(c => c.ativo !== false).length),
+              value: String(clientes.filter(c => c.active !== false).length),
               sub: 'ativos no sistema',
               accentGradient: 'linear-gradient(90deg, #10B981, #6EE7B7)',
               valueColor: '#10B981',
@@ -1224,8 +1224,8 @@ const Clientes = () => {
                 <Input 
                   id="edit_nome" 
                   placeholder="Nome do cliente" 
-                  value={editCliente.nome} 
-                  onChange={e => setEditCliente({ ...editCliente, nome: e.target.value })} 
+                  value={editCliente.name} 
+                  onChange={e => setEditCliente({ ...editCliente, name: e.target.value })} 
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">

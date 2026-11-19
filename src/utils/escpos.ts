@@ -2,7 +2,7 @@
 // Suporte: Elgin i8/i9, Epson TM, Bematech, Daruma, Diebold — protocolo universal
 
 export interface DadosEmpresa {
-  nome: string;
+  name: string;
   cnpj?: string;
   endereco?: string;
   telefone?: string;
@@ -147,7 +147,7 @@ export function gerarCupomSimplesESCPOS(empresa: DadosEmpresa, venda: DadosVenda
 
   // Cabeçalho
   doc += ALIGN_CENTER;
-  doc += BOLD_ON + FONT_DOUBLE_H + empresa.nome.toUpperCase() + LF + FONT_NORMAL + BOLD_OFF;
+  doc += BOLD_ON + FONT_DOUBLE_H + empresa.name.toUpperCase() + LF + FONT_NORMAL + BOLD_OFF;
   if (empresa.cnpj)     doc += 'CNPJ: ' + empresa.cnpj + LF;
   if (empresa.endereco) doc += empresa.endereco + LF;
   if (empresa.telefone) doc += 'Tel: ' + empresa.telefone + LF;
@@ -214,7 +214,7 @@ export function gerarDANFEESCPOS(
 
   // Cabeçalho
   doc += ALIGN_CENTER;
-  doc += BOLD_ON + FONT_DOUBLE_H + empresa.nome.toUpperCase() + LF + FONT_NORMAL + BOLD_OFF;
+  doc += BOLD_ON + FONT_DOUBLE_H + empresa.name.toUpperCase() + LF + FONT_NORMAL + BOLD_OFF;
   if (empresa.cnpj)     doc += 'CNPJ: ' + empresa.cnpj + LF;
   if (empresa.endereco) doc += empresa.endereco + LF;
   if (empresa.telefone) doc += 'Tel: ' + empresa.telefone + LF;

@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast'
 
 interface Movimentacao {
   id: string
-  tipo: 'credito' | 'debito'
+  kind: 'credito' | 'debito'
   valor: number
   descricao: string
   data_movimentacao: string
@@ -34,7 +34,7 @@ interface Movimentacao {
 }
 
 interface Sugestao {
-  tipo: 'conta_pagar' | 'conta_receber' | 'venda'
+  kind: 'conta_pagar' | 'conta_receber' | 'venda'
   id: string
   descricao: string
   valor: number
@@ -50,10 +50,10 @@ const fmtBRL = (v: number) =>
 const fmtData = (d: string) =>
   format(parseISO(d), 'dd/MM', { locale: ptBR })
 
-function corBorda(status: string, tipo: string) {
+function corBorda(status: string, kind: string) {
   if (status === 'conciliado') return '#8E5FCF'
   if (status === 'ignorado') return '#9CA3AF'
-  return tipo === 'credito' ? '#10B981' : '#EF4444'
+  return kind === 'credito' ? '#10B981' : '#EF4444'
 }
 
 function similaridade(a: string, b: string): number {
@@ -143,7 +143,7 @@ function ItemMovimentacao({
   const [hovered, setHovered] = React.useState(false)
   const conciliado = mov.status_conciliacao === 'conciliado'
   const ignorado = mov.status_conciliacao === 'ignorado'
-  const corEsq = corBorda(mov.status_conciliacao, mov.tipo)
+  const corEsq = corBorda(mov.status_conciliacao, mov.kind)
   const catStyle = mov.categoria ? (COR_CAT_INLINE[mov.categoria] ?? { background: 'rgba(107,114,128,0.1)', color: '#6B7280' }) : null
 
   return (
@@ -189,13 +189,13 @@ function ItemMovimentacao({
             )}
           </div>
         </div>
-        {/* Valor + tipo */}
+        {/* Valor + kind */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: '2px' }}>
-          <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1rem', color: mov.tipo === 'credito' ? '#10B981' : '#EF4444' }}>
-            {mov.tipo === 'credito' ? '+' : '-'}{fmtBRL(mov.valor)}
+          <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1rem', color: mov.kind === 'credito' ? '#10B981' : '#EF4444' }}>
+            {mov.kind === 'credito' ? '+' : '-'}{fmtBRL(mov.valor)}
           </p>
           <p style={{ fontFamily: 'Gilroy', fontSize: '0.7rem', color: '#9CA3AF', letterSpacing: '0.05em' }}>
-            {mov.tipo === 'credito' ? 'CRÉDITO' : 'DÉBITO'}
+            {mov.kind === 'credito' ? 'CRÉDITO' : 'DÉBITO'}
           </p>
         </div>
       </div>
@@ -255,7 +255,7 @@ function PainelSugestoes({
   movSelecionada: Movimentacao | null
   sugestoes: Sugestao[]
   loadingSugestoes: boolean
-  onConciliar: (tipo: Sugestao['tipo'], id: string) => void
+  onConciliar: (kind: Sugestao['kind'], id: string) => void
   onIgnorar: () => void
   onImportarOFX: () => void
 }) {
@@ -269,13 +269,13 @@ function PainelSugestoes({
     )
   }
 
-  const labelTipo = (t: Sugestao['tipo']) => {
+  const labelTipo = (t: Sugestao['kind']) => {
     if (t === 'conta_pagar') return 'Contas a Pagar Sugeridas'
     if (t === 'conta_receber') return 'Contas a Receber Sugeridas'
     return 'Vendas Sugeridas'
   }
 
-  const corTipo = (t: Sugestao['tipo']) => {
+  const corTipo = (t: Sugestao['kind']) => {
     if (t === 'conta_pagar') return { text: '#EF4444', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)' }
     if (t === 'conta_receber') return { text: '#10B981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)' }
     return { text: '#8E5FCF', bg: 'rgba(142,95,207,0.06)', border: 'rgba(142,95,207,0.15)' }
@@ -289,8 +289,8 @@ function PainelSugestoes({
       <div style={{ background: 'rgba(142,95,207,0.06)', border: '1px solid rgba(142,95,207,0.12)', borderRadius: '12px', padding: '14px' }}>
         <p style={{ fontFamily: 'Gilroy', fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Movimentação selecionada</p>
         <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.9rem', color: '#1F2937', marginBottom: '4px' }}>{movSelecionada.descricao || '(sem descrição)'}</p>
-        <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.25rem', color: movSelecionada.tipo === 'credito' ? '#10B981' : '#EF4444', marginBottom: '2px' }}>
-          {movSelecionada.tipo === 'credito' ? '+' : '-'}{fmtBRL(movSelecionada.valor)}
+        <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.25rem', color: movSelecionada.kind === 'credito' ? '#10B981' : '#EF4444', marginBottom: '2px' }}>
+          {movSelecionada.kind === 'credito' ? '+' : '-'}{fmtBRL(movSelecionada.valor)}
         </p>
         <p style={{ fontFamily: 'Gilroy', fontSize: '0.8rem', color: '#9CA3AF' }}>{fmtData(movSelecionada.data_movimentacao)}</p>
       </div>
@@ -307,7 +307,7 @@ function PainelSugestoes({
       )}
 
       {!loadingSugestoes && grupos.map(grupo => {
-        const itens = sugestoes.filter(s => s.tipo === grupo)
+        const itens = sugestoes.filter(s => s.kind === grupo)
         if (itens.length === 0) return null
         const cores = corTipo(grupo)
         return (
@@ -326,7 +326,7 @@ function PainelSugestoes({
                     pct={pct}
                     matchColor={matchColor}
                     cores={cores}
-                    onConciliar={() => onConciliar(s.tipo, s.id)}
+                    onConciliar={() => onConciliar(s.kind, s.id)}
                   />
                 )
               })}
@@ -520,7 +520,7 @@ function ModalOFX({
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function Conciliacao() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const { contas, buscarMovimentacoes, conciliarMovimentacao, importarOFX } = useContasBancarias()
   const { toast } = useToast()
 
@@ -548,7 +548,7 @@ export default function Conciliacao() {
 
   // Busca movimentações quando muda conta ou período
   useEffect(() => {
-    if (!contaId || !empresaId) return
+    if (!contaId || !companyId) return
     const carregar = async () => {
       setCarregando(true)
       const data = await buscarMovimentacoes(contaId, dataInicio, dataFim)
@@ -558,17 +558,17 @@ export default function Conciliacao() {
       const pendentes = movs.filter(m => m.status_conciliacao === 'pendente')
       if (pendentes.length > 0) {
         const [{ data: cp }, { data: cr }] = await Promise.all([
-          (api.from('contas_pagar').select('id, valor, data_vencimento')
-            .eq('empresa_id', empresaId).in('status', ['pendente', 'vencido']) as any),
-          (api.from('contas_receber').select('id, valor, data_vencimento')
-            .eq('empresa_id', empresaId).eq('status', 'pendente') as any),
+          (api.from('payable').select('id, valor, data_vencimento')
+            .eq('company_id', companyId).in('status', ['pendente', 'vencido']) as any),
+          (api.from('receivable').select('id, valor, data_vencimento')
+            .eq('company_id', companyId).eq('status', 'pendente') as any),
         ])
 
         for (const mov of pendentes) {
           const base = parseISO(mov.data_movimentacao)
           const vMin = mov.valor * 0.98
           const vMax = mov.valor * 1.02
-          if (mov.tipo === 'debito') {
+          if (mov.kind === 'debito') {
             mov.sugestao_automatica = (cp || []).some((item: any) => {
               const v = Number(item.valor)
               return v >= vMin && v <= vMax &&
@@ -590,7 +590,7 @@ export default function Conciliacao() {
       setCarregando(false)
     }
     carregar()
-  }, [contaId, dataInicio, dataFim, empresaId])
+  }, [contaId, dataInicio, dataFim, companyId])
 
   // Busca sugestões quando seleciona uma movimentação
   useEffect(() => {
@@ -602,7 +602,7 @@ export default function Conciliacao() {
   }, [movSelecionada])
 
   const buscarSugestoes = async (mov: Movimentacao) => {
-    if (!empresaId) return
+    if (!companyId) return
     setLoadingSugestoes(true)
     const resultado: Sugestao[] = []
     const valorMin = mov.valor * 0.99
@@ -610,19 +610,19 @@ export default function Conciliacao() {
     const dataBase = parseISO(mov.data_movimentacao)
 
     // Busca contas a pagar (débitos)
-    if (mov.tipo === 'debito') {
+    if (mov.kind === 'debito') {
       const { data: cp } = await (api
-        .from('contas_pagar')
+        .from('payable')
         .select('id, descricao, valor, data_vencimento')
-        .eq('empresa_id', empresaId)
-        .gte('valor', valorMin)
-        .lte('valor', valorMax) as any)
+        .eq('company_id', companyId)
+        .gte('amount', valorMin)
+        .lte('amount', valorMax) as any)
 
       for (const item of (cp || [])) {
         const diffDias = Math.abs(differenceInDays(parseISO(item.data_vencimento), dataBase))
         if (diffDias <= 7) {
           resultado.push({
-            tipo: 'conta_pagar',
+            kind: 'conta_pagar',
             id: item.id,
             descricao: item.descricao || 'Conta a pagar',
             valor: item.valor,
@@ -634,19 +634,19 @@ export default function Conciliacao() {
     }
 
     // Busca contas a receber (créditos)
-    if (mov.tipo === 'credito') {
+    if (mov.kind === 'credito') {
       const { data: cr } = await (api
-        .from('contas_receber')
+        .from('receivable')
         .select('id, descricao, valor, data_vencimento')
-        .eq('empresa_id', empresaId)
-        .gte('valor', valorMin)
-        .lte('valor', valorMax) as any)
+        .eq('company_id', companyId)
+        .gte('amount', valorMin)
+        .lte('amount', valorMax) as any)
 
       for (const item of (cr || [])) {
         const diffDias = Math.abs(differenceInDays(parseISO(item.data_vencimento), dataBase))
         if (diffDias <= 7) {
           resultado.push({
-            tipo: 'conta_receber',
+            kind: 'conta_receber',
             id: item.id,
             descricao: item.descricao || 'Conta a receber',
             valor: item.valor,
@@ -658,22 +658,22 @@ export default function Conciliacao() {
 
       // Busca vendas (créditos)
       const { data: vendas } = await (api
-        .from('vendas')
+        .from('sale')
         .select('id, valor, created_at')
-        .eq('empresa_id', empresaId)
-        .gte('valor', valorMin)
-        .lte('valor', valorMax) as any)
+        .eq('company_id', companyId)
+        .gte('amount', valorMin)
+        .lte('amount', valorMax) as any)
 
       for (const item of (vendas || [])) {
-        const dataVenda = item.created_at?.split('T')[0] || item.created_at
-        const diffDias = Math.abs(differenceInDays(parseISO(dataVenda), dataBase))
+        const soldOn = item.created_at?.split('T')[0] || item.created_at
+        const diffDias = Math.abs(differenceInDays(parseISO(soldOn), dataBase))
         if (diffDias <= 7) {
           resultado.push({
-            tipo: 'venda',
+            kind: 'venda',
             id: item.id,
             descricao: `Venda #${item.id.slice(0, 8)}`,
             valor: item.valor,
-            data: dataVenda,
+            data: soldOn,
             score: 1 - diffDias / 7,
           })
         }
@@ -685,9 +685,9 @@ export default function Conciliacao() {
     setLoadingSugestoes(false)
   }
 
-  const handleConciliar = async (tipo: Sugestao['tipo'], referenciaId: string) => {
+  const handleConciliar = async (kind: Sugestao['kind'], referenciaId: string) => {
     if (!movSelecionada) return
-    await conciliarMovimentacao(movSelecionada.id, tipo, referenciaId)
+    await conciliarMovimentacao(movSelecionada.id, kind, referenciaId)
     setMovimentacoes(prev =>
       prev.map(m => m.id === movSelecionada.id
         ? { ...m, status_conciliacao: 'conciliado' }
@@ -731,7 +731,7 @@ export default function Conciliacao() {
   const movFiltradas = movimentacoes
     .filter(m => {
       if (filtroStatus !== 'todos' && m.status_conciliacao !== filtroStatus) return false
-      if (filtroTipo !== 'todos' && m.tipo !== filtroTipo) return false
+      if (filtroTipo !== 'todos' && m.kind !== filtroTipo) return false
       if (filtroCategoria !== 'todos' && m.categoria !== filtroCategoria) return false
       if (busca && !m.descricao?.toLowerCase().includes(busca.toLowerCase())) return false
       return true
@@ -751,7 +751,7 @@ export default function Conciliacao() {
   const contaSelecionada = contas.find(c => c.id === contaId)
   const saldoExtrato = movimentacoes
     .filter(m => m.status_conciliacao !== 'ignorado')
-    .reduce((s, m) => s + (m.tipo === 'credito' ? m.valor : -m.valor), 0)
+    .reduce((s, m) => s + (m.kind === 'credito' ? m.valor : -m.valor), 0)
   const saldoSistema = contaSelecionada?.saldo_atual || 0
   const diferenca = saldoExtrato - saldoSistema
 
@@ -801,7 +801,7 @@ export default function Conciliacao() {
                 </SelectTrigger>
                 <SelectContent>
                   {contas.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

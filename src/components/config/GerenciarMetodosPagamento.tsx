@@ -22,15 +22,15 @@ import {
 
 interface MetodoPagamento {
   id: string;
-  nome: string;
-  tipo: string;
-  ativo: boolean;
+  name: string;
+  kind: string;
+  active: boolean;
 }
 
 const METODOS_PADRAO = ['Dinheiro', 'PIX', 'Boleto', 'Cartão de Crédito', 'Cartão de Débito'];
 
 export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetodosChange?: () => void }) {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
   const [metodos, setMetodos] = useState<MetodoPagamento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,13 +38,13 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
   const [adicionando, setAdicionando] = useState(false);
 
   const fetchMetodos = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
 
     const { data, error } = await api
-      .from('metodos_pagamento')
-      .select('id, nome, tipo, ativo')
-      .eq('empresa_id', empresaId)
+      .from('payment_method')
+      .select('id, name, kind, active')
+      .eq('company_id', companyId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -54,42 +54,42 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
       setMetodos((data as MetodoPagamento[]) || []);
     }
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchMetodos();
   }, [fetchMetodos]);
 
   const seedDefaults = useCallback(async () => {
-    if (!empresaId || metodos.length > 0) return;
+    if (!companyId || metodos.length > 0) return;
 
-    for (const nome of METODOS_PADRAO) {
-      const tipo = nome.includes('Cartão') ? 'cartao' : nome.toLowerCase();
-      await api.from('metodos_pagamento').insert({
-        empresa_id: empresaId,
-        nome,
-        tipo,
-        ativo: true,
+    for (const name of METODOS_PADRAO) {
+      const kind = name.includes('Cartão') ? 'cartao' : name.toLowerCase();
+      await api.from('payment_method').insert({
+        company_id: companyId,
+        name,
+        kind,
+        active: true,
       } as any);
     }
     fetchMetodos();
-  }, [empresaId, metodos.length, fetchMetodos]);
+  }, [companyId, metodos.length, fetchMetodos]);
 
   useEffect(() => {
-    if (!loading && metodos.length === 0 && empresaId) {
+    if (!loading && metodos.length === 0 && companyId) {
       seedDefaults();
     }
-  }, [loading, metodos.length, empresaId, seedDefaults]);
+  }, [loading, metodos.length, companyId, seedDefaults]);
 
   const handleAdicionar = async () => {
-    if (!empresaId || !novoNome.trim()) return;
+    if (!companyId || !novoNome.trim()) return;
     setAdicionando(true);
 
-    const { error } = await api.from('metodos_pagamento').insert({
-      empresa_id: empresaId,
-      nome: novoNome.trim(),
-      tipo: 'outro',
-      ativo: true,
+    const { error } = await api.from('payment_method').insert({
+      company_id: companyId,
+      name: novoNome.trim(),
+      kind: 'outro',
+      active: true,
     } as any);
 
     if (error) {
@@ -109,21 +109,21 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
 
   const handleToggle = async (metodo: MetodoPagamento) => {
     const { error } = await api
-      .from('metodos_pagamento')
-      .update({ ativo: !metodo.ativo, updated_at: new Date().toISOString() } as any)
+      .from('payment_method')
+      .update({ active: !metodo.active, updated_at: new Date().toISOString() } as any)
       .eq('id', metodo.id);
 
     if (error) {
       toast({ title: 'Erro ao atualizar', description: error.message, variant: 'destructive' });
     } else {
-      setMetodos(prev => prev.map(m => m.id === metodo.id ? { ...m, ativo: !m.ativo } : m));
+      setMetodos(prev => prev.map(m => m.id === metodo.id ? { ...m, active: !m.active } : m));
       onMetodosChange?.();
     }
   };
 
   const handleExcluir = async (metodo: MetodoPagamento) => {
     const { error } = await api
-      .from('metodos_pagamento')
+      .from('payment_method')
       .delete()
       .eq('id', metodo.id);
 
@@ -136,7 +136,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
     }
   };
 
-  const isPadrao = (nome: string) => METODOS_PADRAO.includes(nome);
+  const isPadrao = (name: string) => METODOS_PADRAO.includes(name);
 
   return (
     <Card data-state="static">
@@ -176,15 +176,15 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
               <div
                 key={metodo.id}
                 className={`flex items-center justify-between p-3 rounded-lg border border-border !transform-none !transition-none ${
-                  metodo.ativo ? 'bg-card' : 'bg-muted/40 opacity-60'
+                  metodo.active ? 'bg-card' : 'bg-muted/40 opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">{metodo.nome}</span>
-                  {isPadrao(metodo.nome) && (
+                  <span className="text-sm font-medium">{metodo.name}</span>
+                  {isPadrao(metodo.name) && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">padrão</Badge>
                   )}
-                  {!metodo.ativo && (
+                  {!metodo.active && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">inativo</Badge>
                   )}
                 </div>
@@ -194,9 +194,9 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => handleToggle(metodo)}
-                    title={metodo.ativo ? 'Desativar' : 'Ativar'}
+                    title={metodo.active ? 'Desativar' : 'Ativar'}
                   >
-                    {metodo.ativo ? (
+                    {metodo.active ? (
                       <ToggleRight className="h-4 w-4 text-green-500" />
                     ) : (
                       <ToggleLeft className="h-4 w-4 text-muted-foreground" />
@@ -213,7 +213,7 @@ export default function GerenciarMetodosPagamento({ onMetodosChange }: { onMetod
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir método?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir "{metodo.nome}"? Essa ação não pode ser desfeita.
+                          Tem certeza que deseja excluir "{metodo.name}"? Essa ação não pode ser desfeita.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

@@ -22,17 +22,17 @@ interface ContaAlerta {
 
 export const AlertasVencimento = () => {
   const { user } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
   const [contasVencidas, setContasVencidas] = useState<ContaAlerta[]>([]);
   const [contasProximas, setContasProximas] = useState<ContaAlerta[]>([]);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchContasAlerta();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchContasAlerta = async () => {
     const hoje = startOfDay(new Date());
@@ -40,11 +40,11 @@ export const AlertasVencimento = () => {
     
     // Buscar contas pendentes
     const { data } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('*')
       .eq('status', 'pendente')
-      .eq('empresa_id', empresaId)
-      .order('data_vencimento', { ascending: true });
+      .eq('company_id', companyId)
+      .order('due_on', { ascending: true });
 
     if (data) {
       const vencidas: ContaAlerta[] = [];
@@ -74,7 +74,7 @@ export const AlertasVencimento = () => {
       // Atualizar status das contas vencidas para 'vencido'
       if (contasParaAtualizar.length > 0) {
         await api
-          .from('contas_pagar')
+          .from('payable')
           .update({ status: 'vencido' })
           .in('id', contasParaAtualizar);
       }

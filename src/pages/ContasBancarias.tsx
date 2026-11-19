@@ -161,7 +161,7 @@ function ContaCard({
         {/* Linha 1: ícone + badges */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ width: '44px', height: '44px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', background: `linear-gradient(135deg, ${corConta}dd, ${corConta}99)`, flexShrink: 0 }}>
-            {TIPO_ICONE[conta.tipo] ?? <Wallet size={20} />}
+            {TIPO_ICONE[conta.kind] ?? <Wallet size={20} />}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
             {conta.padrao && (
@@ -184,11 +184,11 @@ function ContaCard({
         </div>
 
         {/* Nome */}
-        <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1rem', color: '#1F2937', marginBottom: '4px' }}>{conta.nome}</p>
+        <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1rem', color: '#1F2937', marginBottom: '4px' }}>{conta.name}</p>
 
-        {/* Banco/tipo */}
+        {/* Banco/kind */}
         <p style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy', marginBottom: '16px' }}>
-          {TIPO_LABEL[conta.tipo]}
+          {TIPO_LABEL[conta.kind]}
           {conta.banco && <> · {conta.banco}</>}
           {conta.agencia && <> · Ag: {conta.agencia}</>}
           {conta.numero_conta && <> C: {conta.numero_conta}{conta.digito ? `-${conta.digito}` : ''}</>}
@@ -197,12 +197,12 @@ function ContaCard({
         {/* Saldo */}
         <div>
           <p style={{ fontSize: '0.7rem', fontFamily: 'Gilroy', fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-            {conta.tipo === 'cartao_credito' ? 'Fatura atual' : 'Saldo atual'}
+            {conta.kind === 'cartao_credito' ? 'Fatura atual' : 'Saldo atual'}
           </p>
           <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.5rem', color: saldoNegativo ? '#EF4444' : '#1F2937', lineHeight: 1.2 }}>
             {fmtBRL(conta.saldo_atual || 0)}
           </p>
-          {conta.tipo === 'cartao_credito' && conta.limite_credito && (
+          {conta.kind === 'cartao_credito' && conta.limite_credito && (
             <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy', marginTop: '4px' }}>
               Limite: {fmtBRL(conta.limite_credito)}
             </p>
@@ -321,11 +321,11 @@ const TIPO_OPTIONS = [
 ]
 
 const CARTEIRAS_DIGITAIS = [
-  { codigo: '260', nome: 'Nubank' },
-  { codigo: '380', nome: 'PicPay' },
-  { codigo: '999', nome: 'Mercado Pago' },
-  { codigo: '000', nome: 'PayPal' },
-  { codigo: 'out', nome: 'Outro' },
+  { code: '260', name: 'Nubank' },
+  { code: '380', name: 'PicPay' },
+  { code: '999', name: 'Mercado Pago' },
+  { code: '000', name: 'PayPal' },
+  { code: 'out', name: 'Outro' },
 ]
 
 function ModalNovaConta({
@@ -337,15 +337,15 @@ function ModalNovaConta({
   open: boolean
   onClose: () => void
   onCriar: (dados: any) => Promise<void>
-  BANCOS: { codigo: string; nome: string }[]
+  BANCOS: { code: string; name: string }[]
 }) {
   const [passo, setPasso] = useState(1)
-  const [tipo, setTipo] = useState('')
+  const [kind, setTipo] = useState('')
   const [form, setForm] = useState<any>({
     banco: '', agencia: '', numero_conta: '', digito: '',
     saldo_inicial: '', saldo_atual: '', data_inicio: format(new Date(), 'yyyy-MM-dd'),
     padrao: false, limite_credito: '', dia_fechamento: '', dia_vencimento: '',
-    nome: '', cor: CORES[0],
+    name: '', cor: CORES[0],
   })
   const [salvando, setSalvando] = useState(false)
 
@@ -353,11 +353,11 @@ function ModalNovaConta({
 
   const handleCriar = async () => {
     setSalvando(true)
-    const banco = BANCOS.find(b => b.codigo === form.banco)
+    const banco = BANCOS.find(b => b.code === form.banco)
     await onCriar({
-      tipo,
-      nome: form.nome || TIPO_LABEL[tipo],
-      banco_nome: banco?.nome || form.banco,
+      kind,
+      name: form.name || TIPO_LABEL[kind],
+      banco_nome: banco?.name || form.banco,
       banco_codigo: form.banco,
       agencia: form.agencia,
       numero_conta: form.numero_conta,
@@ -374,7 +374,7 @@ function ModalNovaConta({
     setTipo('')
     setForm({ banco: '', agencia: '', numero_conta: '', digito: '', saldo_inicial: '',
       saldo_atual: '', data_inicio: format(new Date(), 'yyyy-MM-dd'), padrao: false,
-      limite_credito: '', dia_fechamento: '', dia_vencimento: '', nome: '', cor: CORES[0] })
+      limite_credito: '', dia_fechamento: '', dia_vencimento: '', name: '', cor: CORES[0] })
   }
 
   return (
@@ -400,12 +400,12 @@ function ModalNovaConta({
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                   padding: '20px 12px', borderRadius: '16px', cursor: 'pointer',
                   transition: 'all 0.2s ease', textAlign: 'center',
-                  background: tipo === opt.key ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.8)',
-                  border: tipo === opt.key ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.15)',
-                  boxShadow: tipo === opt.key ? '0 0 0 3px rgba(142,95,207,0.15)' : 'none',
+                  background: kind === opt.key ? 'rgba(142,95,207,0.06)' : 'rgba(255,255,255,0.8)',
+                  border: kind === opt.key ? '2px solid #8E5FCF' : '1px solid rgba(142,95,207,0.15)',
+                  boxShadow: kind === opt.key ? '0 0 0 3px rgba(142,95,207,0.15)' : 'none',
                 }}
-                onMouseEnter={e => { if (tipo !== opt.key) { e.currentTarget.style.border = '1px solid rgba(142,95,207,0.4)'; e.currentTarget.style.background = 'rgba(142,95,207,0.03)'; } }}
-                onMouseLeave={e => { if (tipo !== opt.key) { e.currentTarget.style.border = '1px solid rgba(142,95,207,0.15)'; e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; } }}
+                onMouseEnter={e => { if (kind !== opt.key) { e.currentTarget.style.border = '1px solid rgba(142,95,207,0.4)'; e.currentTarget.style.background = 'rgba(142,95,207,0.03)'; } }}
+                onMouseLeave={e => { if (kind !== opt.key) { e.currentTarget.style.border = '1px solid rgba(142,95,207,0.15)'; e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; } }}
               >
                 <span style={{ color: '#8E5FCF' }}>{opt.icone}</span>
                 <span style={{ fontFamily: 'Gilroy', fontWeight: 600, fontSize: '0.8rem', color: '#374151', lineHeight: 1.3 }}>{opt.label}</span>
@@ -414,10 +414,10 @@ function ModalNovaConta({
           </div>
         )}
 
-        {/* Passo 2 — Dados por tipo */}
+        {/* Passo 2 — Dados por kind */}
         {passo === 2 && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {(tipo === 'corrente' || tipo === 'poupanca') && (
+            {(kind === 'corrente' || kind === 'poupanca') && (
               <>
                 <div>
                   <Label>Banco</Label>
@@ -425,8 +425,8 @@ function ModalNovaConta({
                     <SelectTrigger><SelectValue placeholder="Selecione o banco" /></SelectTrigger>
                     <SelectContent>
                       {BANCOS.map(b => (
-                        <SelectItem key={b.codigo} value={b.codigo}>
-                          {b.codigo} — {b.nome}
+                        <SelectItem key={b.code} value={b.code}>
+                          {b.code} — {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -435,13 +435,13 @@ function ModalNovaConta({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <Label>Agência</Label>
-                    <Input placeholder="0001" value={form.agencia} onChange={e => set('agencia', e.target.value)} />
+                    <Input placeholder="0001" value={form.agencia} onChange={e => set('branch', e.target.value)} />
                   </div>
                   <div>
                     <Label>Número da Conta</Label>
                     <div style={{ display: 'flex', gap: '4px' }}>
                       <Input placeholder="12345" value={form.numero_conta} onChange={e => set('numero_conta', e.target.value)} />
-                      <Input placeholder="0" style={{ width: '56px' }} value={form.digito} onChange={e => set('digito', e.target.value)} />
+                      <Input placeholder="0" style={{ width: '56px' }} value={form.digito} onChange={e => set('account_digit', e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -460,7 +460,7 @@ function ModalNovaConta({
               </>
             )}
 
-            {tipo === 'cartao_credito' && (
+            {kind === 'cartao_credito' && (
               <>
                 <div>
                   <Label>Banco / Operadora</Label>
@@ -468,8 +468,8 @@ function ModalNovaConta({
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {BANCOS.map(b => (
-                        <SelectItem key={b.codigo} value={b.codigo}>
-                          {b.codigo} — {b.nome}
+                        <SelectItem key={b.code} value={b.code}>
+                          {b.code} — {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -496,7 +496,7 @@ function ModalNovaConta({
               </>
             )}
 
-            {tipo === 'carteira_digital' && (
+            {kind === 'carteira_digital' && (
               <>
                 <div>
                   <Label>Carteira</Label>
@@ -504,7 +504,7 @@ function ModalNovaConta({
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {CARTEIRAS_DIGITAIS.map(b => (
-                        <SelectItem key={b.codigo} value={b.codigo}>{b.nome}</SelectItem>
+                        <SelectItem key={b.code} value={b.code}>{b.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -516,11 +516,11 @@ function ModalNovaConta({
               </>
             )}
 
-            {tipo === 'caixa' && (
+            {kind === 'caixa' && (
               <>
                 <div>
                   <Label>Nome do caixa</Label>
-                  <Input placeholder="Ex: Caixa Loja" value={form.nome} onChange={e => set('nome', e.target.value)} />
+                  <Input placeholder="Ex: Caixa Loja" value={form.name} onChange={e => set('name', e.target.value)} />
                 </div>
                 <div>
                   <Label>Saldo inicial (R$)</Label>
@@ -529,7 +529,7 @@ function ModalNovaConta({
               </>
             )}
 
-            {tipo === 'investimento' && (
+            {kind === 'investimento' && (
               <>
                 <div>
                   <Label>Banco / Corretora</Label>
@@ -537,8 +537,8 @@ function ModalNovaConta({
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {BANCOS.map(b => (
-                        <SelectItem key={b.codigo} value={b.codigo}>
-                          {b.codigo} — {b.nome}
+                        <SelectItem key={b.code} value={b.code}>
+                          {b.code} — {b.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -559,9 +559,9 @@ function ModalNovaConta({
             <div>
               <Label>Nome da conta</Label>
               <Input
-                placeholder={TIPO_LABEL[tipo]}
-                value={form.nome}
-                onChange={e => set('nome', e.target.value)}
+                placeholder={TIPO_LABEL[kind]}
+                value={form.name}
+                onChange={e => set('name', e.target.value)}
               />
             </div>
             <div>
@@ -570,7 +570,7 @@ function ModalNovaConta({
                 {CORES.map(cor => (
                   <button
                     key={cor}
-                    onClick={() => set('cor', cor)}
+                    onClick={() => set('color', cor)}
                     style={{
                       width: '28px', height: '28px', borderRadius: '50%',
                       background: cor, border: 'none', cursor: 'pointer',
@@ -590,11 +590,11 @@ function ModalNovaConta({
               <div style={{ padding: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', background: form.cor }}>
-                    {TIPO_ICONE[tipo]}
+                    {TIPO_ICONE[kind]}
                   </div>
                   <div>
-                    <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.875rem', color: '#1F2937' }}>{form.nome || TIPO_LABEL[tipo]}</p>
-                    <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#6B7280' }}>{TIPO_LABEL[tipo]}</p>
+                    <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.875rem', color: '#1F2937' }}>{form.name || TIPO_LABEL[kind]}</p>
+                    <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#6B7280' }}>{TIPO_LABEL[kind]}</p>
                   </div>
                 </div>
                 <p style={{ fontFamily: 'Gilroy', fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '2px' }}>Saldo atual</p>
@@ -684,8 +684,8 @@ function ModalImportarOFX({
     }
 
     const datas = transacoes.map(t => t.data_movimentacao).sort()
-    const creditos = transacoes.filter(t => t.tipo === 'credito').reduce((s, t) => s + t.valor, 0)
-    const debitos = transacoes.filter(t => t.tipo === 'debito').reduce((s, t) => s + t.valor, 0)
+    const creditos = transacoes.filter(t => t.kind === 'credito').reduce((s, t) => s + t.valor, 0)
+    const debitos = transacoes.filter(t => t.kind === 'debito').reduce((s, t) => s + t.valor, 0)
 
     setPreview({
       total: transacoes.length,
@@ -901,7 +901,7 @@ function ModalTransferencia({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '16px 24px 0' }}>
             {contaOrigemObj && (
               <div style={{ flex: 1, background: 'rgba(142,95,207,0.06)', border: '1px solid rgba(142,95,207,0.15)', borderRadius: '12px', padding: '10px 12px', textAlign: 'center' }}>
-                <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaOrigemObj.nome}</p>
+                <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaOrigemObj.name}</p>
                 <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaOrigemObj.saldo_atual || 0)}</p>
               </div>
             )}
@@ -910,7 +910,7 @@ function ModalTransferencia({
             )}
             {contaDestinoObj && (
               <div style={{ flex: 1, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', padding: '10px 12px', textAlign: 'center' }}>
-                <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaDestinoObj.nome}</p>
+                <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaDestinoObj.name}</p>
                 <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaDestinoObj.saldo_atual || 0)}</p>
               </div>
             )}
@@ -924,7 +924,7 @@ function ModalTransferencia({
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {contas.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -935,7 +935,7 @@ function ModalTransferencia({
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {contas.filter(c => c.id !== origem).map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -989,7 +989,7 @@ export default function ContasBancarias() {
   } = useContasBancarias()
 
   const { importarTransacoesPluggy, sincronizarTransacoes, importando } = usePluggy()
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const { toast } = useToast()
   const [sincronizandoId, setSincronizandoId] = useState<string | null>(null)
   const [sincronizandoTodas, setSincronizandoTodas] = useState(false)
@@ -1004,7 +1004,7 @@ export default function ContasBancarias() {
   const fimMes = format(endOfMonth(hoje), 'yyyy-MM-dd')
 
   const saldoTotal = contas
-    .filter(c => c.tipo !== 'cartao_credito')
+    .filter(c => c.kind !== 'cartao_credito')
     .reduce((s, c) => s + (c.saldo_atual || 0), 0)
 
   // Entradas e saídas são calculadas via movimentações — aqui usamos saldo_inicial como fallback
@@ -1023,8 +1023,8 @@ export default function ContasBancarias() {
 
       for (const conta of contas) {
         const movs = await buscarMovimentacoes(conta.id, iniMes, fimMes)
-        creditos += movs.filter((m: any) => m.tipo === 'credito').reduce((s: number, m: any) => s + m.valor, 0)
-        debitos += movs.filter((m: any) => m.tipo === 'debito').reduce((s: number, m: any) => s + m.valor, 0)
+        creditos += movs.filter((m: any) => m.kind === 'credito').reduce((s: number, m: any) => s + m.valor, 0)
+        debitos += movs.filter((m: any) => m.kind === 'debito').reduce((s: number, m: any) => s + m.valor, 0)
 
         // Mini gráfico: últimos 7 dias agrupados por dia
         const ultimos7 = movs.filter((m: any) => m.data_movimentacao >= sete)
@@ -1036,7 +1036,7 @@ export default function ContasBancarias() {
         for (const m of ultimos7 as any[]) {
           const d = m.data_movimentacao?.split('T')[0] || m.data_movimentacao
           if (porDia[d]) {
-            if (m.tipo === 'credito') porDia[d].credito += m.valor
+            if (m.kind === 'credito') porDia[d].credito += m.valor
             else porDia[d].debito += m.valor
           }
         }
@@ -1080,11 +1080,11 @@ export default function ContasBancarias() {
 
   const handleSincronizarTodas = async () => {
     const contasPluggy = contas.filter(c => c.pluggy_item_id)
-    if (!contasPluggy.length || !empresaId) return
+    if (!contasPluggy.length || !companyId) return
     setSincronizandoTodas(true)
     let total = 0
     for (const conta of contasPluggy) {
-      const result = await sincronizarTransacoes(conta.pluggy_item_id, conta.id, empresaId)
+      const result = await sincronizarTransacoes(conta.pluggy_item_id, conta.id, companyId)
       if (!result.error) total += result.importadas || 0
     }
     buscarContas()
@@ -1217,8 +1217,8 @@ export default function ContasBancarias() {
                     await atualizarConta(conta.id, { pluggy_item_id: itemId })
                     toast({ title: 'Banco conectado! Importando transações…' })
 
-                    if (empresaId) {
-                      const result = await importarTransacoesPluggy(itemId, conta.id, empresaId)
+                    if (companyId) {
+                      const result = await importarTransacoesPluggy(itemId, conta.id, companyId)
                       if (result.saldo !== null) {
                         await atualizarSaldo(conta.id, result.saldo)
                       }
@@ -1231,9 +1231,9 @@ export default function ContasBancarias() {
                     }
                   }}
                   onSincronizar={async () => {
-                    if (!empresaId || !conta.pluggy_item_id) return
+                    if (!companyId || !conta.pluggy_item_id) return
                     setSincronizandoId(conta.id)
-                    const result = await sincronizarTransacoes(conta.pluggy_item_id, conta.id, empresaId)
+                    const result = await sincronizarTransacoes(conta.pluggy_item_id, conta.id, companyId)
                     if (result.saldo !== null) {
                       await atualizarSaldo(conta.id, result.saldo)
                     }
@@ -1255,7 +1255,7 @@ export default function ContasBancarias() {
           )}
 
           {/* Breakdown de gastos por categoria */}
-          <ResumoCategoriasCard empresaId={empresaId} />
+          <ResumoCategoriasCard companyId={companyId} />
 
         </div>
       </div>

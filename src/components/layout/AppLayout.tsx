@@ -162,8 +162,8 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
   );
 
   const getUserInitials = () => {
-    const nome = user?.user_metadata?.nome;
-    if (nome) return nome.substring(0, 2).toUpperCase();
+    const name = user?.user_metadata?.name;
+    if (name) return name.substring(0, 2).toUpperCase();
     if (!user?.email) return '?';
     return user.email.substring(0, 2).toUpperCase();
   };
@@ -180,7 +180,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
         {!collapsed && (
           <div className="flex items-center gap-2 overflow-hidden">
             {empresaAtiva?.logo_url ? (
-              <img src={empresaAtiva.logo_url} alt={empresaAtiva.nome} className="h-8 w-auto" />
+              <img src={empresaAtiva.logo_url} alt={empresaAtiva.name} className="h-8 w-auto" />
             ) : (
               <img src="/images/oasis-logo-white.svg" alt="Oasis" className="h-10 w-auto" />
             )}
@@ -212,7 +212,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
             className="w-full text-xs font-medium bg-primary/5 border border-border rounded-lg px-2 py-1.5 text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
           >
             {empresas.map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.nome}</option>
+              <option key={emp.id} value={emp.id}>{emp.name}</option>
             ))}
           </select>
         </div>
@@ -437,7 +437,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
               {!collapsed && (
                 <div className="flex-1 text-left overflow-hidden">
                   <p className="text-sm font-semibold truncate text-foreground leading-tight">
-                    {user?.user_metadata?.nome || user?.email?.split('@')[0]}
+                    {user?.user_metadata?.name || user?.email?.split('@')[0]}
                   </p>
                   {role && (
                     <p className="text-[11px] text-text-secondary truncate leading-tight mt-0.5">
@@ -452,7 +452,7 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
             <DropdownMenuLabel className="font-normal pb-2">
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-semibold text-foreground">
-                  {user?.user_metadata?.nome || user?.email?.split('@')[0]}
+                  {user?.user_metadata?.name || user?.email?.split('@')[0]}
                 </p>
                 <p className="text-xs text-text-secondary truncate">{user?.email}</p>
                 {role && (
@@ -523,8 +523,8 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
   }, []);
 
   const getUserInitials = () => {
-    const nome = user?.user_metadata?.nome;
-    if (nome) return nome.substring(0, 2).toUpperCase();
+    const name = user?.user_metadata?.name;
+    if (name) return name.substring(0, 2).toUpperCase();
     if (!user?.email) return '?';
     return user.email.substring(0, 2).toUpperCase();
   };
@@ -643,7 +643,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
                   </Avatar>
                   <div className="hidden sm:flex flex-col text-left">
                     <span className="text-xs font-semibold text-foreground leading-tight max-w-[120px] truncate">
-                      {user?.user_metadata?.nome || user?.email?.split('@')[0]}
+                      {user?.user_metadata?.name || user?.email?.split('@')[0]}
                     </span>
                     {role && (
                       <span className="text-[10px] text-text-secondary leading-tight">
@@ -657,7 +657,7 @@ export function AppLayout({ children, actions }: AppLayoutProps) {
                 <DropdownMenuLabel className="font-normal pb-2">
                   <div className="flex flex-col gap-0.5">
                     <p className="text-sm font-semibold text-foreground">
-                      {user?.user_metadata?.nome || user?.email?.split('@')[0]}
+                      {user?.user_metadata?.name || user?.email?.split('@')[0]}
                     </p>
                     <p className="text-xs text-text-secondary truncate">{user?.email}</p>
                   </div>

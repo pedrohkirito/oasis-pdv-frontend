@@ -415,7 +415,7 @@ function MetodoBadge({ metodo }: { metodo?: string }) {
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { role, loading: roleLoading, canViewModule } = useUserRole();
-  const { empresaId, empresaSelecionada, empresas, loading: empresaLoading } = useEmpresa();
+  const { companyId, empresaSelecionada, empresas, loading: empresaLoading } = useEmpresa();
   const navigate = useNavigate();
   const { setActions } = useLayoutActions();
 
@@ -427,8 +427,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   const isAdmin    = role === 'admin';
-  const isGerente  = role === 'gerente';
-  const isRestrito = role === 'vendedor' || role === 'visualizador';
+  const isGerente  = role === 'manager';
+  const isRestrito = role === 'seller' || role === 'viewer';
   const podeVerFinanceiro = isAdmin || isGerente;
 
   // ── Redirect ──────────────────────────────────────────────────────────────
@@ -446,50 +446,50 @@ const Index = () => {
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       setLoading(true);
       const fetches = [fetchVendas(), fetchOperacoesPendentes()];
       if (podeVerFinanceiro) fetches.push(fetchContasPagar(), fetchContasReceberVencidas());
       Promise.all(fetches).finally(() => setLoading(false));
     }
-  }, [user, empresaId, role]);
+  }, [user, companyId, role]);
 
   const fetchVendas = async () => {
-    if (!empresaId) return;
-    let query = api.from('vendas').select('*').eq('empresa_id', empresaId);
+    if (!companyId) return;
+    let query = api.from('sale').select('*').eq('company_id', companyId);
     if (isRestrito && user) {
-      query = query.eq('vendedor_id', user.id);
+      query = query.eq('seller_id', user.id);
     }
-    const { data } = await query.order('data_venda', { ascending: false });
+    const { data } = await query.order('sold_on', { ascending: false });
     setVendas(data || []);
   };
 
   const fetchContasPagar = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('contas_pagar').select('*')
-      .eq('empresa_id', empresaId)
-      .order('data_vencimento', { ascending: false });
+      .from('payable').select('*')
+      .eq('company_id', companyId)
+      .order('due_on', { ascending: false });
     setContasPagar(data || []);
   };
 
   const fetchContasReceberVencidas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const hoje = new Date().toISOString().split('T')[0];
     const { data } = await api
-      .from('contas_receber')
+      .from('receivable')
       .select('id, descricao, cliente_nome, valor, valor_recebido, data_vencimento')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'vencido')
-      .order('data_vencimento', { ascending: true });
+      .order('due_on', { ascending: true });
     setContasReceberVencidas(data || []);
   };
 
   const fetchOperacoesPendentes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('operacoes').select('*')
-      .eq('empresa_id', empresaId)
+      .from('operation').select('*')
+      .eq('company_id', companyId)
       .not('status', 'eq', 'finalizado')
       .order('data_prevista', { ascending: true, nullsFirst: false });
     setOperacoesPendentes(data || []);
@@ -598,7 +598,7 @@ const Index = () => {
   const vendasExibidas = isRestrito ? vendas.filter(v => v.vendedor_id === user?.id) : vendas;
 
   // Nome do usuário
-  const userName = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'usuário';
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'usuário';
 
   // ── Header actions (admin) ────────────────────────────────────────────────
 

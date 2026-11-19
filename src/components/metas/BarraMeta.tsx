@@ -5,7 +5,7 @@ import React from 'react'
 export interface ProgressoMeta {
   meta: {
     id: string
-    tipo: string
+    kind: string
     periodo: string
     valor: number
     usuario_nome?: string
@@ -45,8 +45,8 @@ function labelPeriodo(periodo: string): string {
 }
 
 function labelTipo(meta: ProgressoMeta['meta']): string {
-  if (meta.tipo === 'vendedora' && meta.usuario_nome) return meta.usuario_nome
-  if (meta.tipo === 'categoria' && meta.categoria) return `Categoria: ${meta.categoria}`
+  if (meta.kind === 'vendedora' && meta.usuario_nome) return meta.usuario_nome
+  if (meta.kind === 'category' && meta.categoria) return `Categoria: ${meta.categoria}`
   return 'Meta da Loja'
 }
 

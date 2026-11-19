@@ -22,7 +22,7 @@ function desconto(original: number, atual: number) {
 
 // ─── Barcode simulado — usa width 100% para centralizar corretamente ──────────
 
-function Barcode({ codigo, height = 28 }: { codigo: string; height?: number }) {
+function Barcode({ code, height = 28 }: { code: string; height?: number }) {
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
       <div
@@ -56,7 +56,7 @@ function Barcode({ codigo, height = 28 }: { codigo: string; height?: number }) {
           lineHeight: 1.2,
         }}
       >
-        {codigo}
+        {code}
       </span>
     </div>
   );
@@ -106,13 +106,13 @@ const BASE: React.CSSProperties = {
 function Simples({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
   return (
     <div style={{ ...BASE, justifyContent: 'center', gap: 4 }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2, fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
-      {c.campos.includes('preco') && (
+      {c.campos.includes('price') && (
         <p style={{ margin: 0, fontSize: fs + 5, fontWeight: 900, textAlign: 'center', width: '100%', lineHeight: 1, fontFamily: c.fonte }}>
           {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
         </p>
@@ -122,21 +122,21 @@ function Simples({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; 
 }
 
 function Padrao({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   return (
     <div style={{ ...BASE }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2, fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <Barcode codigo={codigo} height={26} />
+          <Barcode code={code} height={26} />
         </div>
       )}
-      {c.campos.includes('preco') && (
+      {c.campos.includes('price') && (
         <p style={{ margin: 0, fontSize: fs + 4, fontWeight: 900, textAlign: 'center', width: '100%', lineHeight: 1, fontFamily: c.fonte }}>
           {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
         </p>
@@ -146,30 +146,30 @@ function Padrao({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; f
 }
 
 function Completo({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   return (
     <div style={{ ...BASE, alignItems: 'flex-start' }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, lineHeight: 1.2, width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', width: '100%' }}>
-        {c.campos.includes('sku') && p.codigo && (
-          <span style={{ fontSize: fs - 2, color: '#777', fontFamily: c.fonte }}>SKU: {p.codigo}</span>
+        {c.campos.includes('sku') && p.code && (
+          <span style={{ fontSize: fs - 2, color: '#777', fontFamily: c.fonte }}>SKU: {p.code}</span>
         )}
-        {c.campos.includes('categoria') && p.categoria && (
+        {c.campos.includes('category') && p.categoria && (
           <span style={{ fontSize: fs - 2, color: '#777', fontFamily: c.fonte }}>{p.categoria}</span>
         )}
       </div>
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%' }}>
-          <Barcode codigo={codigo} height={22} />
+          <Barcode code={code} height={22} />
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
-        {c.campos.includes('preco') && (
+        {c.campos.includes('price') && (
           <p style={{ margin: 0, fontSize: fs + 4, fontWeight: 900, lineHeight: 1, fontFamily: c.fonte }}>
             {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
           </p>
@@ -185,13 +185,13 @@ function Completo({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova;
 }
 
 function Roupas({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   return (
     <div style={{ ...BASE }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2, fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
       <div style={{ display: 'flex', gap: 5, alignItems: 'center', justifyContent: 'center' }}>
@@ -201,16 +201,16 @@ function Roupas({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; f
             {p.tamanho}
           </span>
         )}
-        {c.campos.includes('cor') && p.cor && (
+        {c.campos.includes('color') && p.cor && (
           <span style={{ fontSize: fs - 1, color: '#555', fontFamily: c.fonte }}>{p.cor}</span>
         )}
       </div>
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%' }}>
-          <Barcode codigo={codigo} height={22} />
+          <Barcode code={code} height={22} />
         </div>
       )}
-      {c.campos.includes('preco') && (
+      {c.campos.includes('price') && (
         <p style={{ margin: 0, fontSize: fs + 4, fontWeight: 900, textAlign: 'center', width: '100%', lineHeight: 1, fontFamily: c.fonte }}>
           {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
         </p>
@@ -220,15 +220,15 @@ function Roupas({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; f
 }
 
 function Promocao({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   const orig = p.preco_original ?? p.preco * 1.3;
   const pct = desconto(orig, p.preco);
   return (
     <div style={{ ...BASE }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2, fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
@@ -244,15 +244,15 @@ function Promocao({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova;
           </span>
         )}
       </div>
-      {c.campos.includes('preco') && (
+      {c.campos.includes('price') && (
         <p style={{ margin: 0, fontSize: fs + 7, fontWeight: 900, color: '#e00',
           textAlign: 'center', width: '100%', lineHeight: 1, fontFamily: c.fonte }}>
           {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
         </p>
       )}
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%' }}>
-          <Barcode codigo={codigo} height={20} />
+          <Barcode code={code} height={20} />
         </div>
       )}
     </div>
@@ -260,28 +260,28 @@ function Promocao({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova;
 }
 
 function Gondola({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   return (
     <div style={{ ...BASE, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 2, minWidth: 0, paddingRight: 6 }}>
-        {c.campos.includes('nome') && (
+        {c.campos.includes('name') && (
           <p style={{ margin: 0, fontSize: fs, fontWeight: 700, lineHeight: 1.2, overflow: 'hidden',
             textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: c.fonte }}>
-            {p.nome}
+            {p.name}
           </p>
         )}
         {c.campos.includes('unidade') && p.unidade_comercial && (
           <span style={{ fontSize: fs - 2, color: '#666', fontFamily: c.fonte }}>{p.unidade_comercial}</span>
         )}
-        {c.campos.includes('preco') && (
+        {c.campos.includes('price') && (
           <p style={{ margin: 0, fontSize: fs + 3, fontWeight: 900, lineHeight: 1, fontFamily: c.fonte }}>
             {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
           </p>
         )}
       </div>
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '35%', flexShrink: 0 }}>
-          <Barcode codigo={codigo} height={32} />
+          <Barcode code={code} height={32} />
         </div>
       )}
     </div>
@@ -289,27 +289,27 @@ function Gondola({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; 
 }
 
 function ComQR({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   const qrSize = 36;
   return (
     <div style={{ ...BASE }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: fs, fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2, fontFamily: c.fonte }}>
-          {p.nome}
+          {p.name}
         </p>
       )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
         {c.campos.includes('qrcode') && <QRCode size={qrSize} />}
-        {c.campos.includes('preco') && (
+        {c.campos.includes('price') && (
           <p style={{ margin: 0, fontSize: fs + 3, fontWeight: 900, textAlign: 'center', lineHeight: 1, fontFamily: c.fonte }}>
             {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
           </p>
         )}
       </div>
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%' }}>
-          <Barcode codigo={codigo} height={16} />
+          <Barcode code={code} height={16} />
         </div>
       )}
     </div>
@@ -317,25 +317,25 @@ function ComQR({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs
 }
 
 function Bobina({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; fs: number }) {
-  const codigo = p.ean ?? p.codigo;
+  const code = p.ean ?? p.code;
   return (
     <div style={{ ...BASE, padding: '3px 4px' }}>
-      {c.campos.includes('nome') && (
+      {c.campos.includes('name') && (
         <p style={{ margin: 0, fontSize: Math.max(6, fs - 1), fontWeight: 700, textAlign: 'center', width: '100%',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2,
           fontFamily: 'Courier, monospace', textTransform: 'uppercase' }}>
-          {p.nome.slice(0, 22)}
+          {p.name.slice(0, 22)}
         </p>
       )}
-      {c.campos.includes('preco') && (
+      {c.campos.includes('price') && (
         <p style={{ margin: 0, fontSize: Math.max(7, fs + 1), fontWeight: 900, textAlign: 'center',
           width: '100%', lineHeight: 1, fontFamily: 'Courier, monospace' }}>
           {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
         </p>
       )}
-      {c.campos.includes('codigo_barras') && codigo && (
+      {c.campos.includes('codigo_barras') && code && (
         <div style={{ width: '100%' }}>
-          <Barcode codigo={codigo} height={20} />
+          <Barcode code={code} height={20} />
         </div>
       )}
     </div>
@@ -452,10 +452,10 @@ export function EtiquetaScaled({
 
 const DEMO_PRODUTO: ProdutoParaEtiqueta = {
   id: 'demo',
-  nome: 'Camiseta Básica',
+  name: 'Camiseta Básica',
   preco: 49.90,
   preco_custo: 25.00,
-  codigo: '000123',
+  code: '000123',
   ean: '7891234567890',
   categoria: 'Roupas',
   unidade_comercial: 'UN',
@@ -466,14 +466,14 @@ const DEMO_PRODUTO: ProdutoParaEtiqueta = {
 };
 
 const MODELO_DEFAULTS: Record<string, { largura: number; altura: number; campos: string[] }> = {
-  simples:  { largura: 40,  altura: 25, campos: ['nome', 'preco'] },
-  padrao:   { largura: 80,  altura: 40, campos: ['nome', 'codigo_barras', 'preco'] },
-  completo: { largura: 100, altura: 50, campos: ['nome', 'sku', 'codigo_barras', 'preco', 'preco_custo', 'categoria'] },
-  roupas:   { largura: 50,  altura: 30, campos: ['nome', 'preco', 'tamanho', 'cor', 'codigo_barras'] },
-  promocao: { largura: 80,  altura: 50, campos: ['nome', 'preco_original', 'preco', 'desconto_pct', 'codigo_barras'] },
-  gondola:  { largura: 100, altura: 30, campos: ['nome', 'preco', 'unidade', 'codigo_barras'] },
-  qrcode:   { largura: 60,  altura: 60, campos: ['nome', 'preco', 'qrcode', 'codigo_barras'] },
-  bobina:   { largura: 40,  altura: 20, campos: ['nome', 'preco', 'codigo_barras'] },
+  simples:  { largura: 40,  altura: 25, campos: ['name', 'price'] },
+  padrao:   { largura: 80,  altura: 40, campos: ['name', 'codigo_barras', 'price'] },
+  completo: { largura: 100, altura: 50, campos: ['name', 'sku', 'codigo_barras', 'price', 'preco_custo', 'category'] },
+  roupas:   { largura: 50,  altura: 30, campos: ['name', 'price', 'tamanho', 'color', 'codigo_barras'] },
+  promocao: { largura: 80,  altura: 50, campos: ['name', 'preco_original', 'price', 'desconto_pct', 'codigo_barras'] },
+  gondola:  { largura: 100, altura: 30, campos: ['name', 'price', 'unidade', 'codigo_barras'] },
+  qrcode:   { largura: 60,  altura: 60, campos: ['name', 'price', 'qrcode', 'codigo_barras'] },
+  bobina:   { largura: 40,  altura: 20, campos: ['name', 'price', 'codigo_barras'] },
 };
 
 const BASE_CONFIG: Omit<ConfigEtiquetaNova, 'modeloId' | 'largura' | 'altura' | 'campos'> = {

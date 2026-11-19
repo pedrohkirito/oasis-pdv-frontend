@@ -4,16 +4,16 @@ import { useEmpresa } from './useEmpresa'
 import { useAuth } from './useAuth'
 
 export function useOrcamentos() {
-  const { empresaId, empresaAtiva } = useEmpresa()
+  const { companyId, empresaAtiva } = useEmpresa()
   const { user } = useAuth()
   const [orcamentos, setOrcamentos] = useState([])
   const [loading, setLoading] = useState(true)
 
   const buscarOrcamentos = async () => {
     const { data } = await api
-      .from('orcamentos')
+      .from('quote')
       .select('*, orcamento_itens(*)')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .order('created_at', { ascending: false })
     setOrcamentos(data || [])
     setLoading(false)
@@ -35,22 +35,22 @@ export function useOrcamentos() {
     const total = subtotal - (orcamento.desconto || 0)
 
     const { data, error } = await api
-      .from('orcamentos')
+      .from('quote')
       .insert({
         ...orcamento,
         numero,
         subtotal,
         total,
-        empresa_id: empresaId
+        company_id: companyId
       })
       .select().single()
 
     if (!error && data) {
-      await api.from('orcamento_itens').insert(
+      await api.from('quote_item').insert(
         itens.map(i => ({
           ...i,
           orcamento_id: data.id,
-          empresa_id: empresaId,
+          company_id: companyId,
           total: i.quantidade * i.preco_unitario - (i.desconto_item || 0)
         }))
       )
@@ -60,7 +60,7 @@ export function useOrcamentos() {
   }
 
   const atualizarStatus = async (id: string, status: string) => {
-    await api.from('orcamentos')
+    await api.from('quote')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
     buscarOrcamentos()
@@ -72,9 +72,9 @@ export function useOrcamentos() {
 
     // Cria a venda com os campos corretos da tabela vendas
     const { data: venda, error } = await (api
-      .from('vendas')
+      .from('sale')
       .insert({
-        empresa_id: empresaId,
+        company_id: companyId,
         cliente_nome: orcamento.cliente_nome || 'Cliente',
         cliente_email: orcamento.cliente_email,
         cliente_telefone: orcamento.cliente_telefone,
@@ -92,7 +92,7 @@ export function useOrcamentos() {
       const itens: any[] = orcamento.orcamento_itens || []
       const itensValidos = itens.filter(i => i.produto_id)
       if (itensValidos.length > 0) {
-        await api.from('itens_venda').insert(
+        await api.from('sale_item').insert(
           itensValidos.map(i => ({
             venda_id: venda.id,
             produto_id: i.produto_id,
@@ -104,7 +104,7 @@ export function useOrcamentos() {
       }
 
       // Atualiza orçamento como convertido
-      await api.from('orcamentos')
+      await api.from('quote')
         .update({
           status: 'convertido',
           venda_id: venda.id,
@@ -118,16 +118,16 @@ export function useOrcamentos() {
   }
 
   const excluirOrcamento = async (id: string) => {
-    await api.from('orcamentos').delete().eq('id', id)
+    await api.from('quote').delete().eq('id', id)
     buscarOrcamentos()
   }
 
   useEffect(() => {
-    if (empresaId) {
+    if (companyId) {
       setLoading(true)
       buscarOrcamentos()
     }
-  }, [empresaId])
+  }, [companyId])
 
   return {
     orcamentos, loading,

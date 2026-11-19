@@ -4,9 +4,9 @@ import { useEmpresa } from './useEmpresa'
 
 export interface LinhaBalancete {
   conta_id: string
-  codigo: string
-  nome: string
-  tipo: string
+  code: string
+  name: string
+  kind: string
   natureza: 'devedora' | 'credora'
   sintetica: boolean
   total_debito: number
@@ -15,22 +15,22 @@ export interface LinhaBalancete {
 }
 
 export function useBalancete() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [linhas, setLinhas] = useState<LinhaBalancete[]>([])
   const [loading, setLoading] = useState(false)
 
   const buscarBalancete = useCallback(async (dataIni: string, dataFim: string) => {
-    if (!empresaId) return { data: null, error: 'Sem empresa selecionada' }
+    if (!companyId) return { data: null, error: 'Sem empresa selecionada' }
     setLoading(true)
-    const { data, error } = await (api.rpc('balancete', {
-      p_empresa_id: empresaId,
+    const { data, error } = await (api.rpc('trial_balance', {
+      p_company_id: companyId,
       p_data_ini: dataIni,
       p_data_fim: dataFim,
     } as any) as any)
     setLinhas((data || []) as LinhaBalancete[])
     setLoading(false)
     return { data, error: error ? error.message : null }
-  }, [empresaId])
+  }, [companyId])
 
   return { linhas, loading, buscarBalancete }
 }

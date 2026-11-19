@@ -17,7 +17,7 @@ const fmtBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 const TIPO_LABEL: Record<string, string> = {
-  ativo: 'Ativo',
+  active: 'Ativo',
   passivo: 'Passivo',
   patrimonio_liquido: 'Patrimônio Líquido',
   receita: 'Receita',
@@ -25,9 +25,9 @@ const TIPO_LABEL: Record<string, string> = {
   despesa: 'Despesa',
 }
 
-const codigoPai = (codigo: string): string | null => {
-  const idx = codigo.lastIndexOf('.')
-  return idx === -1 ? null : codigo.slice(0, idx)
+const codigoPai = (code: string): string | null => {
+  const idx = code.lastIndexOf('.')
+  return idx === -1 ? null : code.slice(0, idx)
 }
 
 const INDENT_CLASS = ['pl-0', 'pl-6', 'pl-12', 'pl-[4.5rem]']
@@ -36,12 +36,12 @@ function useArvoreBalancete(linhas: LinhaBalancete[]) {
   return useMemo(() => {
     const porPai = new Map<string | null, LinhaBalancete[]>()
     for (const l of linhas) {
-      const pai = codigoPai(l.codigo)
+      const pai = codigoPai(l.code)
       if (!porPai.has(pai)) porPai.set(pai, [])
       porPai.get(pai)!.push(l)
     }
     for (const lista of porPai.values()) {
-      lista.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
+      lista.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
     }
     return porPai
   }, [linhas])
@@ -57,7 +57,7 @@ function LinhaRow({
   porPai: Map<string | null, LinhaBalancete[]>
 }) {
   const [aberto, setAberto] = useState(true)
-  const filhos = porPai.get(linha.codigo) ?? []
+  const filhos = porPai.get(linha.code) ?? []
   const temFilhos = filhos.length > 0
   const indent = INDENT_CLASS[Math.min(depth, INDENT_CLASS.length - 1)]
 
@@ -76,9 +76,9 @@ function LinhaRow({
         {linha.sintetica
           ? <Folder size={15} className="text-brand shrink-0" />
           : <FileText size={15} className="text-muted-foreground shrink-0" />}
-        <span className="font-mono text-xs text-muted-foreground shrink-0 w-16">{linha.codigo}</span>
+        <span className="font-mono text-xs text-muted-foreground shrink-0 w-16">{linha.code}</span>
         <span className={`truncate text-sm ${linha.sintetica ? 'font-semibold text-foreground' : 'text-foreground'}`}>
-          {linha.nome}
+          {linha.name}
         </span>
       </div>
       <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(linha.total_debito)}</span>
@@ -132,8 +132,8 @@ export default function Balancete() {
       ['Código', 'Conta', 'Tipo', 'Débito', 'Crédito', 'Saldo'],
       ...linhas
         .slice()
-        .sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
-        .map(l => [l.codigo, l.nome, TIPO_LABEL[l.tipo] ?? l.tipo, l.total_debito, l.total_credito, l.saldo]),
+        .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
+        .map(l => [l.code, l.name, TIPO_LABEL[l.kind] ?? l.kind, l.total_debito, l.total_credito, l.saldo]),
     ]
     const csv = linhasCSV.map(r => r.join(';')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })

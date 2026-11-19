@@ -51,7 +51,7 @@ const glassCard: React.CSSProperties = {
 const FechamentoComissoes = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
   const isAdmin = role === 'admin';
 
@@ -59,36 +59,36 @@ const FechamentoComissoes = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; mes: string; action: 'fechar' | 'reabrir' }>({ open: false, mes: '', action: 'fechar' });
-  const [vendedores, setVendedores] = useState<{ id: string; nome: string }[]>([]);
+  const [vendedores, setVendedores] = useState<{ id: string; name: string }[]>([]);
 
   // UI state
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchData();
       fetchVendedores();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchVendedores = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     try {
-      const response = await api.functions.invoke('list-users', { method: 'POST', body: { empresa_id: empresaId } });
+      const response = await api.functions.invoke('list-users', { method: 'POST', body: { company_id: companyId } });
       if (response.data?.users) {
         setVendedores(response.data.users.map((u: any) => ({
           id: u.id,
-          nome: u.nome || u.email?.split('@')[0] || 'Sem nome',
+          name: u.name || u.email?.split('@')[0] || 'Sem name',
         })));
       }
     } catch (e) { console.error(e); }
   };
 
-  const getVendedorNome = (id: string) => vendedores.find(v => v.id === id)?.nome || id.substring(0, 8);
+  const getVendedorNome = (id: string) => vendedores.find(v => v.id === id)?.name || id.substring(0, 8);
 
   const fetchData = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
 
     // Generate last 12 months
@@ -100,27 +100,27 @@ const FechamentoComissoes = () => {
 
     // Fetch existing fechamentos
     const { data: fechData } = await api
-      .from('fechamento_comissao')
+      .from('commission_closing')
       .select('*')
-      .eq('empresa_id', empresaId);
+      .eq('company_id', companyId);
 
     const fechMap: Record<string, any> = {};
     (fechData || []).forEach((f: any) => { fechMap[f.mes_referencia] = f; });
 
     // Fetch all comissoes with vendas data
     const { data: comissoes } = await api
-      .from('comissoes')
+      .from('commission')
       .select('*')
-      .eq('empresa_id', empresaId);
+      .eq('company_id', companyId);
 
     const vendaIds = [...new Set((comissoes || []).map(c => c.venda_id))];
     let vendasMap: Record<string, any> = {};
     if (vendaIds.length > 0) {
       const { data: vendas } = await api
-        .from('vendas')
+        .from('sale')
         .select('id, data_venda, valor_bruto, desconto, valor_final')
         .in('id', vendaIds)
-        .eq('empresa_id', empresaId);
+        .eq('company_id', companyId);
       (vendas || []).forEach(v => { vendasMap[v.id] = v; });
     }
 
@@ -153,7 +153,7 @@ const FechamentoComissoes = () => {
   };
 
   const handleFecharMes = async (mes: string) => {
-    if (!empresaId || !user) return;
+    if (!companyId || !user) return;
     setActionLoading(mes);
 
     const row = fechamentos.find(f => f.mes_referencia === mes);
@@ -161,7 +161,7 @@ const FechamentoComissoes = () => {
     try {
       if (row?.id) {
         await api
-          .from('fechamento_comissao')
+          .from('commission_closing')
           .update({
             status: 'fechado',
             data_fechamento: new Date().toISOString(),
@@ -172,8 +172,8 @@ const FechamentoComissoes = () => {
           } as any)
           .eq('id', row.id);
       } else {
-        await api.from('fechamento_comissao').insert({
-          empresa_id: empresaId,
+        await api.from('commission_closing').insert({
+          company_id: companyId,
           mes_referencia: mes,
           status: 'fechado',
           data_fechamento: new Date().toISOString(),
@@ -193,14 +193,14 @@ const FechamentoComissoes = () => {
   };
 
   const handleReabrirMes = async (mes: string) => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setActionLoading(mes);
 
     try {
       const row = fechamentos.find(f => f.mes_referencia === mes);
       if (row?.id) {
         await api
-          .from('fechamento_comissao')
+          .from('commission_closing')
           .update({ status: 'aberto', data_fechamento: null, updated_at: new Date().toISOString() } as any)
           .eq('id', row.id);
       }
@@ -225,7 +225,7 @@ const FechamentoComissoes = () => {
   };
 
   const fetchDetalhesForExport = async (mes: string): Promise<ComissaoDetalhe[]> => {
-    if (!empresaId) return [];
+    if (!companyId) return [];
 
     const startDate = `${mes}-01`;
     const [y, m] = mes.split('-');
@@ -233,19 +233,19 @@ const FechamentoComissoes = () => {
     const endDate = `${mes}-${String(lastDay).padStart(2, '0')}`;
 
     const { data: vendas } = await api
-      .from('vendas')
+      .from('sale')
       .select('id, data_venda, cliente_nome, valor_bruto, desconto, valor_final, vendedor_id')
-      .eq('empresa_id', empresaId)
-      .gte('data_venda', startDate)
-      .lte('data_venda', endDate);
+      .eq('company_id', companyId)
+      .gte('sold_on', startDate)
+      .lte('sold_on', endDate);
 
     if (!vendas || vendas.length === 0) return [];
 
     const vendaIds = vendas.map(v => v.id);
     const { data: comissoes } = await api
-      .from('comissoes')
+      .from('commission')
       .select('*')
-      .in('venda_id', vendaIds);
+      .in('sale_id', vendaIds);
 
     const comissaoMap: Record<string, any> = {};
     (comissoes || []).forEach(c => { comissaoMap[c.venda_id] = c; });
@@ -282,10 +282,10 @@ const FechamentoComissoes = () => {
     const lines: string[] = [];
     lines.push('Vendedora;Data;Cliente;Valor Bruto;Desconto;Valor Final;% Comissão;Comissão');
 
-    Object.entries(vendedorMap).forEach(([nome, items]) => {
+    Object.entries(vendedorMap).forEach(([name, items]) => {
       items.forEach(d => {
         lines.push([
-          nome,
+          name,
           format(new Date(d.venda_data), 'dd/MM/yyyy'),
           d.cliente_nome,
           d.valor_bruto.toFixed(2).replace('.', ','),
@@ -298,7 +298,7 @@ const FechamentoComissoes = () => {
 
       const totalVendido = items.reduce((s, i) => s + i.valor_final, 0);
       const totalComissao = items.reduce((s, i) => s + i.valor_comissao, 0);
-      lines.push(`${nome} - TOTAL;;;;"";${totalVendido.toFixed(2).replace('.', ',')};;${totalComissao.toFixed(2).replace('.', ',')}`);
+      lines.push(`${name} - TOTAL;;;;"";${totalVendido.toFixed(2).replace('.', ',')};;${totalComissao.toFixed(2).replace('.', ',')}`);
       lines.push('');
     });
 
@@ -331,7 +331,7 @@ const FechamentoComissoes = () => {
     if (!printWindow) return;
 
     let vendedorSections = '';
-    Object.entries(vendedorMap).forEach(([nome, items]) => {
+    Object.entries(vendedorMap).forEach(([name, items]) => {
       const totalV = items.reduce((s, i) => s + i.valor_final, 0);
       const totalC = items.reduce((s, i) => s + i.valor_comissao, 0);
 
@@ -348,7 +348,7 @@ const FechamentoComissoes = () => {
       `).join('');
 
       vendedorSections += `
-        <h2 style="margin-top:24px;font-size:14px;border-bottom:1px solid #ddd;padding-bottom:4px;">${escapeHtml(nome)}</h2>
+        <h2 style="margin-top:24px;font-size:14px;border-bottom:1px solid #ddd;padding-bottom:4px;">${escapeHtml(name)}</h2>
         <table>
           <thead><tr>
             <th>Data</th><th>Cliente</th><th style="text-align:right">Valor Bruto</th>
@@ -357,7 +357,7 @@ const FechamentoComissoes = () => {
           </tr></thead>
           <tbody>${rows}</tbody>
           <tfoot><tr style="font-weight:bold;background:#f0f0f0;">
-            <td colspan="4">Total ${escapeHtml(nome)}</td>
+            <td colspan="4">Total ${escapeHtml(name)}</td>
             <td style="text-align:right">${formatCurrency(totalV)}</td>
             <td></td>
             <td style="text-align:right">${formatCurrency(totalC)}</td>

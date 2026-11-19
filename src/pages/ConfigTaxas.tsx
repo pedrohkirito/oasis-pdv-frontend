@@ -98,7 +98,7 @@ function ChartTooltip({ active, payload, label }: any) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function ConfigTaxas() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
   const [taxas, setTaxas] = useState<TaxaRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,20 +110,20 @@ export default function ConfigTaxas() {
   const [metodosAtivos, setMetodosAtivos] = useState<string[]>([]);
 
   const fetchMetodosAtivos = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
-      .from('metodos_pagamento')
-      .select('nome, ativo')
-      .eq('empresa_id', empresaId)
-      .eq('ativo', true);
+      .from('payment_method')
+      .select('name, active')
+      .eq('company_id', companyId)
+      .eq('active', true);
     if (data) {
-      setMetodosAtivos(data.map((m: any) => m.nome));
+      setMetodosAtivos(data.map((m: any) => m.name));
     }
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => { fetchMetodosAtivos(); }, [fetchMetodosAtivos]);
 
-  const isMetodoAtivo = (nome: string) => metodosAtivos.length === 0 || metodosAtivos.includes(nome);
+  const isMetodoAtivo = (name: string) => metodosAtivos.length === 0 || metodosAtivos.includes(name);
 
   const buildInitialTaxas = useCallback((): TaxaRow[] => {
     const rows: TaxaRow[] = [];
@@ -143,13 +143,13 @@ export default function ConfigTaxas() {
   }, []);
 
   const fetchTaxas = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const initial = buildInitialTaxas();
     const { data } = await api
-      .from('taxas_pagamento')
+      .from('payment_fee')
       .select('metodo_pagamento, taxa_percentual, parcelas, bandeira, tipo_taxa, prazo_recebimento')
-      .eq('empresa_id', empresaId);
+      .eq('company_id', companyId);
 
     if (data) {
       const merged = initial.map(row => {
@@ -167,15 +167,15 @@ export default function ConfigTaxas() {
       setTaxas(initial);
     }
     setLoading(false);
-  }, [empresaId, buildInitialTaxas]);
+  }, [companyId, buildInitialTaxas]);
 
   useEffect(() => { fetchTaxas(); }, [fetchTaxas]);
 
-  const handleChange = (metodo: string, parcelas: number, bandeira: string, field: 'taxa_percentual' | 'tipo_taxa' | 'prazo_recebimento', valor: string) => {
+  const handleChange = (metodo: string, parcelas: number, bandeira: string, field: 'fee_percent' | 'tipo_taxa' | 'prazo_recebimento', valor: string) => {
     setTaxas(prev =>
       prev.map(t =>
         t.metodo_pagamento === metodo && t.parcelas === parcelas && t.bandeira === bandeira
-          ? { ...t, [field]: field === 'taxa_percentual' ? (parseFloat(valor.replace(',', '.')) || 0) : valor }
+          ? { ...t, [field]: field === 'fee_percent' ? (parseFloat(valor.replace(',', '.')) || 0) : valor }
           : t
       )
     );
@@ -184,7 +184,7 @@ export default function ConfigTaxas() {
   const handleMaskedInput = (metodo: string, parcelas: number, bandeira: string, rawValue: string) => {
     const digits = rawValue.replace(/\D/g, '');
     const num = parseInt(digits || '0', 10) / 100;
-    handleChange(metodo, parcelas, bandeira, 'taxa_percentual', num.toString());
+    handleChange(metodo, parcelas, bandeira, 'fee_percent', num.toString());
   };
 
   const formatTaxaDisplay = (value: number | undefined) => {
@@ -196,14 +196,14 @@ export default function ConfigTaxas() {
     taxas.find(t => t.metodo_pagamento === metodo && t.parcelas === parcelas && t.bandeira === bandeira);
 
   const handleSalvar = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setSaving(true);
     for (const taxa of taxas) {
       const { error } = await api
-        .from('taxas_pagamento')
+        .from('payment_fee')
         .upsert(
           {
-            empresa_id: empresaId,
+            company_id: companyId,
             metodo_pagamento: taxa.metodo_pagamento,
             parcelas: taxa.parcelas,
             bandeira: taxa.bandeira,
@@ -255,14 +255,14 @@ export default function ConfigTaxas() {
 
   useEffect(() => {
     const calcularCustos = async () => {
-      if (!empresaId || taxas.length === 0) return;
+      if (!companyId || taxas.length === 0) return;
       const now = new Date();
       const inicio = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const fim = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
       const { data } = await api
-        .from('vendas')
+        .from('sale')
         .select('valor, valor_final, metodo_pagamento, parcelas, bandeira')
-        .eq('empresa_id', empresaId)
+        .eq('company_id', companyId)
         .gte('created_at', inicio)
         .lt('created_at', fim);
 
@@ -300,7 +300,7 @@ export default function ConfigTaxas() {
       setCustoTotalMes(cDeb + cCre1 + cParc);
     };
     calcularCustos();
-  }, [empresaId, taxas]);
+  }, [companyId, taxas]);
 
   // ── Simulator ─────────────────────────────────────────────────────────────
   const simValor = parseFloat(simValorRaw.replace(/\./g, '').replace(',', '.')) || 0;
@@ -345,7 +345,7 @@ export default function ConfigTaxas() {
     const isZeroTax = metodo === 'Dinheiro' || metodo === 'PIX';
     return (
       <div key={metodo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(142,95,207,0.06)' }}>
-        {/* Esquerda: ícone + nome + preview */}
+        {/* Esquerda: ícone + name + preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 22, flexShrink: 0 }}>{icon}</div>
           <div style={{ minWidth: 0 }}>

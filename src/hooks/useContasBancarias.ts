@@ -5,24 +5,24 @@ import { parseOFX } from '@/utils/ofxParser'
 import { format, addDays } from 'date-fns'
 
 const BANCOS_BR = [
-  { codigo: '001', nome: 'Banco do Brasil' },
-  { codigo: '033', nome: 'Santander' },
-  { codigo: '077', nome: 'Inter' },
-  { codigo: '104', nome: 'Caixa Econômica Federal' },
-  { codigo: '208', nome: 'BTG Pactual' },
-  { codigo: '212', nome: 'Banco Original' },
-  { codigo: '237', nome: 'Bradesco' },
-  { codigo: '260', nome: 'Nubank' },
-  { codigo: '341', nome: 'Itaú' },
-  { codigo: '380', nome: 'PicPay' },
-  { codigo: '422', nome: 'Safra' },
-  { codigo: '748', nome: 'Sicredi' },
-  { codigo: '756', nome: 'Sicoob' },
-  { codigo: '999', nome: 'Mercado Pago' },
+  { code: '001', name: 'Banco do Brasil' },
+  { code: '033', name: 'Santander' },
+  { code: '077', name: 'Inter' },
+  { code: '104', name: 'Caixa Econômica Federal' },
+  { code: '208', name: 'BTG Pactual' },
+  { code: '212', name: 'Banco Original' },
+  { code: '237', name: 'Bradesco' },
+  { code: '260', name: 'Nubank' },
+  { code: '341', name: 'Itaú' },
+  { code: '380', name: 'PicPay' },
+  { code: '422', name: 'Safra' },
+  { code: '748', name: 'Sicredi' },
+  { code: '756', name: 'Sicoob' },
+  { code: '999', name: 'Mercado Pago' },
 ]
 
 export function useContasBancarias() {
-  const { empresaId } = useEmpresa()
+  const { companyId } = useEmpresa()
   const [contas, setContas] = useState<any[]>([])
   const [movimentacoes, setMovimentacoes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,8 +32,8 @@ export function useContasBancarias() {
     const { data } = await (api
       .from('contas_bancarias' as any)
       .select('*') as any)
-      .eq('empresa_id', empresaId)
-      .eq('ativo', true)
+      .eq('company_id', companyId)
+      .eq('active', true)
       .order('padrao', { ascending: false })
     setContas(data || [])
     setLoading(false)
@@ -47,7 +47,7 @@ export function useContasBancarias() {
     let query = (api
       .from('movimentacoes_bancarias' as any)
       .select('*') as any)
-      .eq('conta_id', contaId)
+      .eq('account_id', contaId)
       .order('data_movimentacao', { ascending: false })
 
     if (dataInicio) query = query.gte('data_movimentacao', dataInicio)
@@ -62,12 +62,12 @@ export function useContasBancarias() {
     if (conta.padrao) {
       await (api.from('contas_bancarias' as any)
         .update({ padrao: false } as any) as any)
-        .eq('empresa_id', empresaId)
+        .eq('company_id', companyId)
     }
 
     const { data, error } = await (api
       .from('contas_bancarias' as any)
-      .insert({ ...conta, empresa_id: empresaId } as any) as any)
+      .insert({ ...conta, company_id: companyId } as any) as any)
       .select().single()
 
     if (!error) buscarContas()
@@ -102,7 +102,7 @@ export function useContasBancarias() {
     const { data: existentes } = await (api
       .from('movimentacoes_bancarias' as any)
       .select('identificador_externo') as any)
-      .eq('conta_id', contaId)
+      .eq('account_id', contaId)
 
     const idsExistentes = new Set(
       existentes?.map((e: any) => e.identificador_externo) || []
@@ -126,7 +126,7 @@ export function useContasBancarias() {
       .insert(novas.map(t => ({
         ...t,
         conta_id: contaId,
-        empresa_id: empresaId,
+        company_id: companyId,
       })) as any) as any)
 
     if (!error) {
@@ -139,14 +139,14 @@ export function useContasBancarias() {
 
   const conciliarMovimentacao = async (
     movimentacaoId: string,
-    tipo: 'conta_pagar' | 'conta_receber' | 'venda' | 'ignorar',
+    kind: 'conta_pagar' | 'conta_receber' | 'venda' | 'ignorar',
     referenciaId?: string
   ) => {
     const updates: any = { status_conciliacao: 'conciliado' }
-    if (tipo === 'ignorar') updates.status_conciliacao = 'ignorado'
-    if (tipo === 'conta_pagar') updates.conta_pagar_id = referenciaId
-    if (tipo === 'conta_receber') updates.conta_receber_id = referenciaId
-    if (tipo === 'venda') updates.venda_id = referenciaId
+    if (kind === 'ignorar') updates.status_conciliacao = 'ignorado'
+    if (kind === 'conta_pagar') updates.conta_pagar_id = referenciaId
+    if (kind === 'conta_receber') updates.conta_receber_id = referenciaId
+    if (kind === 'venda') updates.venda_id = referenciaId
 
     await (api.from('movimentacoes_bancarias' as any)
       .update(updates) as any).eq('id', movimentacaoId)
@@ -164,7 +164,7 @@ export function useContasBancarias() {
     const { error } = await (api
       .from('transferencias_bancarias' as any)
       .insert({
-        empresa_id: empresaId,
+        company_id: companyId,
         conta_origem_id: contaOrigemId,
         conta_destino_id: contaDestinoId,
         valor,
@@ -175,9 +175,9 @@ export function useContasBancarias() {
     if (!error) {
       await (api.from('movimentacoes_bancarias' as any).insert([
         {
-          empresa_id: empresaId,
+          company_id: companyId,
           conta_id: contaOrigemId,
-          tipo: 'debito',
+          kind: 'debito',
           valor,
           descricao: `Transferência para: ${descricao}`,
           data_movimentacao: data,
@@ -185,9 +185,9 @@ export function useContasBancarias() {
           status_conciliacao: 'conciliado',
         },
         {
-          empresa_id: empresaId,
+          company_id: companyId,
           conta_id: contaDestinoId,
-          tipo: 'credito',
+          kind: 'credito',
           valor,
           descricao: `Transferência de: ${descricao}`,
           data_movimentacao: data,
@@ -202,7 +202,7 @@ export function useContasBancarias() {
 
   const excluirConta = async (id: string) => {
     await (api.from('contas_bancarias' as any)
-      .update({ ativo: false } as any) as any).eq('id', id)
+      .update({ active: false } as any) as any).eq('id', id)
     buscarContas()
   }
 
@@ -218,7 +218,7 @@ export function useContasBancarias() {
         pluggyAccountId: conta.pluggy_account_id,
         dataInicio,
         dataFim,
-        empresaId,
+        companyId,
       },
     })
 
@@ -227,11 +227,11 @@ export function useContasBancarias() {
   }
 
   useEffect(() => {
-    if (empresaId) {
+    if (companyId) {
       setLoading(true)
       buscarContas()
     }
-  }, [empresaId])
+  }, [companyId])
 
   return {
     contas, movimentacoes, loading, BANCOS,

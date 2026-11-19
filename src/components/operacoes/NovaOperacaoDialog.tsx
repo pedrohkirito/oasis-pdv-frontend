@@ -37,14 +37,14 @@ const inputStyle: React.CSSProperties = {
 };
 
 export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperacaoDialogProps) {
-  const { empresaId } = useEmpresa();
-  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([]);
+  const { companyId } = useEmpresa();
+  const [fornecedores, setFornecedores] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
     cliente_nome: '',
     cliente_telefone: '',
     cliente_email: '',
     produtos: '',
-    tipo: 'entrega',
+    kind: 'entrega',
     status_pagamento: 'pendente',
     data_prevista: '',
     fornecedor_id: '',
@@ -54,12 +54,12 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
   });
 
   useEffect(() => {
-    if (open && empresaId) {
-      api.from('fornecedores').select('id, nome').eq('empresa_id', empresaId).eq('ativo', true).then(({ data }) => {
+    if (open && companyId) {
+      api.from('supplier').select('id, name').eq('company_id', companyId).eq('active', true).then(({ data }) => {
         setFornecedores(data || []);
       });
     }
-  }, [open, empresaId]);
+  }, [open, companyId]);
 
   const handleSubmit = () => {
     if (!form.cliente_nome || !form.produtos) return;
@@ -68,11 +68,11 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
       ...form,
       data_prevista: form.data_prevista || null,
       fornecedor_id: form.fornecedor_id || null,
-      fornecedor_nome: fornecedor?.nome || form.fornecedor_nome || null,
+      fornecedor_nome: fornecedor?.name || form.fornecedor_nome || null,
     } as any);
     setForm({
       cliente_nome: '', cliente_telefone: '', cliente_email: '', produtos: '',
-      tipo: 'entrega', status_pagamento: 'pendente', data_prevista: '',
+      kind: 'entrega', status_pagamento: 'pendente', data_prevista: '',
       fornecedor_id: '', fornecedor_nome: '', urgencia: 'normal', observacoes: '',
     });
     onOpenChange(false);
@@ -162,7 +162,7 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={labelStyle}>Tipo</label>
-              <Select value={form.tipo} onValueChange={v => setForm(f => ({ ...f, tipo: v }))}>
+              <Select value={form.kind} onValueChange={v => setForm(f => ({ ...f, kind: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="entrega">Entrega</SelectItem>
@@ -209,12 +209,12 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
             <label style={labelStyle}>Fornecedor</label>
             <Select value={form.fornecedor_id} onValueChange={v => {
               const f = fornecedores.find(x => x.id === v);
-              setForm(prev => ({ ...prev, fornecedor_id: v, fornecedor_nome: f?.nome || '' }));
+              setForm(prev => ({ ...prev, fornecedor_id: v, fornecedor_nome: f?.name || '' }));
             }}>
               <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar fornecedor" /></SelectTrigger>
               <SelectContent>
                 {fornecedores.map(f => (
-                  <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

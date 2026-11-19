@@ -4,7 +4,7 @@ import { useEmpresa } from './useEmpresa';
 
 export interface ContaReceber {
   id: string;
-  empresa_id: string;
+  company_id: string;
   cliente_id: string | null;
   cliente_nome: string | null;
   descricao: string;
@@ -21,41 +21,41 @@ export interface ContaReceber {
   observacoes: string | null;
   created_at: string;
   updated_at: string;
-  clientes?: { nome: string; telefone: string | null } | null;
+  clientes?: { name: string; telefone: string | null } | null;
 }
 
 export function useContasReceber() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const [contas, setContas] = useState<ContaReceber[]>([]);
   const [loading, setLoading] = useState(true);
 
   const atualizarVencidas = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const hoje = new Date().toISOString().split('T')[0];
     await (api as any)
-      .from('contas_receber')
+      .from('receivable')
       .update({ status: 'vencido' })
-      .eq('empresa_id', empresaId)
+      .eq('company_id', companyId)
       .eq('status', 'pendente')
-      .lt('data_vencimento', hoje);
-  }, [empresaId]);
+      .lt('due_on', hoje);
+  }, [companyId]);
 
   const buscarContas = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data } = await (api as any)
-      .from('contas_receber')
-      .select('*, clientes(nome, telefone)')
-      .eq('empresa_id', empresaId)
-      .order('data_vencimento', { ascending: true });
+      .from('receivable')
+      .select('*, clientes(name, telefone)')
+      .eq('company_id', companyId)
+      .order('due_on', { ascending: true });
     setContas((data as ContaReceber[]) || []);
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   const criarConta = async (conta: Partial<ContaReceber>) => {
     const { data, error } = await (api as any)
-      .from('contas_receber')
-      .insert({ ...conta, empresa_id: empresaId })
+      .from('receivable')
+      .insert({ ...conta, company_id: companyId })
       .select()
       .single();
     if (!error) buscarContas();
@@ -64,7 +64,7 @@ export function useContasReceber() {
 
   const editarConta = async (id: string, updates: Partial<ContaReceber>) => {
     const { error } = await (api as any)
-      .from('contas_receber')
+      .from('receivable')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id);
     if (!error) buscarContas();
@@ -85,7 +85,7 @@ export function useContasReceber() {
       novoRecebido >= Number(conta.valor) ? 'recebido' : 'recebido_parcial';
 
     const { error } = await (api as any)
-      .from('contas_receber')
+      .from('receivable')
       .update({
         valor_recebido: novoRecebido,
         status,
@@ -100,25 +100,25 @@ export function useContasReceber() {
 
   const cancelarConta = async (id: string) => {
     await (api as any)
-      .from('contas_receber')
+      .from('receivable')
       .update({ status: 'cancelado', updated_at: new Date().toISOString() })
       .eq('id', id);
     buscarContas();
   };
 
   const excluirConta = async (id: string) => {
-    await (api as any).from('contas_receber').delete().eq('id', id);
+    await (api as any).from('receivable').delete().eq('id', id);
     buscarContas();
   };
 
   useEffect(() => {
-    if (empresaId) {
+    if (companyId) {
       setLoading(true);
       atualizarVencidas().then(() => buscarContas());
     } else {
       setLoading(false);
     }
-  }, [empresaId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [companyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     contas,

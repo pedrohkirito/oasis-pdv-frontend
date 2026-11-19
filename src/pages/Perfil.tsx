@@ -25,7 +25,7 @@ export default function Perfil() {
   const { role } = useUserRole();
   const { theme, setTheme } = useTheme();
   
-  const [nome, setNome] = useState('');
+  const [name, setNome] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -39,14 +39,14 @@ export default function Perfil() {
 
   useEffect(() => {
     if (user) {
-      setNome(user.user_metadata?.nome || '');
+      setNome(user.user_metadata?.name || '');
       setAvatarUrl(user.user_metadata?.avatar_url || null);
     }
   }, [user]);
 
   const getUserInitials = () => {
-    if (nome) {
-      return nome.substring(0, 2).toUpperCase();
+    if (name) {
+      return name.substring(0, 2).toUpperCase();
     }
     if (!user?.email) return '?';
     return user.email.substring(0, 2).toUpperCase();
@@ -97,7 +97,7 @@ export default function Perfil() {
   };
 
   const handleSaveName = async () => {
-    if (!nome.trim()) {
+    if (!name.trim()) {
       toast.error('Nome não pode estar vazio.');
       return;
     }
@@ -106,7 +106,7 @@ export default function Perfil() {
       setSavingName(true);
 
       const { error } = await api.auth.updateUser({
-        data: { nome: nome.trim() }
+        data: { name: name.trim() }
       });
 
       if (error) {
@@ -115,7 +115,7 @@ export default function Perfil() {
 
       toast.success('Nome atualizado com sucesso!');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar nome.');
+      toast.error(error.message || 'Erro ao atualizar name.');
     } finally {
       setSavingName(false);
     }
@@ -199,7 +199,7 @@ export default function Perfil() {
                 <User className="h-5 w-5" />
                 Informações Pessoais
               </CardTitle>
-              <CardDescription>Atualize sua foto e nome</CardDescription>
+              <CardDescription>Atualize sua foto e name</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Avatar Section */}
@@ -255,12 +255,12 @@ export default function Perfil() {
 
               {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
+                <Label htmlFor="name">Nome</Label>
                 <Input
-                  id="nome"
-                  value={nome}
+                  id="name"
+                  value={name}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu nome"
+                  placeholder="Seu name"
                 />
               </div>
 

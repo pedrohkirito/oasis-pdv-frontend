@@ -131,9 +131,9 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
       return;
     }
     const { data } = await api
-      .from('itens_venda')
+      .from('sale_item')
       .select('id, quantidade, preco_unitario, subtotal, produto_id')
-      .eq('venda_id', operacao.venda_id);
+      .eq('sale_id', operacao.venda_id);
 
     if (!data || data.length === 0) {
       setItensVenda([]);
@@ -142,31 +142,31 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
     const produtoIds = data.map(i => i.produto_id);
     const { data: produtos } = await api
-      .from('produtos')
-      .select('id, nome, fornecedor_id')
+      .from('product')
+      .select('id, name, fornecedor_id')
       .in('id', produtoIds);
 
     const fornecedorIds = (produtos || []).filter(p => p.fornecedor_id).map(p => p.fornecedor_id!);
     let fornecedoresMap: Record<string, string> = {};
     if (fornecedorIds.length > 0) {
       const { data: fornecedores } = await api
-        .from('fornecedores')
-        .select('id, nome')
+        .from('supplier')
+        .select('id, name')
         .in('id', fornecedorIds);
-      fornecedoresMap = (fornecedores || []).reduce((acc, f) => ({ ...acc, [f.id]: f.nome }), {} as Record<string, string>);
+      fornecedoresMap = (fornecedores || []).reduce((acc, f) => ({ ...acc, [f.id]: f.name }), {} as Record<string, string>);
     }
 
     const produtosMap = (produtos || []).reduce((acc, p) => ({
       ...acc,
-      [p.id]: { nome: p.nome, fornecedor_nome: p.fornecedor_id ? (fornecedoresMap[p.fornecedor_id] || null) : null }
-    }), {} as Record<string, { nome: string; fornecedor_nome: string | null }>);
+      [p.id]: { name: p.name, fornecedor_nome: p.fornecedor_id ? (fornecedoresMap[p.fornecedor_id] || null) : null }
+    }), {} as Record<string, { name: string; fornecedor_nome: string | null }>);
 
     setItensVenda(data.map(item => ({
       id: item.id,
       quantidade: item.quantidade,
       preco_unitario: item.preco_unitario,
       subtotal: item.subtotal,
-      produto_nome: produtosMap[item.produto_id]?.nome || 'Produto',
+      produto_nome: produtosMap[item.produto_id]?.name || 'Produto',
       fornecedor_nome: produtosMap[item.produto_id]?.fornecedor_nome || null,
     })));
   };
@@ -174,10 +174,10 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const fetchClienteContatos = async () => {
     if (!operacao?.empresa_id || !operacao?.cliente_nome) return;
     const { data } = await api
-      .from('clientes')
+      .from('customer')
       .select('telefone, telefone_adicional, email')
-      .eq('empresa_id', operacao.empresa_id)
-      .eq('nome', operacao.cliente_nome)
+      .eq('company_id', operacao.empresa_id)
+      .eq('name', operacao.cliente_nome)
       .limit(1)
       .maybeSingle();
     setClienteContatos(data as ClienteContatos | null);
@@ -187,10 +187,10 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     if (!operacao) return;
     setLoadingTarefas(true);
     const { data } = await api
-      .from('operacao_tarefas')
+      .from('operation_task')
       .select('*')
-      .eq('operacao_id', operacao.id)
-      .order('ordem', { ascending: true });
+      .eq('operation_id', operacao.id)
+      .order('sort_order', { ascending: true });
     setTarefas((data || []) as unknown as OperacaoTarefa[]);
     setLoadingTarefas(false);
   };
@@ -198,9 +198,9 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const fetchHistorico = async () => {
     if (!operacao) return;
     const { data } = await api
-      .from('operacao_historico')
+      .from('operation_event')
       .select('*')
-      .eq('operacao_id', operacao.id)
+      .eq('operation_id', operacao.id)
       .order('created_at', { ascending: false });
     setHistorico((data || []) as unknown as OperacaoHistorico[]);
   };
@@ -218,13 +218,13 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     if (!user || !operacao) return;
     const concluida = !tarefa.concluida;
     await api
-      .from('operacao_tarefas')
+      .from('operation_task')
       .update({ concluida, concluida_em: concluida ? new Date().toISOString() : null, concluida_por: concluida ? user.id : null } as any)
       .eq('id', tarefa.id);
 
-    await api.from('operacao_historico').insert({
+    await api.from('operation_event').insert({
       operacao_id: operacao.id,
-      tipo: 'checklist',
+      kind: 'checklist',
       descricao: `${concluida ? '✅' : '⬜'} ${tarefa.titulo}`,
       user_id: user.id,
     } as any);
@@ -279,9 +279,9 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     setSavingObs(true);
 
     try {
-      const { error: histErr } = await api.from('operacao_historico').insert({
+      const { error: histErr } = await api.from('operation_event').insert({
         operacao_id: operacaoIdAtual,
-        tipo: 'note',
+        kind: 'note',
         descricao: textoObs,
         user_id: user.id,
       } as any);
@@ -290,7 +290,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
       // Atualiza o campo observacoes APENAS desta operação específica.
       const { error: updErr } = await api
-        .from('operacoes')
+        .from('operation')
         .update({ observacoes: textoObs } as any)
         .eq('id', operacaoIdAtual);
 
@@ -318,7 +318,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const saveEdits = async () => {
     if (!operacao) return;
     const { error } = await api
-      .from('operacoes')
+      .from('operation')
       .update({
         cliente_nome: editForm.cliente_nome,
         cliente_telefone: editForm.cliente_telefone || null,
@@ -421,7 +421,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
           {/* Badges */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', background: 'rgba(142,95,207,0.1)', border: '1px solid rgba(142,95,207,0.2)', color: '#8E5FCF', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {operacao.tipo === 'entrega_montagem' ? <><Wrench style={{ width: 10, height: 10 }} /> Entrega + Montagem</> : <><Truck style={{ width: 10, height: 10 }} /> Entrega</>}
+              {operacao.kind === 'entrega_montagem' ? <><Wrench style={{ width: 10, height: 10 }} /> Entrega + Montagem</> : <><Truck style={{ width: 10, height: 10 }} /> Entrega</>}
             </span>
             <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', background: operacao.status_pagamento === 'pago' ? 'rgba(16,185,129,0.1)' : 'transparent', border: operacao.status_pagamento === 'pago' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(107,114,128,0.3)', color: operacao.status_pagamento === 'pago' ? '#059669' : '#6B7280' }}>
               {operacao.status_pagamento === 'pago' ? 'Pago' : 'Pagamento Pendente'}
@@ -625,7 +625,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                               if (!date || !operacao) return;
                               const dateStr = format(date, 'yyyy-MM-dd');
                               await api
-                                .from('operacoes')
+                                .from('operation')
                                 .update({ data_prevista: dateStr } as any)
                                 .eq('id', operacao.id);
                               onUpdate?.();
@@ -722,7 +722,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {historico.map((entry, idx) => {
-                  const dotColor = entry.tipo === 'status_change' ? '#8E5FCF' : entry.tipo === 'checklist' ? '#10B981' : '#9CA3AF';
+                  const dotColor = entry.kind === 'status_change' ? '#8E5FCF' : entry.kind === 'checklist' ? '#10B981' : '#9CA3AF';
                   return (
                     <div key={entry.id} style={{ display: 'flex', gap: 12 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

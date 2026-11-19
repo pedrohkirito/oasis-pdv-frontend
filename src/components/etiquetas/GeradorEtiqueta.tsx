@@ -12,9 +12,9 @@ import type { ConfigEtiquetaNova, ProdutoParaEtiqueta } from './types';
 
 export interface ProdutoEtiqueta {
   id: string;
-  nome: string;
+  name: string;
   preco: number;
-  codigo?: string;
+  code?: string;
   tamanho?: string;
   codigo_interno?: string;
   quantidade?: number;
@@ -38,13 +38,13 @@ function formatPrecoNovo(valor: number, mostrarRS: boolean, mostrarCentavos: boo
   return (mostrarRS ? 'R$ ' : '') + f;
 }
 
-function barcodeToBase64(codigo: string, formato: string = 'CODE128'): string | null {
+function barcodeToBase64(code: string, formato: string = 'CODE128'): string | null {
   try {
     const canvas = document.createElement('canvas');
     const jsFormat = formato === 'EAN-13' ? 'EAN13' :
                      formato === 'EAN-8'  ? 'EAN8'  :
                      formato === 'Code39' ? 'CODE39' : 'CODE128';
-    JsBarcode(canvas, codigo, {
+    JsBarcode(canvas, code, {
       format: jsFormat,
       displayValue: false,
       margin: 0,
@@ -132,7 +132,7 @@ export async function gerarPDF(
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
       doc.setTextColor(30, 30, 30);
-      doc.text(truncate(produto.nome, 22), px, py);
+      doc.text(truncate(produto.name, 22), px, py);
       py += 4;
     }
 
@@ -157,8 +157,8 @@ export async function gerarPDF(
       py += fs * 0.4 + 2;
     }
 
-    if (config.mostrar_codigo_barras && produto.codigo) {
-      const barBase64 = barcodeToBase64(produto.codigo);
+    if (config.mostrar_codigo_barras && produto.code) {
+      const barBase64 = barcodeToBase64(produto.code);
       if (barBase64) {
         try {
           doc.addImage(barBase64, 'PNG', px, py, dim.width - 4, 8);
@@ -189,16 +189,16 @@ export async function gerarPDF(
 // ─── LEGACY: gerarZPL / downloadZPL ──────────────────────────────────────────
 
 export function gerarZPL(produto: ProdutoEtiqueta, config: EtiquetaConfig): string {
-  const codigo = produto.codigo ?? produto.codigo_interno ?? '000000';
-  const nome = truncate(produto.nome, 30);
+  const code = produto.code ?? produto.codigo_interno ?? '000000';
+  const name = truncate(produto.name, 30);
   const preco = formatBRL(produto.preco);
   const linhas: string[] = ['^XA'];
 
   if (config.mostrar_codigo_barras) {
-    linhas.push(`^FO20,20^BY2^BCN,60,Y,N,N^FD${codigo}^FS`);
+    linhas.push(`^FO20,20^BY2^BCN,60,Y,N,N^FD${code}^FS`);
   }
   if (config.mostrar_nome) {
-    linhas.push(`^FO20,90^A0N,20,20^FD${nome}^FS`);
+    linhas.push(`^FO20,90^A0N,20,20^FD${name}^FS`);
   }
   if (config.mostrar_tamanho && produto.tamanho) {
     linhas.push(`^FO20,112^A0N,16,16^FD${produto.tamanho}^FS`);
@@ -219,7 +219,7 @@ export function downloadZPL(produto: ProdutoEtiqueta, config: EtiquetaConfig): v
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `etiqueta-${produto.codigo ?? produto.id}.zpl`;
+  a.download = `etiqueta-${produto.code ?? produto.id}.zpl`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -279,30 +279,30 @@ export async function gerarPDFNovo(
     let py = y + 3.5;
 
     const campos = config.campos;
-    const codigoBarras = produto.ean ?? produto.codigo ?? null;
+    const codigoBarras = produto.ean ?? produto.code ?? null;
 
     // Nome
-    if (campos.includes('nome')) {
+    if (campos.includes('name')) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(config.tamFonte - 1);
       doc.setTextColor(20, 20, 20);
-      const nomeStr = truncate(produto.nome, 30);
+      const nomeStr = truncate(produto.name, 30);
       const lines = doc.splitTextToSize(nomeStr, larguraMM - 4);
       doc.text(lines.slice(0, 2), px, py);
       py += lines.slice(0, 2).length * (config.tamFonte - 1) * 0.35 + 1.5;
     }
 
     // SKU / código texto
-    if (campos.includes('sku') && produto.codigo) {
+    if (campos.includes('sku') && produto.code) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(config.tamFonte - 3);
       doc.setTextColor(120, 120, 120);
-      doc.text(`SKU: ${produto.codigo}`, px, py);
+      doc.text(`SKU: ${produto.code}`, px, py);
       py += (config.tamFonte - 3) * 0.35 + 1;
     }
 
     // Categoria
-    if (campos.includes('categoria') && produto.categoria) {
+    if (campos.includes('category') && produto.categoria) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(config.tamFonte - 3);
       doc.setTextColor(120, 120, 120);
@@ -320,7 +320,7 @@ export async function gerarPDFNovo(
     }
 
     // Cor
-    if (campos.includes('cor') && produto.cor) {
+    if (campos.includes('color') && produto.cor) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(config.tamFonte - 2);
       doc.setTextColor(100, 100, 100);
@@ -347,7 +347,7 @@ export async function gerarPDFNovo(
     }
 
     // Preço principal
-    if (campos.includes('preco')) {
+    if (campos.includes('price')) {
       const precoFS = config.tamFonte + 4;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(precoFS);
@@ -424,7 +424,7 @@ export async function gerarPDFNovo(
 export function gerarZPLNovo(produto: ProdutoParaEtiqueta, config: ConfigEtiquetaNova): string {
   const larguraDots = Math.round(config.largura * 8);
   const alturaDots = Math.round(config.altura * 8);
-  const codigo = produto.ean ?? produto.codigo ?? '000000';
+  const code = produto.ean ?? produto.code ?? '000000';
   const campos = config.campos;
 
   const linhas: string[] = [
@@ -435,27 +435,27 @@ export function gerarZPLNovo(produto: ProdutoParaEtiqueta, config: ConfigEtiquet
 
   let y = 20;
 
-  if (campos.includes('nome')) {
-    linhas.push(`^FO10,${y}^A0N,20,20^FD${truncate(produto.nome, 30)}^FS`);
+  if (campos.includes('name')) {
+    linhas.push(`^FO10,${y}^A0N,20,20^FD${truncate(produto.name, 30)}^FS`);
     y += 25;
   }
   if (campos.includes('tamanho') && produto.tamanho) {
     linhas.push(`^FO10,${y}^A0N,16,16^FD${produto.tamanho}^FS`);
     y += 20;
   }
-  if (campos.includes('sku') && produto.codigo) {
-    linhas.push(`^FO10,${y}^A0N,14,14^FDSKU: ${produto.codigo}^FS`);
+  if (campos.includes('sku') && produto.code) {
+    linhas.push(`^FO10,${y}^A0N,14,14^FDSKU: ${produto.code}^FS`);
     y += 18;
   }
-  if (campos.includes('preco')) {
+  if (campos.includes('price')) {
     const precoStr = formatPrecoNovo(produto.preco, config.mostrarRS, config.mostrarCentavos);
     linhas.push(`^FO10,${y}^A0N,30,30^FD${precoStr}^FS`);
     y += 36;
   }
-  if (campos.includes('codigo_barras') && codigo) {
+  if (campos.includes('codigo_barras') && code) {
     const barcodeType = config.tipoCodigo === 'EAN-13' ? 'E' :
                         config.tipoCodigo === 'Code39'  ? '3' : 'C';
-    linhas.push(`^FO10,${y}^BY2^B${barcodeType}N,50,${config.mostrarNumeroCodigo ? 'Y' : 'N'},N,N^FD${codigo}^FS`);
+    linhas.push(`^FO10,${y}^BY2^B${barcodeType}N,50,${config.mostrarNumeroCodigo ? 'Y' : 'N'},N,N^FD${code}^FS`);
   }
   linhas.push('^XZ');
   return linhas.join('\n');
@@ -467,7 +467,7 @@ export function downloadZPLNovo(produto: ProdutoParaEtiqueta, config: ConfigEtiq
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `etiqueta-${produto.codigo ?? produto.ean ?? produto.id}.zpl`;
+  a.download = `etiqueta-${produto.code ?? produto.ean ?? produto.id}.zpl`;
   a.click();
   URL.revokeObjectURL(url);
 }

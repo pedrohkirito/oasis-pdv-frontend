@@ -59,11 +59,11 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
   const fetchNotas = async () => {
     setLoading(true);
     const { data, error } = await api
-      .from('notas_fiscais')
+      .from('fiscal_document')
       .select('id, numero, serie, status, ambiente, valor_total, cliente_nome, cliente_cpf, data_emissao, chave_acesso')
-      .gte('data_emissao', format(dataInicio, 'yyyy-MM-dd'))
-      .lte('data_emissao', format(dataFim, 'yyyy-MM-dd') + 'T23:59:59')
-      .order('data_emissao', { ascending: false });
+      .gte('issued_at', format(dataInicio, 'yyyy-MM-dd'))
+      .lte('issued_at', format(dataFim, 'yyyy-MM-dd') + 'T23:59:59')
+      .order('issued_at', { ascending: false });
 
     if (error) {
       toast({

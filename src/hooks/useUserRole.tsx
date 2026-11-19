@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import { useAuth } from './useAuth';
 import { useEmpresa } from './useEmpresa';
 
-export type AppRole = 'admin' | 'gerente' | 'vendedor' | 'visualizador';
+export type AppRole = 'admin' | 'manager' | 'seller' | 'viewer';
 
 interface RolePermissions {
   canViewDashboard: boolean;
@@ -106,7 +106,7 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
 };
 
 interface CustomPermission {
-  modulo: string;
+  module: string;
   can_view: boolean;
   can_create: boolean;
   can_edit: boolean;
@@ -115,7 +115,7 @@ interface CustomPermission {
 
 // Map custom module permissions to the legacy RolePermissions interface
 function mapCustomToLegacy(custom: CustomPermission[]): RolePermissions {
-  const find = (mod: string) => custom.find(c => c.modulo === mod);
+  const find = (mod: string) => custom.find(c => c.module === mod);
   // Níveis criados antes do módulo de serviços não têm a linha 'servicos':
   // nesse caso herdam a permissão de produtos.
   const servicos = find('servicos') ?? find('produtos');
@@ -184,7 +184,7 @@ const UserRoleContext = createContext<UserRoleContextType>(defaultContextValue);
 
 export const UserRoleProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
-  const { empresaId, loading: empresaLoading } = useEmpresa();
+  const { companyId, loading: empresaLoading } = useEmpresa();
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [customPerms, setCustomPermissions] = useState<CustomPermission[] | null>(null);
@@ -199,12 +199,12 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
 
     try {
       // First try to get role from user_empresas (context-aware per empresa)
-      if (empresaId) {
+      if (companyId) {
         const { data: empresaRole, error: empresaError } = await api
-          .from('user_empresas')
+          .from('company_user')
           .select('role, nivel_acesso_id')
           .eq('user_id', user.id)
-          .eq('empresa_id', empresaId)
+          .eq('company_id', companyId)
           .single();
 
         if (!empresaError && empresaRole) {
@@ -220,9 +220,9 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
           // If user has custom access level, fetch its permissions
           if (empresaRole.nivel_acesso_id) {
             const { data: permData } = await api
-              .from('nivel_acesso_permissoes')
-              .select('modulo, can_view, can_create, can_edit, can_delete')
-              .eq('nivel_acesso_id', empresaRole.nivel_acesso_id);
+              .from('access_level_permission')
+              .select('module, can_view, can_create, can_edit, can_delete')
+              .eq('access_level_id', empresaRole.nivel_acesso_id);
 
             if (permData) {
               setCustomPermissions(permData);
@@ -238,7 +238,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
 
       // Fallback to global user_roles table
       const { data, error } = await api
-        .from('user_roles')
+        .from('user_role')
         .select('role')
         .eq('user_id', user.id)
         .single();
@@ -257,7 +257,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
     } finally {
       setLoading(false);
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   useEffect(() => {
     if (!authLoading && !empresaLoading) {
@@ -278,7 +278,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
   // If no custom permissions are set, default to true (role-based access handles the parent)
   const canViewModule = (moduleId: string): boolean => {
     if (!customPerms) return true; // No custom level = default role behavior
-    const perm = customPerms.find(c => c.modulo === moduleId);
+    const perm = customPerms.find(c => c.module === moduleId);
     if (!perm) return true; // Module not configured = allowed by default
     return perm.can_view;
   };

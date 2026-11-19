@@ -24,11 +24,11 @@ import { KANBAN_COLUMNS } from '@/hooks/useOperacoes';
 
 interface Produto {
   id: string;
-  nome: string;
-  codigo: string | null;
+  name: string;
+  code: string | null;
   preco: number;
   estoque: number | null;
-  ativo: boolean | null;
+  active: boolean | null;
   categoria: string | null;
   tem_variacoes: boolean | null;
   tipo: string;
@@ -53,7 +53,7 @@ interface ItemVenda {
   variacao_id?: string;
   variacao_label?: string;
   desconto: number;
-  desconto_tipo: 'percentual' | 'valor';
+  desconto_tipo: 'percentual' | 'amount';
   observacao: string;
   obs_aberta: boolean;
   servico?: boolean;
@@ -64,7 +64,7 @@ interface ItemVenda {
 
 interface Cliente {
   id: string;
-  nome: string;
+  name: string;
   telefone: string | null;
   email: string | null;
 }
@@ -86,13 +86,13 @@ const formatCurrency = (value: number) =>
 
 export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje = false }: NovaVendaDialogProps) {
   const { user } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { toast } = useToast();
 
   // Data
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [vendedores, setVendedores] = useState<{ id: string; nome: string; email: string }[]>([]);
+  const [vendedores, setVendedores] = useState<{ id: string; name: string; email: string }[]>([]);
   const [taxasPagamento, setTaxasPagamento] = useState<{ metodo: string; parcelas: number; bandeira: string; taxa: number; tipo_taxa: string }[]>([]);
 
   // Form state
@@ -107,8 +107,8 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     vendedor: '',
     desconto: 0,
   });
-  const [descontoTipo, setDescontoTipo] = useState<'valor' | 'percentual'>('valor');
-  const [dataVenda, setDataVenda] = useState<Date>(new Date());
+  const [descontoTipo, setDescontoTipo] = useState<'amount' | 'percentual'>('amount');
+  const [soldOn, setDataVenda] = useState<Date>(new Date());
   const [itensVenda, setItensVenda] = useState<ItemVenda[]>([]);
   const [produtoSelecionado, setProdutoSelecionado] = useState<string>('');
   const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
@@ -161,7 +161,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
   // ── Fetch data ──────────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
 
     // Fetch all products with pagination to bypass 1000-row limit
     let allProducts: any[] = [];
@@ -170,11 +170,11 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     let hasMore = true;
     while (hasMore) {
       const { data } = await api
-        .from('produtos')
-        .select('id, nome, codigo, preco, estoque, ativo, categoria, tem_variacoes, tipo, recorrente, recorrencia_tipo')
-        .eq('ativo', true)
-        .eq('empresa_id', empresaId)
-        .order('nome')
+        .from('product')
+        .select('id, name, code, price, stock, active, category, has_variants, kind, recurring, recurrence_kind')
+        .eq('active', true)
+        .eq('company_id', companyId)
+        .order('name')
         .range(from, from + pageSize - 1);
       allProducts = allProducts.concat(data || []);
       hasMore = (data?.length || 0) === pageSize;
@@ -183,18 +183,18 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     setProdutos(allProducts as Produto[]);
 
     const { data: cliData } = await api
-      .from('clientes')
-      .select('id, nome, telefone, email')
-      .eq('ativo', true)
-      .eq('empresa_id', empresaId)
-      .order('nome');
+      .from('customer')
+      .select('id, name, telefone, email')
+      .eq('active', true)
+      .eq('company_id', companyId)
+      .order('name');
     setClientes((cliData ?? []) as Cliente[]);
 
     // Fetch taxas de pagamento
     const { data: taxasData } = await api
-      .from('taxas_pagamento')
+      .from('payment_fee')
       .select('metodo_pagamento, taxa_percentual, parcelas, bandeira, tipo_taxa')
-      .eq('empresa_id', empresaId);
+      .eq('company_id', companyId);
     if (taxasData) {
       setTaxasPagamento(
         (taxasData as any[]).map(t => ({ metodo: t.metodo_pagamento, parcelas: Number(t.parcelas), bandeira: t.bandeira || '', taxa: Number(t.taxa_percentual), tipo_taxa: t.tipo_taxa || 'percentual' }))
@@ -205,21 +205,21 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     try {
       const { data, error } = await api.functions.invoke('list-users', {
         method: 'POST',
-        body: { empresa_id: empresaId },
+        body: { company_id: companyId },
       });
       if (!error && data?.users) {
-        const lista = (data.users as { id: string; nome: string | null; email: string }[])
-          .map(u => ({ id: u.id, nome: u.nome || u.email, email: u.email }));
+        const lista = (data.users as { id: string; name: string | null; email: string }[])
+          .map(u => ({ id: u.id, name: u.name || u.email, email: u.email }));
         setVendedores(lista);
       }
     } catch (err) {
       console.error('Erro ao buscar vendedores:', err);
     }
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => {
-    if (open && empresaId) fetchData();
-  }, [open, empresaId, fetchData]);
+    if (open && companyId) fetchData();
+  }, [open, companyId, fetchData]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -266,10 +266,10 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     // Se produto tem variações, abre o seletor de variação
     if (produto.tem_variacoes) {
       const { data } = await api
-        .from('produto_variacoes')
+        .from('product_variant')
         .select('id, atributos, preco, estoque, sku')
-        .eq('produto_id', produto.id)
-        .eq('ativo', true)
+        .eq('product_id', produto.id)
+        .eq('active', true)
         .order('created_at');
       setProdutoComVariacao(produto);
       setVariacoes((data as ProdutoVariacaoSimples[]) || []);
@@ -298,7 +298,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     } else {
       setItensVenda([...itensVenda, {
         produto_id: produto.id,
-        produto_nome: produto.nome,
+        produto_nome: produto.name,
         quantidade: quantidadeProduto,
         preco_unitario: Number(produto.preco),
         subtotal: quantidadeProduto * Number(produto.preco),
@@ -333,7 +333,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     } else {
       setItensVenda([...itensVenda, {
         produto_id: produtoComVariacao.id,
-        produto_nome: `${produtoComVariacao.nome} — ${label}`,
+        produto_nome: `${produtoComVariacao.name} — ${label}`,
         quantidade: quantidadeProduto,
         preco_unitario: precoFinal,
         subtotal: quantidadeProduto * precoFinal,
@@ -352,8 +352,8 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     setQuantidadeProduto(1);
   };
 
-  const handleRemoverItem = (produtoId: string) => {
-    setItensVenda(itensVenda.filter(i => i.produto_id !== produtoId));
+  const handleRemoverItem = (productId: string) => {
+    setItensVenda(itensVenda.filter(i => i.produto_id !== productId));
   };
 
   const updateItemField = (itemKey: string, updates: Partial<ItemVenda>) => {
@@ -364,7 +364,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
 
   const resetForm = () => {
     setNovaVenda({ cliente_nome: '', cliente_telefone: '', cliente_email: '', metodo_pagamento: '', parcelas: 1, bandeira: '', observacoes: '', vendedor: '', desconto: 0 });
-    setDescontoTipo('valor');
+    setDescontoTipo('amount');
     setItensVenda([]);
     setDataVenda(new Date());
     setOperacaoStatus('');
@@ -380,7 +380,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     }
 
     if (novaVenda.vendedor) {
-      const vendedorValido = vendedores.some(v => v.nome === novaVenda.vendedor);
+      const vendedorValido = vendedores.some(v => v.name === novaVenda.vendedor);
       if (!vendedorValido) {
         toast({ title: 'Vendedor inválido para a empresa selecionada.', variant: 'destructive' });
         return;
@@ -393,7 +393,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     const descontoGeralInput = novaVenda.desconto || 0;
     const descontoGeral = descontoTipo === 'percentual' ? (valorTotalItens * descontoGeralInput / 100) : descontoGeralInput;
     const desconto = descontoItensTotal + descontoGeral;
-    const valorFinal = valorTotalItens - descontoGeral;
+    const finalAmount = valorTotalItens - descontoGeral;
 
     // Calculate valor líquido based on fees
     const calcValorLiquido = () => {
@@ -405,16 +405,16 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       const taxaVal = matched?.taxa || 0;
       if (taxaVal <= 0) return null;
       return matched?.tipo_taxa === 'fixo'
-        ? valorFinal - taxaVal
-        : valorFinal - (valorFinal * taxaVal / 100);
+        ? finalAmount - taxaVal
+        : finalAmount - (finalAmount * taxaVal / 100);
     };
     const valorLiquido = calcValorLiquido();
 
-    // Resolve cliente_id com fallback CPF → nome+telefone → nome
-    const clienteByName = clientes.find(c => c.nome === novaVenda.cliente_nome);
+    // Resolve cliente_id com fallback CPF → name+telefone → name
+    const clienteByName = clientes.find(c => c.name === novaVenda.cliente_nome);
     const cpfHint = (novaVenda as any).cliente_cpf || (clienteByName as any)?.cpf || null;
     const clienteIdResolvido = resolveClienteId(clientes as any, {
-      nome: novaVenda.cliente_nome,
+      name: novaVenda.cliente_nome,
       cpf: cpfHint,
       telefone: novaVenda.cliente_telefone,
     });
@@ -433,23 +433,23 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       return;
     }
 
-    const { data: rpcResult, error: vendaError } = await api.rpc('criar_venda_completa', {
+    const { data: rpcResult, error: vendaError } = await api.rpc('create_sale', {
       p_venda: {
         user_id: user.id,
-        empresa_id: empresaId,
+        company_id: companyId,
         cliente_id: clienteIdResolvido,
         cliente_nome: novaVenda.cliente_nome,
         cliente_telefone: novaVenda.cliente_telefone || null,
         cliente_email: novaVenda.cliente_email || null,
         produtos: produtosDescricao,
-        valor: valorFinal,
+        valor: finalAmount,
         valor_bruto: subtotalBruto,
         desconto: desconto,
-        valor_final: valorFinal,
-        vendedor_id: vendedores.find(v => v.nome === novaVenda.vendedor)?.id || user.id,
+        valor_final: finalAmount,
+        vendedor_id: vendedores.find(v => v.name === novaVenda.vendedor)?.id || user.id,
         metodo_pagamento: novaVenda.metodo_pagamento,
         parcelas: novaVenda.metodo_pagamento === 'Cartão de Crédito' ? novaVenda.parcelas : 1,
-        data_venda: format(dataVenda, 'yyyy-MM-dd'),
+        data_venda: format(soldOn, 'yyyy-MM-dd'),
         observacoes: novaVenda.observacoes || null,
         vendedor: novaVenda.vendedor || null,
         bandeira: novaVenda.bandeira || '',
@@ -480,7 +480,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       return;
     }
 
-    const vendaId = (rpcResult as any)?.id;
+    const saleId = (rpcResult as any)?.id;
 
     // Criar operação automaticamente se etapa selecionada E houver pelo menos 1 móvel
     if (operacaoStatus && user && temMoveis) {
@@ -494,16 +494,16 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       ];
 
       const { data: opData, error: opError } = await api
-        .from('operacoes')
+        .from('operation')
         .insert({
-          empresa_id: empresaId,
+          company_id: companyId,
           user_id: user.id,
-          venda_id: vendaId,
+          venda_id: saleId,
           cliente_nome: novaVenda.cliente_nome,
           cliente_telefone: novaVenda.cliente_telefone || null,
           cliente_email: novaVenda.cliente_email || null,
           produtos: produtosDescricao,
-          tipo: operacaoTipo,
+          kind: operacaoTipo,
           status: operacaoStatus,
           status_pagamento: 'pendente',
         } as any)
@@ -516,10 +516,10 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
           titulo,
           ordem: i,
         }));
-        await api.from('operacao_tarefas').insert(tarefas as any);
-        await api.from('operacao_historico').insert({
+        await api.from('operation_task').insert(tarefas as any);
+        await api.from('operation_event').insert({
           operacao_id: opData.id,
-          tipo: 'status_change',
+          kind: 'status_change',
           descricao: 'Operação criada automaticamente a partir da venda',
           status_novo: operacaoStatus,
           user_id: user.id,
@@ -535,7 +535,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
 
       if (clienteMatch) {
         const { data: clienteCompleto } = await api
-          .from('clientes')
+          .from('customer')
           .select('endereco, cidade, estado, cep, cpf')
           .eq('id', clienteMatch.id)
           .single();
@@ -547,10 +547,10 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       }
 
       const { data: pedidoData, error: pedidoError } = await api
-        .from('pedidos_entrega')
+        .from('delivery_order')
         .insert({
-          venda_id: vendaId,
-          empresa_id: empresaId,
+          venda_id: saleId,
+          company_id: companyId,
           user_id: user.id,
           cliente_id: clienteMatch?.id || clienteIdResolvido || null,
           cliente_nome: novaVenda.cliente_nome,
@@ -567,7 +567,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
         .single();
 
       if (pedidoData && !pedidoError) {
-        await api.from('pedido_entrega_historico').insert({
+        await api.from('delivery_order_event').insert({
           pedido_id: pedidoData.id,
           user_id: user.id,
           status_novo: 'pendente',
@@ -608,14 +608,14 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
             <Popover open={clientePopoverOpen} onOpenChange={setClientePopoverOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" aria-expanded={clientePopoverOpen} className="justify-between w-full font-normal">
-                  {novaVenda.cliente_nome || "Selecione ou digite o nome do cliente..."}
+                  {novaVenda.cliente_nome || "Selecione ou digite o name do cliente..."}
                   <User className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[400px] p-0 z-[200]" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar cliente..." onValueChange={value => {
-                    if (!clientes.find(c => c.nome.toLowerCase() === value.toLowerCase())) {
+                    if (!clientes.find(c => c.name.toLowerCase() === value.toLowerCase())) {
                       setNovaVenda({ ...novaVenda, cliente_nome: value, cliente_telefone: '', cliente_email: '' });
                     }
                   }} />
@@ -623,17 +623,17 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                     <CommandEmpty>
                       <span className="text-muted-foreground">Nenhum cliente encontrado.</span>
                       <br />
-                      <span className="text-xs text-muted-foreground">Digite o nome para cadastrar manualmente.</span>
+                      <span className="text-xs text-muted-foreground">Digite o name para cadastrar manualmente.</span>
                     </CommandEmpty>
                     <CommandGroup heading="Clientes Cadastrados">
                       {clientes.map(cliente => (
-                        <CommandItem key={cliente.id} value={cliente.nome} onSelect={() => {
-                          setNovaVenda({ ...novaVenda, cliente_nome: cliente.nome, cliente_telefone: cliente.telefone || '', cliente_email: cliente.email || '' });
+                        <CommandItem key={cliente.id} value={cliente.name} onSelect={() => {
+                          setNovaVenda({ ...novaVenda, cliente_nome: cliente.name, cliente_telefone: cliente.telefone || '', cliente_email: cliente.email || '' });
                           setClientePopoverOpen(false);
                         }}>
-                          <Check className={cn("mr-2 h-4 w-4", novaVenda.cliente_nome === cliente.nome ? "opacity-100" : "opacity-0")} />
+                          <Check className={cn("mr-2 h-4 w-4", novaVenda.cliente_nome === cliente.name ? "opacity-100" : "opacity-0")} />
                           <div className="flex flex-col">
-                            <span>{cliente.nome}</span>
+                            <span>{cliente.name}</span>
                             {cliente.telefone && <span className="text-xs text-muted-foreground">{cliente.telefone}</span>}
                           </div>
                         </CommandItem>
@@ -667,9 +667,9 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                     {produtoSelecionado
                       ? (() => {
                           const p = produtos.find(prod => prod.id === produtoSelecionado);
-                          return p ? `${p.codigo ? `[${p.codigo}] ` : ''}${p.nome}` : "Selecione um produto...";
+                          return p ? `${p.code ? `[${p.code}] ` : ''}${p.name}` : "Selecione um produto...";
                         })()
-                      : "Buscar por código ou nome..."}
+                      : "Buscar por código ou name..."}
                     <Package className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -683,14 +683,14 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                     if (v.includes(s)) return 1;
                     return 0;
                   }}>
-                    <CommandInput placeholder="Digite código ou nome do produto..." />
+                    <CommandInput placeholder="Digite código ou name do produto..." />
                     <CommandList>
                       <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
                       <CommandGroup heading="Produtos com Estoque">
                         {produtos.filter(p => !isServico(p) && (p.tem_variacoes || (p.estoque ?? 0) > 0)).map(p => (
                           <CommandItem
                             key={p.id}
-                            value={`${p.codigo || ''} ${p.nome}`}
+                            value={`${p.code || ''} ${p.name}`}
                             onSelect={() => {
                               setProdutoSelecionado(p.id);
                               setProdutoPopoverOpen(false);
@@ -699,8 +699,8 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                             <Check className={cn("mr-2 h-4 w-4", produtoSelecionado === p.id ? "opacity-100" : "opacity-0")} />
                             <div className="flex items-center justify-between w-full gap-2">
                               <div className="flex items-center gap-2">
-                                {p.codigo && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.codigo}</span>}
-                                <span>{p.nome}</span>
+                                {p.code && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.code}</span>}
+                                <span>{p.name}</span>
                               </div>
                               <span className="text-muted-foreground text-xs">
                                 {formatCurrency(Number(p.preco))} • {p.tem_variacoes ? 'Variações' : `Est: ${p.estoque ?? 0}`}
@@ -791,10 +791,10 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                                 background: item.desconto_tipo === 'percentual' ? '#8E5FCF' : 'transparent',
                                 color: item.desconto_tipo === 'percentual' ? 'white' : '#8E5FCF',
                                 border: 'none', cursor: 'pointer', lineHeight: 1 }}>%</button>
-                            <button type="button" onClick={() => updateItemField(itemKey, { desconto_tipo: 'valor' })}
+                            <button type="button" onClick={() => updateItemField(itemKey, { desconto_tipo: 'amount' })}
                               style={{ padding: '3px 7px', fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 700,
-                                background: item.desconto_tipo === 'valor' ? '#8E5FCF' : 'transparent',
-                                color: item.desconto_tipo === 'valor' ? 'white' : '#8E5FCF',
+                                background: item.desconto_tipo === 'amount' ? '#8E5FCF' : 'transparent',
+                                color: item.desconto_tipo === 'amount' ? 'white' : '#8E5FCF',
                                 border: 'none', cursor: 'pointer', lineHeight: 1 }}>R$</button>
                           </div>
                           <input
@@ -888,10 +888,10 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                             background: descontoTipo === 'percentual' ? '#8E5FCF' : 'transparent',
                             color: descontoTipo === 'percentual' ? 'white' : '#8E5FCF',
                             border: 'none', cursor: 'pointer', lineHeight: 1 }}>%</button>
-                        <button type="button" onClick={() => setDescontoTipo('valor')}
+                        <button type="button" onClick={() => setDescontoTipo('amount')}
                           style={{ padding: '2px 6px', fontSize: '0.65rem', fontFamily: 'Gilroy', fontWeight: 700,
-                            background: descontoTipo === 'valor' ? '#8E5FCF' : 'transparent',
-                            color: descontoTipo === 'valor' ? 'white' : '#8E5FCF',
+                            background: descontoTipo === 'amount' ? '#8E5FCF' : 'transparent',
+                            color: descontoTipo === 'amount' ? 'white' : '#8E5FCF',
                             border: 'none', cursor: 'pointer', lineHeight: 1 }}>R$</button>
                       </div>
                       <input
@@ -961,11 +961,11 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn("justify-start text-left font-normal")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(dataVenda, "dd/MM/yyyy", { locale: ptBR })}
+                      {format(soldOn, "dd/MM/yyyy", { locale: ptBR })}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={dataVenda} onSelect={date => date && setDataVenda(date)} initialFocus className="p-3 pointer-events-auto" />
+                    <Calendar mode="single" selected={soldOn} onSelect={date => date && setDataVenda(date)} initialFocus className="p-3 pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               )}
@@ -1034,7 +1034,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                   <SelectItem value="_none" disabled>Nenhum vendedor cadastrado</SelectItem>
                 ) : (
                   vendedores.map(v => (
-                    <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>
+                    <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                   ))
                 )}
               </SelectContent>
@@ -1122,7 +1122,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle>
-            Selecione a variação — {produtoComVariacao?.nome}
+            Selecione a variação — {produtoComVariacao?.name}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">

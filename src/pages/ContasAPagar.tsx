@@ -77,7 +77,7 @@ const ContasAPagar = () => {
     user,
     loading: authLoading
   } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -160,20 +160,20 @@ const ContasAPagar = () => {
     }
   }, [user, authLoading, navigate]);
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchContas();
       fetchFornecedores();
       fetchContasRecorrentes();
       fetchMetodosPagamento();
     }
-  }, [user, empresaId]);
+  }, [user, companyId]);
   const fetchContas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const {
       data,
       error
-    } = await api.from('contas_pagar').select('*').eq('empresa_id', empresaId).order('data_vencimento', {
+    } = await api.from('payable').select('*').eq('company_id', companyId).order('due_on', {
       ascending: false
     });
     if (error) {
@@ -184,11 +184,11 @@ const ContasAPagar = () => {
     setLoading(false);
   };
   const fetchFornecedores = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const {
       data,
       error
-    } = await api.from('fornecedores').select('*').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('supplier').select('*').eq('active', true).eq('company_id', companyId).order('name', {
       ascending: true
     });
     if (!error) {
@@ -196,23 +196,23 @@ const ContasAPagar = () => {
     }
   };
   const fetchMetodosPagamento = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data, error } = await api
-      .from('metodos_pagamento')
+      .from('payment_method')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .eq('ativo', true)
-      .order('nome', { ascending: true });
+      .eq('company_id', companyId)
+      .eq('active', true)
+      .order('name', { ascending: true });
     if (!error) {
       setMetodosPagamento(data || []);
     }
   };
   const fetchContasRecorrentes = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const {
       data,
       error
-    } = await api.from('contas_pagar').select('*').eq('recorrente', true).eq('empresa_id', empresaId).order('descricao', {
+    } = await api.from('payable').select('*').eq('recorrente', true).eq('company_id', companyId).order('description', {
       ascending: true
     });
     if (!error) {
@@ -246,9 +246,9 @@ const ContasAPagar = () => {
       const {
         data: contaMae,
         error: errorMae
-       } = await api.from('contas_pagar').insert({
+       } = await api.from('payable').insert({
         user_id: user.id,
-        empresa_id: empresaId,
+        company_id: companyId,
         descricao: novaConta.descricao,
         fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
         valor: valorBase,
@@ -273,7 +273,7 @@ const ContasAPagar = () => {
         const novaDataVencimento = addMonths(dataVencimentoBase, i);
         contasProvisionadas.push({
           user_id: user.id,
-          empresa_id: empresaId,
+          company_id: companyId,
           descricao: novaConta.descricao,
           fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
           valor: valorBase,
@@ -290,7 +290,7 @@ const ContasAPagar = () => {
       if (contasProvisionadas.length > 0) {
         const {
           error: errorProvisionadas
-        } = await api.from('contas_pagar').insert(contasProvisionadas);
+        } = await api.from('payable').insert(contasProvisionadas);
         if (errorProvisionadas) {
           toast({
             title: "Aviso",
@@ -330,7 +330,7 @@ const ContasAPagar = () => {
     // Criar uma conta para cada parcela com valor individual (fluxo normal)
     const contasParaInserir = datasVencimentoParcelas.slice(0, numParcelasNovaConta).map((data, index) => ({
       user_id: user.id,
-      empresa_id: empresaId,
+      company_id: companyId,
       descricao: novaConta.descricao,
       fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
       valor: valoresParcelas[index],
@@ -344,7 +344,7 @@ const ContasAPagar = () => {
     }));
     const {
       error
-    } = await api.from('contas_pagar').insert(contasParaInserir);
+    } = await api.from('payable').insert(contasParaInserir);
     if (error) {
       handleApiError(error, "Erro ao cadastrar conta");
     } else {
@@ -393,7 +393,7 @@ const ContasAPagar = () => {
 
     // Excluir as contas selecionadas
     const { error: errorExcluir } = await api
-      .from('contas_pagar')
+      .from('payable')
       .delete()
       .in('id', idsParaExcluir);
 
@@ -406,7 +406,7 @@ const ContasAPagar = () => {
     const excluiuMae = idsParaExcluir.includes(contaParaDesmarcar.id);
     if (!excluiuMae && quantidadeExcluir === contasPendentesParaExcluir.length) {
       await api
-        .from('contas_pagar')
+        .from('payable')
         .update({ recorrente: false })
         .eq('id', contaParaDesmarcar.id);
     }
@@ -440,7 +440,7 @@ const ContasAPagar = () => {
     // 1. Atualizar o valor da conta mãe (recorrente)
     const {
       error: errorMae
-    } = await api.from('contas_pagar').update({
+    } = await api.from('payable').update({
       valor: novoValorRecorrente
     }).eq('id', contaParaEditarValor.id);
     if (errorMae) {
@@ -451,7 +451,7 @@ const ContasAPagar = () => {
     // 2. Atualizar todas as contas provisionadas pendentes vinculadas
     const {
       error: errorProvisionadas
-    } = await api.from('contas_pagar').update({
+    } = await api.from('payable').update({
       valor: novoValorRecorrente
     }).eq('conta_recorrente_id', contaParaEditarValor.id).eq('status', 'pendente');
     if (errorProvisionadas) {
@@ -497,7 +497,7 @@ const ContasAPagar = () => {
       const novaDataVencimento = addMonths(ultimaData, i);
       novasContas.push({
         user_id: user.id,
-        empresa_id: empresaId,
+        company_id: companyId,
         descricao: contaParaEstender.descricao,
         fornecedor_nome: contaParaEstender.fornecedor_nome,
         valor: Number(contaParaEstender.valor),
@@ -513,7 +513,7 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await api.from('contas_pagar').insert(novasContas);
+    } = await api.from('payable').insert(novasContas);
     if (error) {
       handleApiError(error, "Erro ao estender recorrência");
     } else {
@@ -537,7 +537,7 @@ const ContasAPagar = () => {
   }, [contasRecorrentes, contas]);
   const handleMoverConta = async (contaId: string, novaData: string) => {
     const { error } = await api
-      .from('contas_pagar')
+      .from('payable')
       .update({ data_vencimento: novaData })
       .eq('id', contaId);
     if (error) {
@@ -585,7 +585,7 @@ const ContasAPagar = () => {
       const novaData = new Date(novoAno, mesAjustado, diaFinal);
       contasParaInserir.push({
         user_id: user.id,
-        empresa_id: empresaId,
+        company_id: companyId,
         descricao: contaParaDuplicar.descricao,
         fornecedor_nome: contaParaDuplicar.fornecedor_nome,
         valor: contaParaDuplicar.valor,
@@ -598,7 +598,7 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await api.from('contas_pagar').insert(contasParaInserir);
+    } = await api.from('payable').insert(contasParaInserir);
     if (error) {
       handleApiError(error, "Erro ao criar parcelas");
     } else {
@@ -639,7 +639,7 @@ const ContasAPagar = () => {
     }
     const {
       error
-    } = await api.from('contas_pagar').update({
+    } = await api.from('payable').update({
       descricao: editConta.descricao,
       fornecedor_nome: isFornecedorRequired ? editConta.fornecedor_nome : categoriaFinal,
       valor: editConta.valor,
@@ -666,7 +666,7 @@ const ContasAPagar = () => {
   const handleMarcarPago = async (conta: ContaPagar) => {
     const {
       error
-    } = await api.from('contas_pagar').update({
+    } = await api.from('payable').update({
       status: 'pago',
       data_pagamento: format(new Date(), 'yyyy-MM-dd')
     }).eq('id', conta.id);
@@ -709,7 +709,7 @@ const ContasAPagar = () => {
     if (!contaSelecionada) return;
     const base = Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor);
     const valorPago = base + pagJuros + pagMulta - pagDesconto;
-    const { error } = await api.from('contas_pagar').update({
+    const { error } = await api.from('payable').update({
       status: 'pago',
       valor_original: base,
       valor_juros: pagJuros,
@@ -733,7 +733,7 @@ const ContasAPagar = () => {
   const handleDelete = async (id: string) => {
     const {
       error
-    } = await api.from('contas_pagar').delete().eq('id', id);
+    } = await api.from('payable').delete().eq('id', id);
     if (error) {
       toast({
         title: "Erro",
@@ -979,11 +979,11 @@ const ContasAPagar = () => {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="descricao">Descrição *</Label>
-                    <Input id="descricao" placeholder="Ex: Conta de luz" value={novaConta.descricao} onChange={e => setNovaConta({ ...novaConta, descricao: e.target.value })} />
+                    <Label htmlFor="description">Descrição *</Label>
+                    <Input id="description" placeholder="Ex: Conta de luz" value={novaConta.descricao} onChange={e => setNovaConta({ ...novaConta, descricao: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="categoria">Categoria *</Label>
+                    <Label htmlFor="category">Categoria *</Label>
                     <Select value={novaConta.categoria === '__nova__' ? '__nova__' : novaConta.categoria} onValueChange={value => {
                       if (value === '__nova__') { setNovaConta({ ...novaConta, categoria: '__nova__', fornecedor_nome: '' }); setNovaCategoria(''); }
                       else { setNovaConta({ ...novaConta, categoria: value, fornecedor_nome: value !== 'Fornecedores' ? '' : novaConta.fornecedor_nome }); }
@@ -1007,8 +1007,8 @@ const ContasAPagar = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {novaConta.categoria === '__nova__' && <div className="grid gap-2"><Label htmlFor="nova-categoria">Nome da nova categoria *</Label><Input id="nova-categoria" placeholder="Digite o nome da categoria" value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} /></div>}
-                  {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2"><Label htmlFor="fornecedor">Fornecedor *</Label><Select value={novaConta.fornecedor_nome} onValueChange={value => setNovaConta({ ...novaConta, fornecedor_nome: value })}><SelectTrigger><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger><SelectContent>{fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">Nenhum fornecedor cadastrado</div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.nome}>{fornecedor.nome}</SelectItem>)}<div className="border-t mt-1 pt-1"><button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}><Plus className="h-4 w-4" />Cadastrar novo fornecedor</button></div></SelectContent></Select></div>}
+                  {novaConta.categoria === '__nova__' && <div className="grid gap-2"><Label htmlFor="nova-categoria">Nome da nova categoria *</Label><Input id="nova-categoria" placeholder="Digite o name da categoria" value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} /></div>}
+                  {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2"><Label htmlFor="fornecedor">Fornecedor *</Label><Select value={novaConta.fornecedor_nome} onValueChange={value => setNovaConta({ ...novaConta, fornecedor_nome: value })}><SelectTrigger><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger><SelectContent>{fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">Nenhum fornecedor cadastrado</div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.name}>{fornecedor.name}</SelectItem>)}<div className="border-t mt-1 pt-1"><button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}><Plus className="h-4 w-4" />Cadastrar novo fornecedor</button></div></SelectContent></Select></div>}
                   <div className="grid gap-2">
                     <Label htmlFor="num_parcelas">Número de Parcelas *</Label>
                     <Input id="num_parcelas" type="number" min="1" max="48" placeholder="Ex: 1" value={numParcelasNovaConta} onChange={e => {
@@ -1031,7 +1031,7 @@ const ContasAPagar = () => {
                   {isRecorrente && numParcelasNovaConta === 1 && <div className="grid gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5"><Label htmlFor="meses_recorrencia">Provisionar para quantos meses?</Label><Input id="meses_recorrencia" type="number" min="2" max="60" placeholder="12" value={mesesRecorrencia} onChange={e => setMesesRecorrencia(Math.max(2, Math.min(60, parseInt(e.target.value) || 12)))} /><p className="text-xs text-muted-foreground">Serão criadas {mesesRecorrencia} contas com vencimento no mesmo dia de cada mês</p></div>}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2"><Label htmlFor="nota_fiscal">Nota Fiscal</Label><Input id="nota_fiscal" placeholder="Nº da nota fiscal" value={novaConta.nota_fiscal} onChange={e => setNovaConta({ ...novaConta, nota_fiscal: e.target.value })} /></div>
-                    <div className="grid gap-2"><Label htmlFor="metodo_pagamento">Método de Pagamento</Label><Select value={novaConta.metodo_pagamento} onValueChange={value => setNovaConta({ ...novaConta, metodo_pagamento: value })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{metodosPagamento.map(m => <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="grid gap-2"><Label htmlFor="payment_method">Método de Pagamento</Label><Select value={novaConta.metodo_pagamento} onValueChange={value => setNovaConta({ ...novaConta, metodo_pagamento: value })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{metodosPagamento.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select></div>
                     {['boleto', 'pix'].includes(novaConta.metodo_pagamento.toLowerCase()) && <div className="grid gap-2 col-span-2"><Label htmlFor="codigo_pagamento">{novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}</Label><Textarea id="codigo_pagamento" placeholder={novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'} value={novaConta.codigo_pagamento} onChange={e => setNovaConta({ ...novaConta, codigo_pagamento: e.target.value })} rows={2} /></div>}
                   </div>
                 </div>
@@ -1198,14 +1198,14 @@ const ContasAPagar = () => {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="descricao">Descrição *</Label>
-                    <Input id="descricao" placeholder="Ex: Conta de luz" value={novaConta.descricao} onChange={e => setNovaConta({
+                    <Label htmlFor="description">Descrição *</Label>
+                    <Input id="description" placeholder="Ex: Conta de luz" value={novaConta.descricao} onChange={e => setNovaConta({
                       ...novaConta,
                       descricao: e.target.value
                     })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="categoria">Categoria *</Label>
+                    <Label htmlFor="category">Categoria *</Label>
                     <Select value={novaConta.categoria === '__nova__' ? '__nova__' : novaConta.categoria} onValueChange={value => {
                       if (value === '__nova__') {
                         setNovaConta({
@@ -1243,7 +1243,7 @@ const ContasAPagar = () => {
                   </div>
                   {novaConta.categoria === '__nova__' && <div className="grid gap-2">
                       <Label htmlFor="nova-categoria">Nome da nova categoria *</Label>
-                      <Input id="nova-categoria" placeholder="Digite o nome da categoria" value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} />
+                      <Input id="nova-categoria" placeholder="Digite o name da categoria" value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} />
                     </div>}
                   {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2">
                       <Label htmlFor="fornecedor">Fornecedor *</Label>
@@ -1257,8 +1257,8 @@ const ContasAPagar = () => {
                         <SelectContent>
                           {fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">
                               Nenhum fornecedor cadastrado
-                            </div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.nome}>
-                                {fornecedor.nome}
+                            </div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.name}>
+                                {fornecedor.name}
                               </SelectItem>)}
                           <div className="border-t mt-1 pt-1">
                             <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}>
@@ -1384,12 +1384,12 @@ const ContasAPagar = () => {
                       })} />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="metodo_pagamento">Método de Pagamento</Label>
+                      <Label htmlFor="payment_method">Método de Pagamento</Label>
                       <Select value={novaConta.metodo_pagamento} onValueChange={value => setNovaConta({ ...novaConta, metodo_pagamento: value })}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
                           {metodosPagamento.map(m => (
-                            <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
+                            <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1747,7 +1747,7 @@ const ContasAPagar = () => {
             </div>
             {editConta.categoria === '__nova__' && <div className="grid gap-2">
                 <Label htmlFor="edit-nova-categoria">Nome da nova categoria *</Label>
-                <Input id="edit-nova-categoria" placeholder="Digite o nome da categoria" value={editNovaCategoria} onChange={e => setEditNovaCategoria(e.target.value)} />
+                <Input id="edit-nova-categoria" placeholder="Digite o name da categoria" value={editNovaCategoria} onChange={e => setEditNovaCategoria(e.target.value)} />
               </div>}
             {editConta.categoria === 'Fornecedores' && <div className="grid gap-2">
                 <Label htmlFor="edit-fornecedor">Fornecedor *</Label>
@@ -1761,8 +1761,8 @@ const ContasAPagar = () => {
                   <SelectContent>
                     {fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">
                         Nenhum fornecedor cadastrado
-                      </div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.nome}>
-                          {fornecedor.nome}
+                      </div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.name}>
+                          {fornecedor.name}
                         </SelectItem>)}
                     <div className="border-t mt-1 pt-1">
                       <button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}>
@@ -1827,7 +1827,7 @@ const ContasAPagar = () => {
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {metodosPagamento.map(m => (
-                    <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
+                    <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

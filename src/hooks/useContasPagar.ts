@@ -7,7 +7,7 @@ import { format, addMonths, addDays, differenceInDays } from 'date-fns';
 
 export interface ContaPagar {
   id: string;
-  empresa_id: string;
+  company_id: string;
   descricao: string;
   valor: number;
   valor_original?: number;
@@ -68,7 +68,7 @@ export interface FiltrosContas {
   fornecedor?: string;
   dataInicio?: string;
   dataFim?: string;
-  campoData?: 'data_vencimento' | 'data_pagamento_efetivo';
+  campoData?: 'due_on' | 'data_pagamento_efetivo';
   centroCusto?: string;
   contaBancariaId?: string;
 }
@@ -85,29 +85,29 @@ export interface AgingResult {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useContasPagar() {
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(false);
 
   // ── Busca principal ──────────────────────────────────────────────────────
 
   const buscarContas = useCallback(async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
-      .from('contas_pagar')
+      .from('payable')
       .select('*')
-      .eq('empresa_id', empresaId)
-      .order('data_vencimento', { ascending: true });
+      .eq('company_id', companyId)
+      .order('due_on', { ascending: true });
 
     if (!error) setContas((data || []) as unknown as ContaPagar[]);
     setLoading(false);
-  }, [empresaId]);
+  }, [companyId]);
 
   useEffect(() => {
-    if (empresaId) buscarContas();
+    if (companyId) buscarContas();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empresaId]);
+  }, [companyId]);
 
   // ── 1. Registrar pagamento com todos os detalhes ─────────────────────────
 
@@ -139,7 +139,7 @@ export function useContasPagar() {
     ];
 
     const { error } = await api
-      .from('contas_pagar')
+      .from('payable')
       .update({
         status: 'pago',
         valor_original: valorOriginal,
@@ -164,11 +164,11 @@ export function useContasPagar() {
   // ── 2. Criar conta parcelada ─────────────────────────────────────────────
 
   const criarContaParcelada = async (
-    dadosBase: Omit<ContaPagar, 'id' | 'empresa_id' | 'created_at' | 'updated_at'>,
+    dadosBase: Omit<ContaPagar, 'id' | 'company_id' | 'created_at' | 'updated_at'>,
     numeroParcelas: number,
     periodicidade: 'semanal' | 'quinzenal' | 'mensal'
   ): Promise<{ error: unknown }> => {
-    if (!empresaId) return { error: 'Empresa não definida' };
+    if (!companyId) return { error: 'Empresa não definida' };
 
     const parcelas: Partial<ContaPagar>[] = [];
     let dataVencimento = new Date(dadosBase.data_vencimento + 'T00:00:00');
@@ -177,7 +177,7 @@ export function useContasPagar() {
     for (let i = 1; i <= numeroParcelas; i++) {
       parcelas.push({
         ...dadosBase,
-        empresa_id: empresaId,
+        company_id: companyId,
         descricao: `${dadosBase.descricao} (${i}/${numeroParcelas})`,
         valor: valorParcela,
         valor_original: valorParcela,
@@ -196,7 +196,7 @@ export function useContasPagar() {
     }
 
     const { error } = await api
-      .from('contas_pagar')
+      .from('payable')
       .insert(parcelas as never[]);
 
     if (!error) buscarContas();
@@ -208,24 +208,24 @@ export function useContasPagar() {
   const buscarContasFiltradas = async (
     filtros: FiltrosContas
   ): Promise<{ data: ContaPagar[]; error: unknown }> => {
-    if (!empresaId) return { data: [], error: 'Empresa não definida' };
+    if (!companyId) return { data: [], error: 'Empresa não definida' };
 
     let query = (api as ReturnType<typeof api.from>)
-      .from('contas_pagar')
-      .select('*, contas_bancarias(nome, banco)')
-      .eq('empresa_id', empresaId) as ReturnType<typeof api.from>;
+      .from('payable')
+      .select('*, contas_bancarias(name, banco)')
+      .eq('company_id', companyId) as ReturnType<typeof api.from>;
 
     // workaround: use any for dynamic chaining
     let q: any = api
-      .from('contas_pagar')
-      .select('*, contas_bancarias(nome, banco)')
-      .eq('empresa_id', empresaId);
+      .from('payable')
+      .select('*, contas_bancarias(name, banco)')
+      .eq('company_id', companyId);
 
     if (filtros.status?.length) {
       q = q.in('status', filtros.status);
     }
     if (filtros.categoria) {
-      q = q.eq('categoria', filtros.categoria);
+      q = q.eq('category', filtros.categoria);
     }
     if (filtros.dataInicio && filtros.campoData) {
       q = q.gte(filtros.campoData, filtros.dataInicio);
@@ -240,10 +240,10 @@ export function useContasPagar() {
       q = q.eq('centro_custo', filtros.centroCusto);
     }
     if (filtros.fornecedor) {
-      q = q.ilike('fornecedor_nome', `%${filtros.fornecedor}%`);
+      q = q.ilike('supplier_name', `%${filtros.fornecedor}%`);
     }
 
-    q = q.order('data_vencimento', { ascending: true });
+    q = q.order('due_on', { ascending: true });
 
     const { data, error } = await q;
     return { data: (data || []) as ContaPagar[], error };

@@ -19,7 +19,7 @@ export interface User {
   email: string;
   aud: string;
   created_at: string;
-  user_metadata: { nome?: string | null; avatar_url?: string | null };
+  user_metadata: { name?: string | null; avatar_url?: string | null };
   app_metadata: { empresa_id?: string | null; empresa_role?: string | null };
 }
 
@@ -30,13 +30,13 @@ export interface Session {
 
 interface EmpresaSessao {
   id: string;
-  nome: string;
+  name: string;
   role: string;
 }
 
 let cachedUser: {
   id: string;
-  nome: string;
+  name: string;
   email: string;
   avatarUrl?: string | null;
   createdAt?: string;
@@ -51,8 +51,8 @@ function empresaAtivaId() {
 
 function buildSession(): Session | null {
   if (!cachedUser) return null;
-  const empresaId = empresaAtivaId();
-  const vinculo = cachedUser.empresas.find((e) => e.id === empresaId);
+  const companyId = empresaAtivaId();
+  const vinculo = cachedUser.empresas.find((e) => e.id === companyId);
   return {
     access_token: 'cookie',
     user: {
@@ -61,11 +61,11 @@ function buildSession(): Session | null {
       aud: 'authenticated',
       created_at: cachedUser.createdAt ?? new Date().toISOString(),
       user_metadata: {
-        nome: cachedUser.nome,
+        name: cachedUser.name,
         avatar_url: cachedUser.avatarUrl ?? null,
       },
       app_metadata: {
-        empresa_id: empresaId,
+        company_id: companyId,
         empresa_role: vinculo?.role ?? null,
       },
     },
@@ -77,8 +77,8 @@ function emit(event: AuthChangeEvent) {
   for (const listener of listeners) listener(event, session);
 }
 
-export function syncEmpresaNaSessao(empresaId: string) {
-  localStorage.setItem(EMPRESA_KEY, empresaId);
+export function syncEmpresaNaSessao(companyId: string) {
+  localStorage.setItem(EMPRESA_KEY, companyId);
   emit('TOKEN_REFRESHED');
 }
 
@@ -87,8 +87,8 @@ async function request(path: string, init?: RequestInit) {
   if (!headers.has('Content-Type') && init?.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-  const empresaId = empresaAtivaId();
-  if (empresaId) headers.set('X-Empresa-Id', empresaId);
+  const companyId = empresaAtivaId();
+  if (companyId) headers.set('X-Company-Id', companyId);
   const response = await fetch(`${backendUrl()}${path}`, {
     ...init,
     headers,
@@ -100,20 +100,20 @@ async function request(path: string, init?: RequestInit) {
 }
 
 async function carregarSessao() {
-  const { ok, body } = await request('/auth/sessao');
+  const { ok, body } = await request('/auth/session');
   if (!ok || !body?.usuario) {
     cachedUser = null;
     return null;
   }
   cachedUser = {
     id: body.usuario.id,
-    nome: body.usuario.nome,
+    name: body.usuario.name,
     email: body.usuario.email,
     avatarUrl: body.usuario.avatarUrl ?? null,
     createdAt: body.usuario.createdAt,
-    empresas: (body.empresas ?? []).map((e: { id: string; role: string; nome: string }) => ({
+    empresas: (body.empresas ?? []).map((e: { id: string; role: string; name: string }) => ({
       id: e.id,
-      nome: e.nome,
+      name: e.name,
       role: e.role,
     })),
   };
@@ -250,7 +250,7 @@ class Query {
 
   private async run() {
     try {
-      const { ok, body } = await request('/dados', {
+      const { ok, body } = await request('/data', {
         method: 'POST',
         body: JSON.stringify({
           table: this.table,
@@ -356,7 +356,7 @@ export const api = {
           return { data: { path }, error: null };
         },
         getPublicUrl(path: string) {
-          return { data: { publicUrl: `${backendUrl()}/arquivos/${bucket}/${path}` } };
+          return { data: { publicUrl: `${backendUrl()}/files/${bucket}/${path}` } };
         },
       };
     },
@@ -388,10 +388,10 @@ export const api = {
       emit('SIGNED_IN');
       return { data: { user: buildSession()?.user ?? null }, error: null };
     },
-    async signUp({ email, password, options }: { email: string; password: string; options?: { data?: { nome?: string }; emailRedirectTo?: string } }) {
-      const { ok, body } = await request('/auth/cadastro', {
+    async signUp({ email, password, options }: { email: string; password: string; options?: { data?: { name?: string }; emailRedirectTo?: string } }) {
+      const { ok, body } = await request('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, nome: options?.data?.nome }),
+        body: JSON.stringify({ email, password, name: options?.data?.name }),
       });
       if (!ok) return { data: null, error: { message: body?.error?.message ?? 'Não foi possível cadastrar.' } };
       await carregarSessao();
@@ -405,7 +405,7 @@ export const api = {
       return { error: null };
     },
     async updateUser(payload: { password?: string; data?: Record<string, unknown> }) {
-      const { ok, body } = await request('/auth/perfil', {
+      const { ok, body } = await request('/auth/profile', {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });

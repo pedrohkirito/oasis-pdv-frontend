@@ -21,10 +21,10 @@ import { cn } from '@/lib/utils';
 
 export interface CategoriaDB {
   id: string;
-  empresa_id: string;
-  nome: string;
+  company_id: string;
+  name: string;
   cor: string;
-  ativo: boolean;
+  active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +32,7 @@ export interface CategoriaDB {
 interface GerenciarCategoriasDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  empresaId: string;
+  companyId: string;
   onCategoriasChange: () => void;
   /** Produtos e serviços têm categorias separadas na mesma tabela. */
   tipo?: 'produto' | 'servico';
@@ -47,7 +47,7 @@ const DEFAULT_COLORS = [
 export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps> = ({
   open,
   onOpenChange,
-  empresaId,
+  companyId,
   onCategoriasChange,
   tipo = 'produto',
 }) => {
@@ -66,32 +66,32 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
   useEffect(() => {
     if (open) fetchCategorias();
-  }, [open, empresaId, tipo]);
+  }, [open, companyId, tipo]);
 
   const fetchCategorias = async () => {
     setLoading(true);
     try {
       const { data, error } = await api
-        .from('categorias_produto')
+        .from('product_category')
         .select('*')
-        .eq('empresa_id', empresaId)
-        .eq('tipo', tipo)
-        .order('nome');
+        .eq('company_id', companyId)
+        .eq('kind', tipo)
+        .order('name');
 
       if (error) throw error;
       setCategorias(data || []);
 
       // Count products per category
       const { data: produtos } = await api
-        .from('produtos')
-        .select('categoria')
-        .eq('empresa_id', empresaId)
-        .eq('tipo', tipo);
+        .from('product')
+        .select('category')
+        .eq('company_id', companyId)
+        .eq('kind', tipo);
 
       const counts: Record<string, number> = {};
       (produtos || []).forEach(p => {
-        if (p.categoria) {
-          counts[p.categoria] = (counts[p.categoria] || 0) + 1;
+        if (p.category) {
+          counts[p.category] = (counts[p.category] || 0) + 1;
         }
       });
       setProdutoCount(counts);
@@ -106,11 +106,11 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
     if (!novaCategoria.trim()) return;
     setSaving(true);
     try {
-      const { error } = await api.from('categorias_produto').insert({
-        empresa_id: empresaId,
-        nome: novaCategoria.trim(),
+      const { error } = await api.from('product_category').insert({
+        company_id: companyId,
+        name: novaCategoria.trim(),
         cor: novaCor,
-        tipo,
+        kind: tipo,
       });
       if (error) {
         if (error.code === '23505') {
@@ -136,15 +136,15 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
     setSaving(true);
     try {
       const cat = categorias.find(c => c.id === id);
-      const oldName = cat?.nome;
+      const oldName = cat?.name;
 
       const { error } = await api
-        .from('categorias_produto')
-        .update({ nome: editNome.trim(), cor: editCor })
+        .from('product_category')
+        .update({ name: editNome.trim(), cor: editCor })
         .eq('id', id);
       if (error) {
         if (error.code === '23505') {
-          toast({ title: 'Já existe uma categoria com este nome', variant: 'destructive' });
+          toast({ title: 'Já existe uma categoria com este name', variant: 'destructive' });
         } else throw error;
         return;
       }
@@ -152,11 +152,11 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
       // Update products with old category name
       if (oldName && oldName !== editNome.trim()) {
         await api
-          .from('produtos')
-          .update({ categoria: editNome.trim() })
-          .eq('empresa_id', empresaId)
-          .eq('tipo', tipo)
-          .eq('categoria', oldName);
+          .from('product')
+          .update({ category: editNome.trim() })
+          .eq('company_id', companyId)
+          .eq('kind', tipo)
+          .eq('category', oldName);
       }
 
       setEditingId(null);
@@ -173,20 +173,20 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
   const handleToggleAtivo = async (cat: CategoriaDB) => {
     try {
       const { error } = await api
-        .from('categorias_produto')
-        .update({ ativo: !cat.ativo })
+        .from('product_category')
+        .update({ active: !cat.active })
         .eq('id', cat.id);
       if (error) throw error;
       fetchCategorias();
       onCategoriasChange();
-      toast({ title: `Categoria ${!cat.ativo ? 'ativada' : 'desativada'}` });
+      toast({ title: `Categoria ${!cat.active ? 'ativada' : 'desativada'}` });
     } catch {
       toast({ title: 'Erro ao atualizar categoria', variant: 'destructive' });
     }
   };
 
   const handleDelete = async (cat: CategoriaDB) => {
-    const count = produtoCount[cat.nome] || 0;
+    const count = produtoCount[cat.name] || 0;
     if (count > 0) {
       toast({
         title: 'Não é possível excluir',
@@ -197,7 +197,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
     }
     try {
       const { error } = await api
-        .from('categorias_produto')
+        .from('product_category')
         .delete()
         .eq('id', cat.id);
       if (error) throw error;
@@ -211,7 +211,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
   const startEdit = (cat: CategoriaDB) => {
     setEditingId(cat.id);
-    setEditNome(cat.nome);
+    setEditNome(cat.name);
     setEditCor(cat.cor);
   };
 
@@ -237,7 +237,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
                 key={cat.id}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg border bg-card transition-colors",
-                  !cat.ativo && "opacity-60"
+                  !cat.active && "opacity-60"
                 )}
               >
                 {editingId === cat.id ? (
@@ -267,12 +267,12 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
                       className="w-4 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: cat.cor }}
                     />
-                    <span className="flex-1 text-sm font-medium">{cat.nome}</span>
+                    <span className="flex-1 text-sm font-medium">{cat.name}</span>
                     <Badge variant="outline" className="text-xs">
-                      {produtoCount[cat.nome] || 0} {rotuloItens}
+                      {produtoCount[cat.name] || 0} {rotuloItens}
                     </Badge>
                     <Switch
-                      checked={cat.ativo}
+                      checked={cat.active}
                       onCheckedChange={() => handleToggleAtivo(cat)}
                       className="scale-75"
                     />
@@ -326,7 +326,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
 function DeleteCategoriaButton({ cat, produtoCount, onDelete }: { cat: CategoriaDB; produtoCount: Record<string, number>; onDelete: (cat: CategoriaDB) => void }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const disabled = (produtoCount[cat.nome] || 0) > 0;
+  const disabled = (produtoCount[cat.name] || 0) > 0;
 
   return (
     <>
@@ -344,7 +344,7 @@ function DeleteCategoriaButton({ cat, produtoCount, onDelete }: { cat: Categoria
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir "{cat.nome}"? Essa ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{cat.name}"? Essa ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

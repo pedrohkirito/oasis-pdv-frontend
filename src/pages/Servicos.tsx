@@ -89,7 +89,7 @@ const toolbarButtonStyle: React.CSSProperties = {
 const Servicos = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { empresaId } = useEmpresa();
+  const { companyId } = useEmpresa();
   const { hasPermission } = useUserRole();
   const podeGerenciar = hasPermission('canManageServicos');
 
@@ -112,21 +112,23 @@ const Servicos = () => {
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
 
   useEffect(() => {
-    if (user && empresaId) {
+    if (user && companyId) {
       fetchServicos();
       fetchCategorias();
       fetchUltimasVendas();
+    } else if (!companyId) {
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, empresaId]);
+  }, [user, companyId]);
 
   const fetchServicos = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     setLoading(true);
     const { data, error } = await api
       .from('produtos')
       .select('id, nome, codigo, descricao, preco, custo, categoria, ativo, recorrente, recurrence_kind, created_at')
-      .eq('company_id', empresaId)
+      .eq('company_id', companyId)
       .eq('tipo', 'servico')
       .order('nome', { ascending: true });
     if (error) {
@@ -138,11 +140,11 @@ const Servicos = () => {
   };
 
   const fetchCategorias = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
       .from('categorias_produto')
       .select('*')
-      .eq('company_id', empresaId)
+      .eq('company_id', companyId)
       .eq('tipo', 'servico')
       .order('nome');
     setCategoriasDB((data as CategoriaDB[]) || []);
@@ -150,11 +152,11 @@ const Servicos = () => {
 
   // Última venda de cada item: usada na lista e para decidir entre excluir e desativar.
   const fetchUltimasVendas = async () => {
-    if (!empresaId) return;
+    if (!companyId) return;
     const { data } = await api
       .from('itens_venda')
       .select('product_id, vendas!inner(sold_on, company_id)')
-      .eq('vendas.company_id', empresaId)
+      .eq('vendas.company_id', companyId)
       .order('created_at', { ascending: false });
     const mapa: Record<string, string> = {};
     for (const item of (data || []) as any[]) {
@@ -166,7 +168,7 @@ const Servicos = () => {
 
   // Produtos e serviços compartilham a numeração de código.
   const gerarProximoCodigo = async () => {
-    const { data } = await api.from('produtos').select('codigo').eq('company_id', empresaId);
+    const { data } = await api.from('produtos').select('codigo').eq('company_id', companyId);
     let maxNum = 0;
     for (const p of (data || []) as { codigo: string | null }[]) {
       const num = parseInt(p.codigo || '0', 10);
@@ -179,7 +181,7 @@ const Servicos = () => {
     const { data } = await api
       .from('produtos')
       .select('id')
-      .eq('company_id', empresaId)
+      .eq('company_id', companyId)
       .eq('codigo', codigo);
     return ((data || []) as { id: string }[]).some((p) => p.id !== ignorarId);
   };
@@ -207,7 +209,7 @@ const Servicos = () => {
   };
 
   const handleSalvar = async () => {
-    if (!user || !empresaId) return;
+    if (!user || !companyId) return;
     if (!form.nome.trim() || !form.preco) {
       toast({ title: 'Erro', description: 'Preencha nome e preço.', variant: 'destructive' });
       return;
@@ -242,7 +244,7 @@ const Servicos = () => {
         : await api.from('produtos').insert({
             ...dados,
             user_id: user.id,
-            company_id: empresaId,
+            company_id: companyId,
             tipo: 'servico',
             estoque: null,
             minimum_stock: null,
@@ -262,10 +264,10 @@ const Servicos = () => {
   };
 
   const handleDuplicar = async (s: Servico) => {
-    if (!user || !empresaId) return;
+    if (!user || !companyId) return;
     const { error } = await api.from('produtos').insert({
       user_id: user.id,
-      company_id: empresaId,
+      company_id: companyId,
       tipo: 'servico',
       nome: `${s.nome} (cópia)`,
       codigo: await gerarProximoCodigo(),
@@ -302,7 +304,7 @@ const Servicos = () => {
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return servicos.filter((s) => {
-      if (termo && !s.nome.toLowerCase().includes(termo) && !(s.codigo || '').toLowerCase().includes(termo)) return false;
+      if (termo && !(s.nome || '').toLowerCase().includes(termo) && !(s.codigo || '').toLowerCase().includes(termo)) return false;
       if (filtroCategoria !== 'todos' && s.categoria !== filtroCategoria) return false;
       if (filtroAtivo === 'ativo' && !s.ativo) return false;
       if (filtroAtivo === 'inativo' && s.ativo) return false;
@@ -313,7 +315,7 @@ const Servicos = () => {
   }, [servicos, busca, filtroCategoria, filtroAtivo, filtroRecorrencia]);
 
   const categoriasUsadas = useMemo(
-    () => [...new Set([...categoriasDB.filter((c) => c.ativo).map((c) => c.nome), ...servicos.map((s) => s.categoria).filter(Boolean) as string[]])].sort(),
+    () => [...new Set([...categoriasDB.filter((c) => c.active !== false).map((c) => c.name), ...servicos.map((s) => s.categoria).filter(Boolean) as string[]])].sort(),
     [categoriasDB, servicos],
   );
 
@@ -611,11 +613,11 @@ const Servicos = () => {
         </DialogContent>
       </Dialog>
 
-      {empresaId && (
+      {companyId && (
         <GerenciarCategoriasDialog
           open={categoriasOpen}
           onOpenChange={setCategoriasOpen}
-          empresaId={empresaId}
+          companyId={companyId}
           tipo="servico"
           onCategoriasChange={() => { fetchCategorias(); fetchServicos(); }}
         />

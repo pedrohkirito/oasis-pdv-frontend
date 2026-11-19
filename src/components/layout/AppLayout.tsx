@@ -200,21 +200,27 @@ function SidebarContent({ collapsed, onCollapse, onNavClick }: SidebarContentPro
         )}
       </div>
 
-      {/* ── Seletor de empresa (multi-tenant) ────────────────────── */}
-      {!collapsed && empresas.length > 1 && (
+      {/* ── Empresa ativa (sempre visível) ───────────────────────── */}
+      {!collapsed && (
         <div className="px-3 py-2">
-          <select
-            value={empresaAtiva?.id || ''}
-            onChange={(e) => {
-              const emp = empresas.find(em => em.id === e.target.value);
-              if (emp) setEmpresaAtiva(emp);
-            }}
-            className="w-full text-xs font-medium bg-primary/5 border border-border rounded-lg px-2 py-1.5 text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
-          >
-            {empresas.map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.name}</option>
-            ))}
-          </select>
+          {empresas.length > 1 ? (
+            <select
+              value={empresaAtiva?.id || ''}
+              onChange={(e) => {
+                const emp = empresas.find(em => em.id === e.target.value);
+                if (emp) setEmpresaAtiva(emp);
+              }}
+              className="w-full text-xs font-medium bg-primary/5 border border-border rounded-lg px-2 py-1.5 text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+            >
+              {empresas.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="w-full text-xs font-medium bg-primary/5 border border-border rounded-lg px-2 py-1.5 text-foreground truncate">
+              {empresaAtiva?.name || empresas[0]?.name || 'Nenhuma empresa'}
+            </div>
+          )}
         </div>
       )}
 

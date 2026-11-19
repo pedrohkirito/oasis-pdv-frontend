@@ -212,7 +212,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
   const startEdit = (cat: CategoriaDB) => {
     setEditingId(cat.id);
     setEditNome(cat.name);
-    setEditCor(cat.cor);
+    setEditCor(cat.cor || '#6b7280');
   };
 
   return (
@@ -265,7 +265,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
                   <>
                     <div
                       className="w-4 h-4 rounded-full shrink-0"
-                      style={{ backgroundColor: cat.cor }}
+                      style={{ backgroundColor: cat.cor || '#6b7280' }}
                     />
                     <span className="flex-1 text-sm font-medium">{cat.name}</span>
                     <Badge variant="outline" className="text-xs">

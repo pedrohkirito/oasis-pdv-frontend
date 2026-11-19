@@ -756,9 +756,9 @@ const Fornecedores = () => {
   };
 
   const filteredFornecedores = fornecedores.filter(f =>
-    f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (f.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (f.legal_name && f.legal_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    f.cnpj.includes(searchTerm)
+    (f.cnpj || '').includes(searchTerm)
   );
 
   if (authLoading) {

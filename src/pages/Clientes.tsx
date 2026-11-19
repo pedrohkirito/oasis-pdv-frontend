@@ -687,7 +687,7 @@ const Clientes = () => {
 
   const filteredClientes = clientes.filter(cliente => {
     const searchLower = searchTerm.toLowerCase();
-    return cliente.name.toLowerCase().includes(searchLower) ||
+    return (cliente.name || '').toLowerCase().includes(searchLower) ||
            (cliente.email && cliente.email.toLowerCase().includes(searchLower)) ||
            (cliente.telefone && cliente.telefone.includes(searchTerm)) ||
            (cliente.cpf && cliente.cpf.includes(searchTerm));

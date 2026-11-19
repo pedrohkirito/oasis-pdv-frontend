@@ -145,7 +145,7 @@ const Produtos = () => {
   const getCategoriaColor = (categoria: string | null): string => {
     if (!categoria) return FALLBACK_COLORS['Outros'];
     const cat = categoriasDB.find(c => c.name === categoria);
-    if (cat) return cat.cor;
+    if (cat?.cor) return cat.cor;
     return FALLBACK_COLORS[categoria] || FALLBACK_COLORS['Outros'];
   };
 
@@ -208,15 +208,15 @@ const Produtos = () => {
     // Get the most recent sale date for each product via itens_venda
     const { data } = await api
       .from('sale_item')
-      .select('product_id, sale_id, vendas!inner(sold_on, company_id)')
-      .eq('vendas.company_id', companyId)
+      .select('product_id, sale_id, sale!inner(sold_on, company_id)')
+      .eq('sale.company_id', companyId)
       .order('created_at', { ascending: false });
 
     if (data) {
       const map: Record<string, string> = {};
       for (const item of data) {
         const prodId = item.product_id;
-        const soldOn = (item as any).vendas?.sold_on;
+        const soldOn = (item as any).sale?.sold_on ?? (item as any).vendas?.sold_on;
         if (soldOn && !map[prodId]) {
           map[prodId] = soldOn;
         }
@@ -231,6 +231,8 @@ const Produtos = () => {
       fetchFornecedores();
       fetchCategoriasDB();
       fetchUltimasVendas();
+    } else if (!companyId) {
+      setLoading(false);
     }
   }, [user, companyId]);
 
@@ -746,7 +748,7 @@ const Produtos = () => {
   // Filtros
   const filteredProdutos = produtos.filter(produto => {
     const searchLower = searchTerm.toLowerCase();
-    const matchSearch = produto.name.toLowerCase().includes(searchLower) ||
+    const matchSearch = (produto.name || '').toLowerCase().includes(searchLower) ||
       produto.fornecedores?.name?.toLowerCase().includes(searchLower) ||
       produto.code?.toLowerCase().includes(searchLower) ||
       produto.categoria?.toLowerCase().includes(searchLower);
@@ -757,8 +759,8 @@ const Produtos = () => {
     return matchSearch && matchCategoria && matchFornecedor && matchAtivo && matchEstoque;
   }).sort((a, b) => {
     switch (sortBy) {
-      case 'nome_asc': return a.name.localeCompare(b.name);
-      case 'nome_desc': return b.name.localeCompare(a.name);
+      case 'nome_asc': return (a.name || '').localeCompare(b.name || '');
+      case 'nome_desc': return (b.name || '').localeCompare(a.name || '');
       case 'codigo_asc': return parseInt(a.code || '0', 10) - parseInt(b.code || '0', 10);
       case 'codigo_desc': return parseInt(b.code || '0', 10) - parseInt(a.code || '0', 10);
       case 'preco_asc': return a.preco - b.preco;

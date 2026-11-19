@@ -795,7 +795,7 @@ const ContasAPagar = () => {
     }).format(value);
   };
   const filteredContas = contas.filter(conta => {
-    const matchSearch = conta.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || conta.supplier_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = (conta.descricao || '').toLowerCase().includes(searchTerm.toLowerCase()) || (conta.supplier_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === 'todos' || conta.status === filterStatus;
 
     // Filtro por intervalo de datas

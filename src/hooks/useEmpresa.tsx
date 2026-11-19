@@ -51,33 +51,38 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
 
     try {
       const { data, error } = await api.companies();
-
       if (error) {
         console.error('Error fetching empresas:', error);
-        setEmpresas([]);
-        setLoading(false);
-        return;
       }
 
-      const empresasList = (data || []).filter((empresa) => empresa.active);
+      const daApi = (data || []).filter((empresa) => empresa.active !== false);
+      const daSessao = api.sessionCompanies();
+      const empresasList = daApi.length > 0 ? daApi : daSessao;
       setEmpresas(empresasList);
 
-      // Restaurar empresa ativa do localStorage
       const savedId = localStorage.getItem(STORAGE_KEY);
-      const savedEmpresa = empresasList.find(e => e.id === savedId);
+      const savedEmpresa = empresasList.find((empresa) => empresa.id === savedId);
 
       if (savedEmpresa) {
         setEmpresaAtivaState(savedEmpresa);
         setEmpresaSelecionada(true);
       } else if (empresasList.length === 1) {
-        // Auto-select if only one company
         setEmpresaAtivaState(empresasList[0]);
-        localStorage.setItem(STORAGE_KEY, empresasList[0].id);
         setEmpresaSelecionada(true);
+        syncEmpresaNaSessao(empresasList[0].id);
+      } else {
+        setEmpresaAtivaState(null);
+        setEmpresaSelecionada(false);
       }
-      // If multiple and no saved, don't auto-select — show selector
     } catch (error) {
       console.error('Error fetching empresas:', error);
+      const daSessao = api.sessionCompanies();
+      setEmpresas(daSessao);
+      if (daSessao.length === 1) {
+        setEmpresaAtivaState(daSessao[0]);
+        setEmpresaSelecionada(true);
+        syncEmpresaNaSessao(daSessao[0].id);
+      }
     } finally {
       setLoading(false);
     }

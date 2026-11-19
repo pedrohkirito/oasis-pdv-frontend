@@ -2,6 +2,8 @@
  * Cliente HTTP do backend. A origem vem de VITE_API_URL, sem barra no final.
  */
 
+import { aliasResponse, remapQuery } from './compat-dados';
+
 function backendUrl() {
   const raw = import.meta.env.VITE_API_URL;
   if (!raw) throw new Error("Defina VITE_API_URL com a URL do backend.");
@@ -32,6 +34,36 @@ interface EmpresaSessao {
   id: string;
   name: string;
   role: string;
+  logoUrl?: string | null;
+  active?: boolean;
+}
+
+export type EmpresaLista = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  active: boolean;
+};
+
+function mapEmpresaApi(empresa: {
+  id?: string;
+  name?: string;
+  nome?: string;
+  logoUrl?: string | null;
+  logo_url?: string | null;
+  active?: boolean;
+  ativo?: boolean;
+  role?: string;
+}): EmpresaLista | null {
+  const id = empresa.id;
+  const name = empresa.name ?? empresa.nome;
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    logo_url: empresa.logoUrl ?? empresa.logo_url ?? null,
+    active: empresa.active ?? empresa.ativo ?? true,
+  };
 }
 
 let cachedUser: {
@@ -117,10 +149,12 @@ async function carregarSessao() {
     email: body.usuario.email,
     avatarUrl: body.usuario.avatarUrl ?? null,
     createdAt: body.usuario.createdAt,
-    empresas: (body.empresas ?? []).map((e: { id: string; role: string; name: string }) => ({
+    empresas: (body.empresas ?? []).map((e: { id: string; role: string; name?: string; nome?: string; logoUrl?: string | null; active?: boolean }) => ({
       id: e.id,
-      name: e.name,
+      name: e.name ?? e.nome ?? '',
       role: e.role,
+      logoUrl: e.logoUrl,
+      active: e.active,
     })),
   };
   empresaAtivaId();
@@ -257,15 +291,23 @@ class Query {
 
   private async run() {
     try {
+      const payload = remapQuery({
+        table: this.table,
+        select: this.selectClause,
+        filters: this.filters,
+        nots: this.nots,
+        order: this.orders,
+        values: this.values,
+      });
       const { ok, body } = await request('/data', {
         method: 'POST',
         body: JSON.stringify({
-          table: this.table,
+          table: payload.table,
           action: this.action ?? 'select',
-          select: this.selectClause,
-          filters: this.filters,
-          nots: this.nots,
-          order: this.orders,
+          select: payload.select,
+          filters: payload.filters,
+          nots: payload.nots,
+          order: payload.order,
           limit: this.limitN,
           range: this.rangePair,
           single: this.singleRow,
@@ -273,7 +315,7 @@ class Query {
           count: this.countMode,
           head: this.head,
           returning: this.returning,
-          values: this.values,
+          values: payload.values,
           onConflict: this.onConflict,
         }),
       });
@@ -282,7 +324,7 @@ class Query {
         return { data: null, error: { message, code: body?.error?.code }, count: null };
       }
       return {
-        data: body?.data ?? null,
+        data: aliasResponse(body?.data ?? null),
         error: body?.error ?? null,
         count: body?.count ?? null,
       };
@@ -312,22 +354,25 @@ async function invoke(name: string, options?: { body?: unknown; method?: string 
 }
 
 export const api = {
+  sessionCompanies(): EmpresaLista[] {
+    return (cachedUser?.empresas ?? [])
+      .map((empresa) => mapEmpresaApi(empresa))
+      .filter((empresa): empresa is EmpresaLista => empresa != null && empresa.active !== false);
+  },
   async companies() {
     const { ok, body } = await request('/companies');
     if (!ok) {
       return {
-        data: [] as Array<{ id: string; name: string; logo_url: string | null; active: boolean }>,
+        data: api.sessionCompanies(),
         error: { message: body?.error?.message ?? 'Erro ao listar empresas' },
       };
     }
-    const empresas = (body?.empresas ?? []).map(
-      (empresa: { id: string; name: string; logoUrl?: string | null; active: boolean }) => ({
-        id: empresa.id,
-        name: empresa.name,
-        logo_url: empresa.logoUrl ?? null,
-        active: empresa.active,
-      }),
-    );
+    const empresas = (body?.empresas ?? [])
+      .map((empresa: Parameters<typeof mapEmpresaApi>[0]) => mapEmpresaApi(empresa))
+      .filter((empresa): empresa is EmpresaLista => empresa != null);
+    if (empresas.length === 0) {
+      return { data: api.sessionCompanies(), error: null };
+    }
     return { data: empresas, error: null };
   },
   from(table: string) {

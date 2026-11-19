@@ -24,11 +24,18 @@ export function labelRecorrencia(tipo: string | null | undefined): string {
 }
 
 /** Sufixo de preço, ex.: "/mês". Vazio para serviço avulso ou produto. */
-export function sufixoRecorrencia(item: { recorrente?: boolean | null; recorrencia_tipo?: string | null }): string {
-  if (!item.recorrente) return '';
-  return RECORRENCIA_OPCOES.find((o) => o.value === item.recorrencia_tipo)?.sufixo ?? '';
+export function sufixoRecorrencia(item: {
+  recorrente?: boolean | null;
+  recorrencia_tipo?: string | null;
+  recurring?: boolean | null;
+  recurrence_kind?: string | null;
+}): string {
+  const recorrente = item.recorrente ?? item.recurring;
+  const tipo = item.recorrencia_tipo ?? item.recurrence_kind;
+  if (!recorrente) return '';
+  return RECORRENCIA_OPCOES.find((o) => o.value === tipo)?.sufixo ?? '';
 }
 
-export function isServico(item: { tipo?: string | null } | null | undefined): boolean {
-  return item?.tipo === 'servico';
+export function isServico(item: { tipo?: string | null; kind?: string | null } | null | undefined): boolean {
+  return item?.tipo === 'servico' || item?.kind === 'servico';
 }

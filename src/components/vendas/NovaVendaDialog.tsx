@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Check, User, Package, CalendarIcon, ClipboardList, ShoppingCart, MessageSquare } from 'lucide-react';
+import { Plus, X, Check, User, Package, CalendarIcon, ClipboardList, ShoppingCart, MessageSquare, Wrench, Repeat } from 'lucide-react';
+import { PERIODOS_PADRAO, RecorrenciaTipo, isServico, labelRecorrencia, sufixoRecorrencia } from '@/lib/servicos';
 import { api } from '@/lib/api';
 import { resolveClienteId } from '@/lib/clienteResolver';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +31,9 @@ interface Produto {
   ativo: boolean | null;
   categoria: string | null;
   tem_variacoes: boolean | null;
+  tipo: string;
+  recorrente: boolean;
+  recorrencia_tipo: string | null;
 }
 
 interface ProdutoVariacaoSimples {
@@ -52,6 +56,10 @@ interface ItemVenda {
   desconto_tipo: 'percentual' | 'valor';
   observacao: string;
   obs_aberta: boolean;
+  servico?: boolean;
+  /** Serviço recorrente: quantos períodos cobrar (gera 1 conta a receber por período). */
+  recorrencia_periodos?: number;
+  recorrencia_tipo?: string | null;
 }
 
 interface Cliente {
@@ -163,7 +171,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     while (hasMore) {
       const { data } = await api
         .from('produtos')
-        .select('id, nome, codigo, preco, estoque, ativo, categoria, tem_variacoes')
+        .select('id, nome, codigo, preco, estoque, ativo, categoria, tem_variacoes, tipo, recorrente, recorrencia_tipo')
         .eq('ativo', true)
         .eq('empresa_id', empresaId)
         .order('nome')
@@ -222,6 +230,38 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
     }
     const produto = produtos.find(p => p.id === produtoSelecionado);
     if (!produto) return;
+
+    if (isServico(produto)) {
+      const itemExistente = itensVenda.find(i => i.produto_id === produto.id);
+      if (itemExistente) {
+        const novaQuantidade = itemExistente.quantidade + quantidadeProduto;
+        setItensVenda(itensVenda.map(i =>
+          i.produto_id === produto.id
+            ? { ...i, quantidade: novaQuantidade, subtotal: novaQuantidade * i.preco_unitario }
+            : i
+        ));
+      } else {
+        setItensVenda([...itensVenda, {
+          produto_id: produto.id,
+          produto_nome: produto.nome,
+          quantidade: quantidadeProduto,
+          preco_unitario: Number(produto.preco),
+          subtotal: quantidadeProduto * Number(produto.preco),
+          desconto: 0,
+          desconto_tipo: 'percentual',
+          observacao: '',
+          obs_aberta: false,
+          servico: true,
+          recorrencia_tipo: produto.recorrente ? produto.recorrencia_tipo : null,
+          recorrencia_periodos: produto.recorrente
+            ? PERIODOS_PADRAO[produto.recorrencia_tipo as RecorrenciaTipo] ?? 1
+            : undefined,
+        }]);
+      }
+      setProdutoSelecionado('');
+      setQuantidadeProduto(1);
+      return;
+    }
 
     // Se produto tem variações, abre o seletor de variação
     if (produto.tem_variacoes) {
@@ -382,6 +422,17 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
       ? clientes.find(c => c.id === clienteIdResolvido)
       : clienteByName;
 
+    const temRecorrente = itensVenda.some(i => (i.recorrencia_periodos ?? 0) > 1);
+    if (temRecorrente && !clienteIdResolvido) {
+      toast({
+        title: 'Cliente obrigatório',
+        description: 'Serviços recorrentes geram cobranças futuras: selecione um cliente cadastrado.',
+        variant: 'destructive',
+      });
+      setSaving(false);
+      return;
+    }
+
     const { data: rpcResult, error: vendaError } = await api.rpc('criar_venda_completa', {
       p_venda: {
         user_id: user.id,
@@ -417,6 +468,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
           desconto: item.desconto > 0 ? discValorItem : 0,
           desconto_tipo: item.desconto > 0 ? item.desconto_tipo : null,
           observacao: item.observacao || null,
+          recorrencia_periodos: item.recorrencia_periodos ?? null,
         };
       }),
     } as any);
@@ -635,7 +687,7 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                     <CommandList>
                       <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
                       <CommandGroup heading="Produtos com Estoque">
-                        {produtos.filter(p => p.tem_variacoes || (p.estoque ?? 0) > 0).map(p => (
+                        {produtos.filter(p => !isServico(p) && (p.tem_variacoes || (p.estoque ?? 0) > 0)).map(p => (
                           <CommandItem
                             key={p.id}
                             value={`${p.codigo || ''} ${p.nome}`}
@@ -657,6 +709,31 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                           </CommandItem>
                         ))}
                       </CommandGroup>
+                      {produtos.some(isServico) && (
+                        <CommandGroup heading="Serviços">
+                          {produtos.filter(isServico).map(p => (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.codigo || ''} ${p.nome}`}
+                              onSelect={() => {
+                                setProdutoSelecionado(p.id);
+                                setProdutoPopoverOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", produtoSelecionado === p.id ? "opacity-100" : "opacity-0")} />
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <div className="flex items-center gap-2">
+                                  {p.codigo && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.codigo}</span>}
+                                  <span>{p.nome}</span>
+                                </div>
+                                <span className="text-muted-foreground text-xs">
+                                  {formatCurrency(Number(p.preco))}{sufixoRecorrencia(p)} • {p.recorrente ? labelRecorrencia(p.recorrencia_tipo) : 'Serviço'}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
                     </CommandList>
                   </Command>
                 </PopoverContent>
@@ -683,10 +760,28 @@ export function NovaVendaDialog({ open, onOpenChange, onVendaSalva, dataFixaHoje
                   return (
                     <div key={itemKey} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                       <div className="flex items-center p-3 gap-3">
-                        <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {item.servico
+                          ? <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
+                          : <Package className="h-4 w-4 text-muted-foreground shrink-0" />}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item.produto_nome}</p>
-                          <p className="text-xs text-muted-foreground">{item.quantidade}× {formatCurrency(item.preco_unitario)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.quantidade}× {formatCurrency(item.preco_unitario)}
+                            {item.recorrencia_tipo ? sufixoRecorrencia({ recorrente: true, recorrencia_tipo: item.recorrencia_tipo }) : ''}
+                          </p>
+                          {item.recorrencia_tipo && (
+                            <label className="flex items-center gap-1.5 text-xs text-sky-700 mt-1">
+                              <Repeat className="h-3 w-3" />
+                              Cobrar por
+                              <input
+                                type="number" min={1} max={120}
+                                value={item.recorrencia_periodos ?? 1}
+                                onChange={e => updateItemField(itemKey, { recorrencia_periodos: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
+                                style={{ width: '52px', border: '1px solid rgba(14,165,233,0.4)', borderRadius: '6px', padding: '1px 4px', textAlign: 'center' }}
+                              />
+                              períodos ({labelRecorrencia(item.recorrencia_tipo).toLowerCase()})
+                            </label>
+                          )}
                         </div>
                         {/* Per-item discount */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>

@@ -20,6 +20,7 @@ import Fornecedores from "./pages/Fornecedores";
 import Relatorios from "./pages/Relatorios";
 import Vendas from "./pages/Vendas";
 import Produtos from "./pages/Produtos";
+import Servicos from "./pages/Servicos";
 import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
 import Perfil from "./pages/Perfil";
@@ -232,6 +233,14 @@ const App = () => {
                       <Produtos />
                     </ProtectedRoute>
                   } 
+                />
+                <Route
+                  path="/servicos"
+                  element={
+                    <ProtectedRoute requiredPermission="canViewServicos">
+                      <Servicos />
+                    </ProtectedRoute>
+                  }
                 />
                 <Route 
                   path="/clientes" 

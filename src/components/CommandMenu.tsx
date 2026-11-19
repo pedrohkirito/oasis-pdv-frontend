@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/command';
 import {
   LayoutDashboard, ShoppingCart, Package, UserCircle, FileText,
-  Users, BarChart3, Settings, Shield, LogOut, Building2, User,
+  Users, BarChart3, Settings, Shield, LogOut, Building2, User, Wrench,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,6 +19,7 @@ const sections = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/', keywords: ['inicio', 'home', 'painel'] },
   { label: 'Vendas', icon: ShoppingCart, to: '/vendas', keywords: ['venda', 'pedido', 'faturamento'] },
   { label: 'Produtos', icon: Package, to: '/produtos', keywords: ['produto', 'estoque', 'item', 'mercadoria'] },
+  { label: 'Serviços', icon: Wrench, to: '/servicos', keywords: ['servico', 'serviço', 'montagem', 'manutencao', 'recorrente'] },
   { label: 'Clientes', icon: UserCircle, to: '/clientes', keywords: ['cliente', 'consumidor', 'cpf'] },
   { label: 'Contas a Pagar', icon: FileText, to: '/contas-a-pagar', keywords: ['conta', 'despesa', 'pagamento', 'boleto'] },
   { label: 'Fornecedores', icon: Users, to: '/fornecedores', keywords: ['fornecedor', 'cnpj', 'compra'] },

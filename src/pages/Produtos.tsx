@@ -198,6 +198,7 @@ const Produtos = () => {
       .from('categorias_produto')
       .select('*')
       .eq('empresa_id', empresaId)
+      .eq('tipo', 'produto')
       .order('nome');
     setCategoriasDB(data as CategoriaDB[] || []);
   };
@@ -251,6 +252,7 @@ const Produtos = () => {
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
+        .eq('tipo', 'produto')
         .order('nome', { ascending: true })
         .range(from, from + pageSize - 1);
       if (error) {
@@ -302,6 +304,7 @@ const Produtos = () => {
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
+        .eq('tipo', 'produto')
         .eq('ean', eanSearch.trim())
         .limit(1);
       if (byEan && byEan.length > 0) {
@@ -318,6 +321,7 @@ const Produtos = () => {
         .from('produtos')
         .select('*, fornecedores(id, nome)')
         .eq('empresa_id', empresaId)
+        .eq('tipo', 'produto')
         .ilike('nome', novoProduto.nome.trim())
         .limit(1);
       if (byName && byName.length > 0) {
@@ -346,6 +350,7 @@ const Produtos = () => {
     const { error } = await api.from('produtos').insert({
       user_id: user.id,
       empresa_id: empresaId,
+      tipo: 'produto',
       nome: novoProduto.nome,
       codigo: codigoFinal,
       fornecedor_id: novoProduto.fornecedor_id || null,
@@ -464,6 +469,7 @@ const Produtos = () => {
     const { error } = await api.from('produtos').insert({
       user_id: user.id,
       empresa_id: empresaId,
+      tipo: 'produto',
       nome: `${produto.nome} (cópia)`,
       codigo: novoCodigo,
       fornecedor_id: produto.fornecedor_id,
@@ -622,8 +628,13 @@ const Produtos = () => {
         nextCodeNum = maxNum + 1;
       } catch { nextCodeNum = 1; }
     }
+    // O upsert casa por código; um código que já pertence a um serviço não pode
+    // ser sobrescrito com dados de produto.
+    const { data: servicosExistentes } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId).eq('tipo', 'servico');
+    const codigosServico = new Set(((servicosExistentes || []) as { codigo: string | null }[]).map(s => s.codigo).filter(Boolean));
     for (const produto of importedProdutos) {
       const codigo = produto.codigo || String(nextCodeNum++).padStart(6, '0');
+      if (codigosServico.has(codigo)) { errorCount++; continue; }
       const { error } = await api.from('produtos').upsert({
         user_id: user.id,
         empresa_id: empresaId,
@@ -694,7 +705,7 @@ const Produtos = () => {
       const codigoSequencial = String(nextCodeNum).padStart(6, '0');
       nextCodeNum++;
       const { error } = await api.from('produtos').insert({
-        user_id: user.id, empresa_id: empresaId, nome: produto.nome, codigo: codigoSequencial, codigo_fornecedor: produto.codigo || null, ean: produto.ean || null, custo: produto.valorUnitario, preco: produto.precoVenda || produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: Math.floor(produto.quantidade), fornecedor_id: fornecedorId, ativo: true
+        user_id: user.id, empresa_id: empresaId, tipo: 'produto', nome: produto.nome, codigo: codigoSequencial, codigo_fornecedor: produto.codigo || null, ean: produto.ean || null, custo: produto.valorUnitario, preco: produto.precoVenda || produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: Math.floor(produto.quantidade), fornecedor_id: fornecedorId, ativo: true
       });
       if (error) { errorCount++; } else { successCount++; }
     }

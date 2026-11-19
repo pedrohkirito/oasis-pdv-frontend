@@ -2,6 +2,28 @@ import { useState } from 'react'
 import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
+/**
+ * Ordena por faturamento e classifica em A (até 80% acumulado), B (até 95%) e C.
+ * Exportada para reclassificar um subconjunto (ex.: só serviços).
+ */
+export function classificarABC<T extends { faturamento: number }>(itens: T[]) {
+  const lista = [...itens].sort((a, b) => b.faturamento - a.faturamento)
+  const totalFaturamento = lista.reduce((acc, p) => acc + p.faturamento, 0)
+
+  let acumulado = 0
+  return lista.map((p, i) => {
+    acumulado += p.faturamento
+    const percentual = totalFaturamento > 0 ? (p.faturamento / totalFaturamento) * 100 : 0
+    const percentualAcumulado = totalFaturamento > 0 ? (acumulado / totalFaturamento) * 100 : 0
+
+    let classe = 'C'
+    if (percentualAcumulado <= 80) classe = 'A'
+    else if (percentualAcumulado <= 95) classe = 'B'
+
+    return { ...p, posicao: i + 1, percentual, percentualAcumulado, classe }
+  })
+}
+
 export function useCurvaABC() {
   const { empresaId } = useEmpresa()
   const [dados, setDados] = useState([])
@@ -36,7 +58,7 @@ export function useCurvaABC() {
         quantidade,
         preco_unitario,
         produto_id,
-        produtos(nome, categoria)
+        produtos(nome, categoria, tipo)
       `)
       .in('venda_id', idsVendas)
 
@@ -48,6 +70,7 @@ export function useCurvaABC() {
           produto_id: id,
           nome: item.produtos?.nome || 'Produto removido',
           categoria: item.produtos?.categoria || 'Sem categoria',
+          tipo: item.produtos?.tipo === 'servico' ? 'servico' : 'produto',
           quantidade: 0,
           faturamento: 0,
           transacoes: 0
@@ -60,36 +83,7 @@ export function useCurvaABC() {
       return acc
     }, {} as Record<string, any>)
 
-    // Ordena por faturamento decrescente
-    const lista = Object.values(porProduto)
-      .sort((a: any, b: any) => b.faturamento - a.faturamento)
-
-    // Calcula total e percentuais acumulados
-    const totalFaturamento = lista.reduce(
-      (acc, p: any) => acc + p.faturamento, 0
-    )
-
-    let acumulado = 0
-    const comClassificacao = lista.map((p: any, i) => {
-      acumulado += p.faturamento
-      const percentual = totalFaturamento > 0
-        ? (p.faturamento / totalFaturamento) * 100 : 0
-      const percentualAcumulado = totalFaturamento > 0
-        ? (acumulado / totalFaturamento) * 100 : 0
-
-      // Classificação ABC
-      let classe = 'C'
-      if (percentualAcumulado <= 80) classe = 'A'
-      else if (percentualAcumulado <= 95) classe = 'B'
-
-      return {
-        ...p,
-        posicao: i + 1,
-        percentual,
-        percentualAcumulado,
-        classe
-      }
-    })
+    const comClassificacao = classificarABC(Object.values(porProduto) as { faturamento: number }[])
 
     setDados(comClassificacao)
     setLoading(false)

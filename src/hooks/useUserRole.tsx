@@ -13,6 +13,8 @@ interface RolePermissions {
   canDeleteVendas: boolean;
   canViewProdutos: boolean;
   canManageProdutos: boolean;
+  canViewServicos: boolean;
+  canManageServicos: boolean;
   canViewClientes: boolean;
   canManageClientes: boolean;
   canViewFornecedores: boolean;
@@ -33,6 +35,8 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canDeleteVendas: true,
     canViewProdutos: true,
     canManageProdutos: true,
+    canViewServicos: true,
+    canManageServicos: true,
     canViewClientes: true,
     canManageClientes: true,
     canViewFornecedores: true,
@@ -50,6 +54,8 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canDeleteVendas: true,
     canViewProdutos: true,
     canManageProdutos: true,
+    canViewServicos: true,
+    canManageServicos: true,
     canViewClientes: true,
     canManageClientes: true,
     canViewFornecedores: true,
@@ -67,6 +73,8 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canDeleteVendas: true,
     canViewProdutos: true,
     canManageProdutos: true,
+    canViewServicos: true,
+    canManageServicos: true,
     canViewClientes: true,
     canManageClientes: true,
     canViewFornecedores: false,
@@ -84,6 +92,8 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canDeleteVendas: false,
     canViewProdutos: true,
     canManageProdutos: false,
+    canViewServicos: true,
+    canManageServicos: false,
     canViewClientes: true,
     canManageClientes: false,
     canViewFornecedores: false,
@@ -106,6 +116,9 @@ interface CustomPermission {
 // Map custom module permissions to the legacy RolePermissions interface
 function mapCustomToLegacy(custom: CustomPermission[]): RolePermissions {
   const find = (mod: string) => custom.find(c => c.modulo === mod);
+  // Níveis criados antes do módulo de serviços não têm a linha 'servicos':
+  // nesse caso herdam a permissão de produtos.
+  const servicos = find('servicos') ?? find('produtos');
   return {
     canViewDashboard: find('dashboard')?.can_view ?? false,
     canViewVendas: find('vendas')?.can_view ?? false,
@@ -114,6 +127,8 @@ function mapCustomToLegacy(custom: CustomPermission[]): RolePermissions {
     canDeleteVendas: find('vendas')?.can_delete ?? false,
     canViewProdutos: find('produtos')?.can_view ?? false,
     canManageProdutos: find('produtos')?.can_edit ?? false,
+    canViewServicos: servicos?.can_view ?? false,
+    canManageServicos: servicos?.can_edit ?? false,
     canViewClientes: find('clientes')?.can_view ?? false,
     canManageClientes: find('clientes')?.can_edit ?? false,
     canViewFornecedores: find('fornecedores')?.can_view ?? false,
@@ -143,6 +158,8 @@ const defaultPermissions: RolePermissions = {
   canDeleteVendas: false,
   canViewProdutos: false,
   canManageProdutos: false,
+  canViewServicos: false,
+  canManageServicos: false,
   canViewClientes: false,
   canManageClientes: false,
   canViewFornecedores: false,

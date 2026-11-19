@@ -34,6 +34,8 @@ interface GerenciarCategoriasDialogProps {
   onOpenChange: (open: boolean) => void;
   empresaId: string;
   onCategoriasChange: () => void;
+  /** Produtos e serviços têm categorias separadas na mesma tabela. */
+  tipo?: 'produto' | 'servico';
 }
 
 const DEFAULT_COLORS = [
@@ -47,7 +49,9 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
   onOpenChange,
   empresaId,
   onCategoriasChange,
+  tipo = 'produto',
 }) => {
+  const rotuloItens = tipo === 'servico' ? 'serviço(s)' : 'produto(s)';
   const { toast } = useToast();
   const [categorias, setCategorias] = useState<CategoriaDB[]>([]);
   const [produtoCount, setProdutoCount] = useState<Record<string, number>>({});
@@ -62,7 +66,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
 
   useEffect(() => {
     if (open) fetchCategorias();
-  }, [open, empresaId]);
+  }, [open, empresaId, tipo]);
 
   const fetchCategorias = async () => {
     setLoading(true);
@@ -71,6 +75,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
         .from('categorias_produto')
         .select('*')
         .eq('empresa_id', empresaId)
+        .eq('tipo', tipo)
         .order('nome');
 
       if (error) throw error;
@@ -80,7 +85,8 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
       const { data: produtos } = await api
         .from('produtos')
         .select('categoria')
-        .eq('empresa_id', empresaId);
+        .eq('empresa_id', empresaId)
+        .eq('tipo', tipo);
 
       const counts: Record<string, number> = {};
       (produtos || []).forEach(p => {
@@ -104,6 +110,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
         empresa_id: empresaId,
         nome: novaCategoria.trim(),
         cor: novaCor,
+        tipo,
       });
       if (error) {
         if (error.code === '23505') {
@@ -148,6 +155,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
           .from('produtos')
           .update({ categoria: editNome.trim() })
           .eq('empresa_id', empresaId)
+          .eq('tipo', tipo)
           .eq('categoria', oldName);
       }
 
@@ -182,7 +190,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
     if (count > 0) {
       toast({
         title: 'Não é possível excluir',
-        description: `Existem ${count} produto(s) vinculado(s) a esta categoria.`,
+        description: `Existem ${count} ${rotuloItens} vinculado(s) a esta categoria.`,
         variant: 'destructive',
       });
       return;
@@ -261,7 +269,7 @@ export const GerenciarCategoriasDialog: React.FC<GerenciarCategoriasDialogProps>
                     />
                     <span className="flex-1 text-sm font-medium">{cat.nome}</span>
                     <Badge variant="outline" className="text-xs">
-                      {produtoCount[cat.nome] || 0} produto(s)
+                      {produtoCount[cat.nome] || 0} {rotuloItens}
                     </Badge>
                     <Switch
                       checked={cat.ativo}

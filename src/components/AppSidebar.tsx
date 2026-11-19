@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Receipt, Users, FileBarChart, ShoppingCart, Package, FileText, ClipboardList, DollarSign, Lock, Settings2, ChevronDown, Tag, Bell, CreditCard, TrendingUp, ScrollText } from "lucide-react";
+import { LayoutDashboard, Receipt, Users, FileBarChart, ShoppingCart, Package, FileText, ClipboardList, DollarSign, Lock, Settings2, ChevronDown, Tag, Bell, CreditCard, TrendingUp, ScrollText, Wrench } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import lafioreLogo from '@/assets/lafiore-logo.jpg';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -28,6 +28,7 @@ const allMenuItems: Array<{
   { title: "Vendas",            url: "/vendas",                icon: ShoppingCart,    permission: 'canViewVendas' },
   { title: "Orçamentos",        url: "/orcamentos",            icon: ScrollText,      permission: null },
   { title: "Produtos",          url: "/produtos",              icon: Package,         permission: 'canViewProdutos' },
+  { title: "Serviços",          url: "/servicos",              icon: Wrench,          permission: 'canViewServicos' },
   { title: "Clientes",          url: "/clientes",              icon: Users,           permission: 'canViewClientes' },
   { title: "Comissões",         url: "/comissoes",             icon: DollarSign,      permission: 'canViewVendas' },
   { title: "Notas Fiscais",     url: "/notas-fiscais",         icon: FileText,        permission: 'canViewRelatorios' },

@@ -11,11 +11,12 @@ import { Trash2, Plus, User, Package } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useEmpresa } from '@/hooks/useEmpresa'
 import { addDays, format, differenceInDays, parseISO } from 'date-fns'
+import { isServico, labelRecorrencia, sufixoRecorrencia } from '@/lib/servicos'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Cliente { id: string; nome: string; telefone: string | null; email: string | null }
-interface Produto  { id: string; nome: string; preco: number; estoque: number | null; codigo: string | null }
+interface Produto  { id: string; nome: string; preco: number; estoque: number | null; codigo: string | null; tipo?: string; recorrente?: boolean; recorrencia_tipo?: string | null }
 
 interface ItemOrcamento {
   _key: string
@@ -84,7 +85,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
       const pageSize = 1000;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await api.from('produtos').select('id, nome, preco, estoque, codigo').eq('empresa_id', empresaId).eq('ativo', true).order('nome').range(from, from + pageSize - 1);
+        const { data } = await api.from('produtos').select('id, nome, preco, estoque, codigo, tipo, recorrente, recorrencia_tipo').eq('empresa_id', empresaId).eq('ativo', true).order('nome').range(from, from + pageSize - 1);
         all = all.concat(data || []);
         hasMore = (data?.length || 0) === pageSize;
         from += pageSize;
@@ -120,6 +121,8 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
       produto_id: p.id,
       produto_nome: p.nome,
       preco_unitario: p.preco,
+      // Serviço recorrente: a periodicidade vai para o PDF pela coluna de variação.
+      ...(isServico(p) && p.recorrente ? { variacao: `Cobrança ${labelRecorrencia(p.recorrencia_tipo).toLowerCase()}` } : {}),
     })
   }
 
@@ -532,8 +535,9 @@ function ItemRow({
                       <div className="flex items-center gap-2 flex-1">
                         {p.codigo && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{p.codigo}</span>}
                         <span>{p.nome}</span>
+                        {isServico(p) && <span className="text-[10px] uppercase tracking-wide text-sky-700 bg-sky-500/10 px-1.5 py-0.5 rounded">Serviço</span>}
                       </div>
-                      <span className="text-xs text-muted-foreground ml-2">{p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{p.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}{sufixoRecorrencia(p)}</span>
                     </CommandItem>
                   ))}
                 </CommandGroup>

@@ -42,7 +42,8 @@ import { useEmpresa } from '@/hooks/useEmpresa';
 import { useImpressora } from '@/hooks/useImpressora';
 import { KANBAN_COLUMNS, KanbanStatus } from '@/hooks/useOperacoes';
 import { Switch } from '@/components/ui/switch';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Wrench, Repeat } from 'lucide-react';
+import { PERIODOS_PADRAO, RecorrenciaTipo, isServico, labelRecorrencia, sufixoRecorrencia } from '@/lib/servicos';
 import { VendaDetailAccordion } from '@/components/vendas/VendaDetailAccordion';
 interface Venda {
   id: string;
@@ -81,6 +82,9 @@ interface Produto {
   estoque: number | null;
   ativo: boolean | null;
   categoria: string | null;
+  tipo?: string;
+  recorrente?: boolean;
+  recorrencia_tipo?: string | null;
 }
 interface ItemVenda {
   produto_id: string;
@@ -93,6 +97,7 @@ interface ItemVenda {
   desconto_tipo: 'percentual' | 'valor';
   observacao: string;
   obs_aberta: boolean;
+  recorrencia_periodos?: number | null;
 }
 interface Cliente {
   id: string;
@@ -583,7 +588,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     const {
       data,
       error
-    } = await api.from('produtos').select('id, nome, codigo, preco, estoque, ativo, categoria').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
+    } = await api.from('produtos').select('id, nome, codigo, preco, estoque, ativo, categoria, tipo, recorrente, recorrencia_tipo').eq('ativo', true).eq('empresa_id', empresaId).order('nome', {
       ascending: true
     });
     if (!error) {
@@ -704,6 +709,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         desconto_tipo: 'percentual',
         observacao: '',
         obs_aberta: false,
+        recorrencia_periodos: isServico(produto) && produto.recorrente
+          ? PERIODOS_PADRAO[produto.recorrencia_tipo as RecorrenciaTipo] ?? 1
+          : null,
       }]);
     }
     setEditProdutoSelecionado('');
@@ -969,7 +977,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     let rawItens: any[] = [];
     const itensRes = await api
       .from('itens_venda')
-      .select('produto_id, variacao_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
+      .select('produto_id, variacao_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, recorrencia_periodos')
       .eq('venda_id', venda.id);
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
       const fallback = await api
@@ -1012,6 +1020,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           desconto_tipo: (item.desconto_tipo as 'percentual' | 'valor') || 'percentual',
           observacao: item.observacao || '',
           obs_aberta: false,
+          recorrencia_periodos: item.recorrencia_periodos != null ? Number(item.recorrencia_periodos) : null,
         };
       });
       setEditItensVenda(itensComNomes);
@@ -1104,6 +1113,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           desconto: item.desconto > 0 ? discValor : 0,
           desconto_tipo: item.desconto > 0 ? item.desconto_tipo : null,
           observacao: item.observacao || null,
+          recorrencia_periodos: item.recorrencia_periodos ?? null,
         };
       });
       let { error: insertError } = await api
@@ -1118,6 +1128,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           quantidade: item.quantidade,
           preco_unitario: item.preco_unitario,
           subtotal: item.subtotal,
+          recorrencia_periodos: item.recorrencia_periodos ?? null,
         }));
         ({ error: insertError } = await api.from('itens_venda').insert(fallback));
       }
@@ -1331,8 +1342,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       const produtoIds = itensData.map(item => item.produto_id);
       const { data: produtosData, error: produtosError } = await api
         .from('produtos')
-        .select('id, nome, codigo, ncm, cfop, origem, unidade_comercial, preco')
+        .select('id, nome, codigo, ncm, cfop, origem, unidade_comercial, preco, tipo')
         .in('id', produtoIds);
+
+      // NFC-e só cobre mercadorias: serviços (que exigiriam NFS-e) ficam fora da nota.
+      if (produtosData && (produtosData as any[]).every((p: any) => isServico(p))) {
+        throw new Error('Esta venda só tem serviços. A NFC-e cobre apenas produtos; serviços exigem NFS-e, que ainda não é emitida pelo sistema.');
+      }
 
       if (produtosError || !produtosData) {
         throw new Error('Não foi possível carregar os dados dos produtos');
@@ -1383,7 +1399,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         if (!produto) {
           throw new Error(`Produto não encontrado: ${item.produto_id}`);
         }
-        if (!produto.ncm) {
+        if (!produto.ncm && !isServico(produto)) {
           throw new Error(`Produto "${produto.nome}" não possui NCM cadastrado`);
         }
 
@@ -1403,6 +1419,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           : 0;
 
         return {
+          servico: isServico(produto),
           id: produto.id,
           produto_id: produto.id,
           codigo: produto.codigo || produto.id.substring(0, 8),
@@ -1471,21 +1488,34 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         }
       }
 
+      // Descontos e arredondamento foram distribuídos sobre todos os itens; agora
+      // os serviços saem e o total da nota passa a ser só o dos produtos.
+      const temServico = itens.some(i => i.servico);
+      const itensNota = itens.filter(i => !i.servico).map(({ servico: _servico, ...item }) => item);
+      const r2 = (v: number) => Math.round(v * 100) / 100;
+      const totalNota = r2(itensNota.reduce((acc, i) => acc + i.valor_final_item, 0));
+      const brutoNota = r2(itensNota.reduce((acc, i) => acc + i.quantidade * i.preco_unitario, 0));
+      const baseProdutos = itensComDescItem
+        .filter(item => !isServico((produtosData as any[]).find((p: any) => p.id === item.produto_id)))
+        .reduce((acc, i) => acc + i.subtotalAposItem, 0);
+      const descGeralProdutos = baseDescGeral > 0 ? r2(descGeralReais * (baseProdutos / baseDescGeral)) : 0;
+
       const payloadEmissao = {
         empresaFiscal,
         venda: {
           id: venda.id,
           user_id: venda.user_id,
           cliente_nome: venda.cliente_nome,
-          valor: Number(venda.valor),
-          valor_bruto: Number(venda.valor_bruto || venda.valor),
-          valor_final: Number(venda.valor_final || venda.valor),
+          valor: temServico ? totalNota : Number(venda.valor),
+          valor_bruto: temServico ? brutoNota : Number(venda.valor_bruto || venda.valor),
+          valor_final: temServico ? totalNota : Number(venda.valor_final || venda.valor),
           metodo_pagamento: venda.metodo_pagamento,
           observacoes: venda.observacoes,
-          desconto_geral: venda.desconto_geral || 0,
-          desconto_geral_tipo: venda.desconto_geral_tipo || 'percentual',
+          // Venda mista: só a fatia do desconto geral que coube aos produtos, em R$.
+          desconto_geral: temServico ? descGeralProdutos : (venda.desconto_geral || 0),
+          desconto_geral_tipo: temServico ? 'valor' : (venda.desconto_geral_tipo || 'percentual'),
         },
-        itens,
+        itens: itensNota,
         cliente,
       };
 
@@ -2327,9 +2357,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                   <SelectContent>
                     {produtos.map(p => <SelectItem key={p.id} value={p.id}>
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span>{p.nome}</span>
+                          <span>{p.nome}{isServico(p) ? ' · Serviço' : ''}</span>
                           <span className="text-muted-foreground text-xs">
-                            {formatCurrency(Number(p.preco))}
+                            {formatCurrency(Number(p.preco))}{sufixoRecorrencia(p)}
                           </span>
                         </div>
                       </SelectItem>)}
@@ -2356,10 +2386,32 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                       <div key={item.produto_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                         {/* Main item row */}
                         <div className="flex items-center gap-2 p-3">
-                          <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          {(() => {
+                            const prod = produtos.find(p => p.id === item.produto_id);
+                            return isServico(prod)
+                              ? <Wrench className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              : <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />;
+                          })()}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p className="font-medium text-sm truncate">{item.produto_nome}</p>
                             <p className="text-xs text-muted-foreground">{item.quantidade}x {formatCurrency(item.preco_unitario)}</p>
+                            {(() => {
+                              const prod = produtos.find(p => p.id === item.produto_id);
+                              if (!isServico(prod) || !prod?.recorrente) return null;
+                              return (
+                                <label className="flex items-center gap-1.5 text-xs text-sky-700 mt-1">
+                                  <Repeat className="h-3 w-3" />
+                                  Cobrar por
+                                  <input
+                                    type="number" min={1} max={120}
+                                    value={item.recorrencia_periodos ?? 1}
+                                    onChange={e => updateEditItemField(item.produto_id, { recorrencia_periodos: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
+                                    style={{ width: '52px', border: '1px solid rgba(14,165,233,0.4)', borderRadius: '6px', padding: '1px 4px', textAlign: 'center' }}
+                                  />
+                                  períodos ({labelRecorrencia(prod.recorrencia_tipo).toLowerCase()})
+                                </label>
+                              );
+                            })()}
                           </div>
                           {/* Discount toggle + input */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>

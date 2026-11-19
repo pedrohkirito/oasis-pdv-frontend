@@ -4,7 +4,7 @@ import {
   LogOut, LayoutDashboard, FileText, Users, BarChart3,
   ShoppingCart, Package, UserCircle, Settings, Building2,
   ChevronLeft, ChevronRight, Search, ClipboardList, DollarSign,
-  Lock, Bell, Menu, UserCog, Settings2, ChevronDown, Tag, Banknote, CalendarDays, CreditCard, ShoppingBag, TrendingUp, ScrollText, Target, Landmark, GitMerge, BarChart2, Printer, ListTree, Scale, BookOpen,
+  Lock, Bell, Menu, UserCog, Settings2, ChevronDown, Tag, Banknote, CalendarDays, CreditCard, ShoppingBag, TrendingUp, ScrollText, Target, Landmark, GitMerge, BarChart2, Printer, ListTree, Scale, BookOpen, Wrench,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -51,6 +51,7 @@ const navGroups = [
       { to: '/orcamentos',   label: 'Orçamentos',  icon: ScrollText,   permission: 'canViewVendas'   },
       { to: '/metas',        label: 'Metas',       icon: Target,       permission: 'canViewVendas'   },
       { to: '/produtos',     label: 'Produtos',    icon: Package,      permission: 'canViewProdutos' },
+      { to: '/servicos',     label: 'Serviços',    icon: Wrench,       permission: 'canViewServicos' },
       { to: '/clientes',  label: 'Clientes',   icon: UserCircle,    permission: 'canViewClientes'  },
       { to: '/operacoes', label: 'Operações',  icon: ClipboardList, permission: 'canViewVendas'    },
     ],

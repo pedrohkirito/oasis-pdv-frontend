@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useEmpresa } from '@/hooks/useEmpresa';
+import { isServico } from '@/lib/servicos';
 
 interface NotaFiscal {
   id: string;
@@ -388,7 +389,14 @@ const NotasFiscais = () => {
     }
     setReemitindo(true);
     try {
-      const itensFormatados = itensVenda.map(item => ({
+      // NFC-e só cobre mercadorias: itens de serviço ficam fora da nota.
+      const itensProduto = itensVenda.filter(item => !isServico(item.produtos));
+      if (itensProduto.length === 0) {
+        throw new Error('Esta venda só tem serviços. A NFC-e cobre apenas produtos; serviços exigem NFS-e.');
+      }
+      const temServico = itensProduto.length !== itensVenda.length;
+      const totalProdutos = Math.round(itensProduto.reduce((acc, i) => acc + Number(i.subtotal), 0) * 100) / 100;
+      const itensFormatados = itensProduto.map(item => ({
         id: item.produto_id,
         codigo: item.produtos?.codigo || item.produto_id,
         nome: item.produtos?.nome || 'Produto',
@@ -405,7 +413,9 @@ const NotasFiscais = () => {
           action: 'emitir',
           data: {
             empresaFiscal,
-            venda: { ...vendaOriginal, user_id: user?.id },
+            venda: temServico
+              ? { ...vendaOriginal, user_id: user?.id, valor: totalProdutos, valor_final: totalProdutos, valor_bruto: totalProdutos, desconto_geral: 0 }
+              : { ...vendaOriginal, user_id: user?.id },
             itens: itensFormatados,
             cliente: notaParaReemitir.cliente_cpf ? { cpf: notaParaReemitir.cliente_cpf, nome: notaParaReemitir.cliente_nome } : null,
           }

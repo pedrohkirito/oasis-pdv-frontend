@@ -16,6 +16,7 @@ export const MODULOS_SISTEMA = [
   { id: 'vendas', label: 'Vendas' },
   { id: 'orcamentos', label: 'Orçamentos' },
   { id: 'produtos', label: 'Produtos' },
+  { id: 'servicos', label: 'Serviços' },
   { id: 'clientes', label: 'Clientes' },
   { id: 'comissoes', label: 'Comissões' },
   { id: 'notas_fiscais', label: 'Notas Fiscais' },

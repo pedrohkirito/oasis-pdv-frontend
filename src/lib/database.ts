@@ -55,6 +55,7 @@ export type Database = {
           empresa_id: string
           id: string
           nome: string
+          tipo: string
           updated_at: string
         }
         Insert: {
@@ -64,6 +65,7 @@ export type Database = {
           empresa_id: string
           id?: string
           nome: string
+          tipo?: string
           updated_at?: string
         }
         Update: {
@@ -73,6 +75,7 @@ export type Database = {
           empresa_id?: string
           id?: string
           nome?: string
+          tipo?: string
           updated_at?: string
         }
         Relationships: [
@@ -854,6 +857,7 @@ export type Database = {
           preco_unitario: number
           produto_id: string
           quantidade: number
+          recorrencia_periodos: number | null
           subtotal: number
           variacao_id: string | null
           venda_id: string
@@ -868,6 +872,7 @@ export type Database = {
           preco_unitario: number
           produto_id: string
           quantidade?: number
+          recorrencia_periodos?: number | null
           subtotal: number
           variacao_id?: string | null
           venda_id: string
@@ -882,6 +887,7 @@ export type Database = {
           preco_unitario?: number
           produto_id?: string
           quantidade?: number
+          recorrencia_periodos?: number | null
           subtotal?: number
           variacao_id?: string | null
           venda_id?: string
@@ -2235,6 +2241,9 @@ export type Database = {
           origem: string | null
           preco: number
           tem_variacoes: boolean | null
+          recorrencia_tipo: string | null
+          recorrente: boolean
+          tipo: string
           unidade_comercial: string | null
           updated_at: string
           user_id: string
@@ -2263,6 +2272,9 @@ export type Database = {
           origem?: string | null
           preco: number
           tem_variacoes?: boolean | null
+          recorrencia_tipo?: string | null
+          recorrente?: boolean
+          tipo?: string
           unidade_comercial?: string | null
           updated_at?: string
           user_id: string
@@ -2291,6 +2303,9 @@ export type Database = {
           origem?: string | null
           preco?: number
           tem_variacoes?: boolean | null
+          recorrencia_tipo?: string | null
+          recorrente?: boolean
+          tipo?: string
           unidade_comercial?: string | null
           updated_at?: string
           user_id?: string

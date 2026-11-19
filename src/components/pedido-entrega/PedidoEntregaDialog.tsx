@@ -113,6 +113,8 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
   const { empresaId, empresaAtiva } = useEmpresa();
   const [pedido, setPedido] = useState<PedidoEntrega | null>(null);
   const [itens, setItens] = useState<ItemVenda[]>([]);
+  // Valor dos serviços da venda: não aparecem na lista de entrega, mas compõem o total.
+  const [valorServicos, setValorServicos] = useState(0);
   const [empresaFiscal, setEmpresaFiscal] = useState<EmpresaFiscal | null>(null);
   const [vendaInfo, setVendaInfo] = useState<VendaInfo | null>(null);
   const [clienteInfo, setClienteInfo] = useState<ClienteInfo | null>(null);
@@ -132,7 +134,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
 
     const [pedidoRes, itensRes, fiscalRes, vendaRes] = await Promise.all([
       api.from('pedidos_entrega').select('*').eq('venda_id', vendaId).eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(1).single(),
-      api.from('itens_venda').select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, produtos(nome, codigo, categoria)').eq('venda_id', vendaId),
+      api.from('itens_venda').select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao, produtos(nome, codigo, categoria, tipo)').eq('venda_id', vendaId),
       api.from('empresa_fiscal').select('razao_social, nome_fantasia, cnpj, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cidade, endereco_uf, endereco_cep').eq('empresa_id', empresaId).limit(1).single(),
       api.from('vendas').select('valor, valor_bruto, desconto, valor_final, metodo_pagamento, parcelas, vendedor, observacoes, data_venda, cliente_nome, cliente_id').eq('id', vendaId).single(),
     ]);
@@ -145,13 +147,20 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
       const fallback = await api
         .from('itens_venda')
-        .select('produto_id, quantidade, preco_unitario, subtotal, produtos(nome, codigo, categoria)')
+        .select('produto_id, quantidade, preco_unitario, subtotal, produtos(nome, codigo, categoria, tipo)')
         .eq('venda_id', vendaId);
       itensData = (fallback.data as any[]) || [];
       usouFallback = true;
     }
     setItensComDescontoDetalhado(!usouFallback);
     if (itensData) {
+      // Serviços não são entregues: ficam fora do pedido de entrega.
+      setValorServicos(
+        itensData
+          .filter((item: any) => item.produtos?.tipo === 'servico')
+          .reduce((acc: number, item: any) => acc + Number(item.quantidade) * Number(item.preco_unitario), 0),
+      );
+      itensData = itensData.filter((item: any) => item.produtos?.tipo !== 'servico');
       setItens(itensData.map((item: any) => ({
         ...item,
         desconto: item.desconto != null ? Number(item.desconto) : 0,
@@ -447,7 +456,8 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, venda
                 const descontoGeral = itensComDescontoDetalhado ? Math.max(0, totalDesconto - descontoItens) : 0;
                 const descontoCombinado = !itensComDescontoDetalhado ? totalDesconto : 0;
                 const linhas = [
-                  { label: 'Total Produtos', value: formatCurrency(Number(valorBruto)), red: false, bold: false },
+                  { label: 'Total Produtos', value: formatCurrency(Number(valorBruto) - valorServicos), red: false, bold: false },
+                  ...(valorServicos > 0 ? [{ label: 'Serviços (não entregues)', value: formatCurrency(valorServicos), red: false, bold: false }] : []),
                   ...(descontoItens > 0 ? [{ label: '(-) Desc. por item', value: `- ${formatCurrency(descontoItens)}`, red: true, bold: false }] : []),
                   ...(descontoGeral > 0 ? [{ label: '(-) Desc. geral', value: `- ${formatCurrency(descontoGeral)}`, red: true, bold: false }] : []),
                   ...(descontoCombinado > 0 ? [{ label: '(-) Desconto', value: `- ${formatCurrency(descontoCombinado)}`, red: true, bold: false }] : []),

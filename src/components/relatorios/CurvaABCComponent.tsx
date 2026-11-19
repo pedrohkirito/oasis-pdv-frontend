@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { useCurvaABC } from '@/hooks/useCurvaABC'
+import { classificarABC, useCurvaABC } from '@/hooks/useCurvaABC'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -13,6 +13,7 @@ interface Produto {
   produto_id: string
   nome: string
   categoria: string
+  tipo: 'produto' | 'servico'
   quantidade: number
   faturamento: number
   transacoes: number
@@ -122,8 +123,16 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
   const { dados, loading, buscarCurvaABC } = useCurvaABC()
 
   const [categoriaSel, setCategoriaSel] = useState('todas')
+  const [tipoSel, setTipoSel] = useState<'todos' | 'produto' | 'servico'>('todos')
 
-  const produtos = dados as Produto[]
+  const todos = dados as Produto[]
+  const temServicos = useMemo(() => todos.some(p => p.tipo === 'servico'), [todos])
+
+  // Ao separar produtos de serviços, a curva é recalculada dentro do grupo.
+  const produtos = useMemo(() => {
+    if (tipoSel === 'todos') return todos
+    return classificarABC(todos.filter(p => p.tipo === tipoSel)) as Produto[]
+  }, [todos, tipoSel])
 
   const categorias = useMemo(() => {
     const cats = [...new Set(produtos.map(p => p.categoria))].sort()
@@ -209,6 +218,21 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
               {categorias.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          {temServicos && (
+            <>
+              <label style={{ fontSize: '0.72rem', color: '#9CA3AF', fontFamily: 'Gilroy', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Tipo
+              </label>
+              <Select value={tipoSel} onValueChange={v => { setTipoSel(v as typeof tipoSel); setCategoriaSel('todas') }}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Produtos e serviços</SelectItem>
+                  <SelectItem value="produto">Só produtos</SelectItem>
+                  <SelectItem value="servico">Só serviços</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
       )}
 

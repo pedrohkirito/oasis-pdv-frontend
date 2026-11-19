@@ -1051,6 +1051,7 @@ export default function ConfigEtiquetas() {
       .from('produtos')
       .select('id, nome, preco, preco_custo:custo, estoque_atual:estoque, codigo, ean, categoria, unidade_comercial, ativo')
       .eq('empresa_id', empresaId)
+      .eq('tipo', 'produto')
       .eq('ativo', true)
       .order('nome')
       .then(({ data }) => {

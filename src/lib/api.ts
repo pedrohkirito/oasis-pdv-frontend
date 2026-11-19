@@ -46,7 +46,13 @@ let cachedUser: {
 const listeners = new Set<Listener>();
 
 function empresaAtivaId() {
-  return localStorage.getItem(EMPRESA_KEY);
+  const saved = localStorage.getItem(EMPRESA_KEY);
+  if (!saved) return null;
+  if (cachedUser && !cachedUser.empresas.some((empresa) => empresa.id === saved)) {
+    localStorage.removeItem(EMPRESA_KEY);
+    return null;
+  }
+  return saved;
 }
 
 function buildSession(): Session | null {
@@ -117,6 +123,7 @@ async function carregarSessao() {
       role: e.role,
     })),
   };
+  empresaAtivaId();
   return buildSession();
 }
 
@@ -305,6 +312,24 @@ async function invoke(name: string, options?: { body?: unknown; method?: string 
 }
 
 export const api = {
+  async companies() {
+    const { ok, body } = await request('/companies');
+    if (!ok) {
+      return {
+        data: [] as Array<{ id: string; name: string; logo_url: string | null; active: boolean }>,
+        error: { message: body?.error?.message ?? 'Erro ao listar empresas' },
+      };
+    }
+    const empresas = (body?.empresas ?? []).map(
+      (empresa: { id: string; name: string; logoUrl?: string | null; active: boolean }) => ({
+        id: empresa.id,
+        name: empresa.name,
+        logo_url: empresa.logoUrl ?? null,
+        active: empresa.active,
+      }),
+    );
+    return { data: empresas, error: null };
+  },
   from(table: string) {
     return new Query(table);
   },
@@ -401,6 +426,7 @@ export const api = {
     async signOut() {
       await request('/auth/logout', { method: 'POST', body: '{}' });
       cachedUser = null;
+      localStorage.removeItem(EMPRESA_KEY);
       emit('SIGNED_OUT');
       return { error: null };
     },

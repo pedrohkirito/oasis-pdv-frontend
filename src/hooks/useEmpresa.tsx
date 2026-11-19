@@ -50,10 +50,7 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { data, error } = await api
-        .from('company')
-        .select('*')
-        .eq('active', true);
+      const { data, error } = await api.companies();
 
       if (error) {
         console.error('Error fetching empresas:', error);
@@ -62,7 +59,7 @@ export const EmpresaProvider = ({ children }: { children: React.ReactNode }) => 
         return;
       }
 
-      const empresasList = (data || []) as Empresa[];
+      const empresasList = (data || []).filter((empresa) => empresa.active);
       setEmpresas(empresasList);
 
       // Restaurar empresa ativa do localStorage

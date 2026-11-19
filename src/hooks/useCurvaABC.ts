@@ -56,18 +56,18 @@ export function useCurvaABC() {
       .from('sale_item')
       .select(`
         quantidade,
-        preco_unitario,
-        produto_id,
+        unit_price,
+        product_id,
         product(name, category, kind)
       `)
       .in('sale_id', idsVendas)
 
     // Agrupa por produto
     const porProduto = (itens || []).reduce((acc, item) => {
-      const id = item.produto_id
+      const id = item.product_id
       if (!acc[id]) {
         acc[id] = {
-          produto_id: id,
+          product_id: id,
           name: item.produtos?.name || 'Produto removido',
           categoria: item.produtos?.categoria || 'Sem categoria',
           tipo: item.produtos?.tipo === 'servico' ? 'servico' : 'produto',
@@ -78,7 +78,7 @@ export function useCurvaABC() {
       }
       acc[id].quantidade += item.quantidade || 0
       acc[id].faturamento += (item.quantidade || 0) *
-                              (item.preco_unitario || 0)
+                              (item.unit_price || 0)
       acc[id].transacoes += 1
       return acc
     }, {} as Record<string, any>)

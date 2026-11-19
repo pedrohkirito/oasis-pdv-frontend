@@ -287,7 +287,7 @@ const Relatorios = () => {
   const dadosPorMetodoPagamento = () => {
     const metodos: Record<string, number> = {};
     vendas.forEach(venda => {
-      metodos[venda.metodo_pagamento] = (metodos[venda.metodo_pagamento] || 0) + Number(venda.valor);
+      metodos[venda.payment_method] = (metodos[venda.payment_method] || 0) + Number(venda.valor);
     });
     return Object.entries(metodos)
       .map(([name, value]) => ({
@@ -327,7 +327,7 @@ const Relatorios = () => {
         const inicioD = startOfDay(dia);
         const fimD = endOfDay(dia);
         const vendasDia = vendas.filter(v => {
-          const data = new Date(v.data_venda + 'T00:00:00');
+          const data = new Date(v.sold_on + 'T00:00:00');
           return data >= inicioD && data <= fimD;
         });
         const total = vendasDia.reduce((sum, v) => sum + Number(v.valor), 0);
@@ -346,7 +346,7 @@ const Relatorios = () => {
         const inicioS = startOfWeek(semana, { locale: ptBR });
         const fimS = endOfWeek(semana, { locale: ptBR });
         const vendasSemana = vendas.filter(v => {
-          const data = new Date(v.data_venda + 'T00:00:00');
+          const data = new Date(v.sold_on + 'T00:00:00');
           return data >= inicioS && data <= fimS;
         });
         const total = vendasSemana.reduce((sum, v) => sum + Number(v.valor), 0);
@@ -363,7 +363,7 @@ const Relatorios = () => {
         const inicioM = startOfMonth(mes);
         const fimM = endOfMonth(mes);
         const vendasMes = vendas.filter(v => {
-          const data = new Date(v.data_venda + 'T00:00:00');
+          const data = new Date(v.sold_on + 'T00:00:00');
           return data >= inicioM && data <= fimM;
         });
         const total = vendasMes.reduce((sum, v) => sum + Number(v.valor), 0);
@@ -387,7 +387,7 @@ const Relatorios = () => {
       const inicio = startOfMonth(mes);
       const fim = endOfMonth(mes);
       const contasMes = contas.filter(c => {
-        const data = new Date(c.data_vencimento);
+        const data = new Date(c.due_on);
         return data >= inicio && data <= fim;
       });
       const despesas = contasMes.reduce((sum, c) => sum + Number(c.valor), 0);
@@ -429,7 +429,7 @@ const Relatorios = () => {
       const inicioM = startOfMonth(mes);
       const fimM = endOfMonth(mes);
       const contasMes = contas.filter(c => {
-        const data = new Date(c.data_vencimento);
+        const data = new Date(c.due_on);
         return data >= inicioM && data <= fimM;
       });
       const resultado: { periodo: string; [key: string]: number | string } = {
@@ -458,13 +458,13 @@ const Relatorios = () => {
     return categorias.map(cat => {
       const gastoAtual = contas
         .filter(c => {
-          const data = new Date(c.data_vencimento);
+          const data = new Date(c.due_on);
           return data >= mesAtual && data <= fimMesAtual && (c.categoria || 'Outros') === cat;
         })
         .reduce((sum, c) => sum + Number(c.valor), 0);
       const gastoAnterior = contas
         .filter(c => {
-          const data = new Date(c.data_vencimento);
+          const data = new Date(c.due_on);
           return data >= mesAnterior && data <= fimMesAnterior && (c.categoria || 'Outros') === cat;
         })
         .reduce((sum, c) => sum + Number(c.valor), 0);

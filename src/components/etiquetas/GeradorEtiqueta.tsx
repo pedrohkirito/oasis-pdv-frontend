@@ -364,20 +364,20 @@ export async function gerarPDFNovo(
     }
 
     // Preço de custo
-    if (campos.includes('preco_custo') && produto.preco_custo) {
+    if (campos.includes('cost_price') && produto.cost_price) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(config.tamFonte - 3);
       doc.setTextColor(160, 160, 160);
-      doc.text(`Custo: ${formatPrecoNovo(produto.preco_custo, true, true)}`, px, py);
+      doc.text(`Custo: ${formatPrecoNovo(produto.cost_price, true, true)}`, px, py);
       py += (config.tamFonte - 3) * 0.35 + 1;
     }
 
     // Unidade
-    if (campos.includes('unidade') && produto.unidade_comercial) {
+    if (campos.includes('unidade') && produto.commercial_unit) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(config.tamFonte - 2);
       doc.setTextColor(100, 100, 100);
-      doc.text(produto.unidade_comercial, px, py);
+      doc.text(produto.commercial_unit, px, py);
       py += (config.tamFonte - 2) * 0.35 + 1;
     }
 

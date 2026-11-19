@@ -64,7 +64,7 @@ interface XmlImportDialogProps {
   onOpenChange: (open: boolean) => void;
   onImport: (produtos: ProdutoXml[], updateExisting: boolean, mergeStock: boolean, fornecedor?: FornecedorXml, destinatario?: DestinatarioXml) => Promise<void>;
   existingCodes: string[];
-  existingProducts: { id: string; code: string | null; name: string; ean: string | null; codigo_fornecedor: string | null; estoque: number | null; preco: number | null }[];
+  existingProducts: { id: string; code: string | null; name: string; ean: string | null; supplier_code: string | null; estoque: number | null; preco: number | null }[];
 }
 
 const parseXmlNFe = (xmlContent: string): { produtos: ProdutoXml[]; fornecedor?: FornecedorXml; destinatario?: DestinatarioXml } => {
@@ -216,12 +216,12 @@ export const XmlImportDialog: React.FC<XmlImportDialogProps> = ({
     let nextCodeCounter = maxCode;
 
     return parsedProdutos.map(produto => {
-      // Detectar duplicados: EAN > codigo_fornecedor (cProd) > name
+      // Detectar duplicados: EAN > supplier_code (cProd) > name
       const existingProduct = existingProducts.find(ep => {
         // Match by EAN first (if both have EAN)
         if (produto.ean && ep.ean && produto.ean === ep.ean) return true;
-        // Match by codigo_fornecedor (cProd from XML)
-        if (produto.code && ep.codigo_fornecedor && produto.code === ep.codigo_fornecedor) return true;
+        // Match by supplier_code (cProd from XML)
+        if (produto.code && ep.supplier_code && produto.code === ep.supplier_code) return true;
         // Fallback: match by name
         if (ep.name && produto.name && ep.name.toLowerCase().trim() === produto.name.toLowerCase().trim()) return true;
         return false;

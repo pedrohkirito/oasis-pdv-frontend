@@ -22,13 +22,13 @@ interface VendaDetailProps {
 }
 
 interface ItemVendaDetail {
-  produto_id: string;
+  product_id: string;
   quantidade: number;
-  preco_unitario: number;
+  unit_price: number;
   subtotal: number;
-  produto_nome: string;
+  product_name: string;
   desconto?: number;
-  desconto_tipo?: 'percentual' | 'amount';
+  discount_kind?: 'percentual' | 'amount';
   observacao?: string;
 }
 
@@ -36,18 +36,18 @@ interface OperacaoDetail {
   id: string;
   kind: string;
   status: string;
-  data_prevista: string | null;
-  data_entrega: string | null;
-  data_montagem: string | null;
+  expected_on: string | null;
+  delivered_on: string | null;
+  assembly_on: string | null;
   observacoes: string | null;
 }
 
 interface ComissaoDetail {
   id: string;
   percentual: number;
-  valor_base: number;
-  valor_comissao: number;
-  vendedor_id: string;
+  base_amount: number;
+  commission_amount: number;
+  seller_id: string;
 }
 
 const formatCurrency = (value: number) =>
@@ -101,17 +101,17 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       const [itensRes, operacaoRes, comissaoRes] = await Promise.all([
         api
           .from('sale_item')
-          .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
+          .select('product_id, quantidade, unit_price, subtotal, desconto, discount_kind, observacao')
           .eq('sale_id', saleId),
         api
           .from('operation')
-          .select('id, kind, status, data_prevista, data_entrega, data_montagem, observacoes')
+          .select('id, kind, status, expected_on, delivered_on, assembly_on, observacoes')
           .eq('sale_id', saleId)
           .eq('company_id', companyId)
           .maybeSingle(),
         api
           .from('commission')
-          .select('id, percentual, valor_base, valor_comissao, vendedor_id')
+          .select('id, percentual, base_amount, commission_amount, seller_id')
           .eq('sale_id', saleId)
           .eq('company_id', companyId)
           .maybeSingle(),
@@ -122,14 +122,14 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
       if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
         const fallback = await api
           .from('sale_item')
-          .select('produto_id, quantidade, preco_unitario, subtotal')
+          .select('product_id, quantidade, unit_price, subtotal')
           .eq('sale_id', saleId);
         itensData = (fallback.data as any[]) || [];
       }
 
       // Resolve product names
       if (itensData && itensData.length > 0) {
-        const produtoIds = itensData.map((i: any) => i.produto_id);
+        const produtoIds = itensData.map((i: any) => i.product_id);
         const { data: produtosData } = await api
           .from('product')
           .select('id, name')
@@ -139,12 +139,12 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
         setItens(
           itensData.map((item: any) => ({
             ...item,
-            preco_unitario: Number(item.preco_unitario),
+            unit_price: Number(item.unit_price),
             subtotal: Number(item.subtotal),
             desconto: item.desconto != null ? Number(item.desconto) : 0,
-            desconto_tipo: (item.desconto_tipo as 'percentual' | 'amount') || 'percentual',
+            discount_kind: (item.discount_kind as 'percentual' | 'amount') || 'percentual',
             observacao: item.observacao || '',
-            produto_nome: produtoMap.get(item.produto_id) || 'Produto não encontrado',
+            product_name: produtoMap.get(item.product_id) || 'Produto não encontrado',
           }))
         );
       }
@@ -161,7 +161,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
           .eq('id', saleId)
           .single();
         if (vendaData) {
-          const mes = vendaData.data_venda.substring(0, 7);
+          const mes = vendaData.sold_on.substring(0, 7);
           const { data: fechamento } = await api
             .from('commission_closing')
             .select('id')
@@ -209,19 +209,19 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
               const precoFinal = item.subtotal;                  // after discount
               // Badge label: re-derive % from stored R$ value if kind === 'percentual'
               const badgeLabel = temDesconto
-                ? item.desconto_tipo === 'percentual'
+                ? item.discount_kind === 'percentual'
                   ? `-${precoOriginal > 0 ? ((descontoR$ / precoOriginal) * 100).toFixed(1).replace(/\.0$/, '') : 0}%`
                   : `-${formatCurrency(descontoR$)}`
                 : '';
               const temObs = !!item.observacao;
-              const obsKey = item.produto_id;
+              const obsKey = item.product_id;
               return (
-                <div key={item.produto_id}>
+                <div key={item.product_id}>
                   <div className="flex items-start justify-between p-3 text-sm">
                     {/* Left: name + badge + qty×price */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium">{item.produto_nome}</p>
+                        <p className="font-medium">{item.product_name}</p>
                         {temDesconto && (
                           <Badge variant="outline" style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)', color: '#10B981', borderRadius: '20px', fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 700, padding: '0 6px' }}>
                             {badgeLabel}
@@ -229,7 +229,7 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {item.quantidade}x {formatCurrency(item.preco_unitario)}
+                        {item.quantidade}x {formatCurrency(item.unit_price)}
                       </p>
                     </div>
                     {/* Right: original (struck) + final (green), or just final */}
@@ -349,27 +349,27 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
                 {statusLabels[operacao.status] || operacao.status}
               </Badge>
             </div>
-            {operacao.data_prevista && (
+            {operacao.expected_on && (
               <div>
                 <p className="text-xs text-muted-foreground">Data Prevista</p>
                 <p className="font-medium">
-                  {new Date(operacao.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}
+                  {new Date(operacao.expected_on + 'T00:00:00').toLocaleDateString('pt-BR')}
                 </p>
               </div>
             )}
-            {operacao.data_entrega && (
+            {operacao.delivered_on && (
               <div>
                 <p className="text-xs text-muted-foreground">Data Entrega</p>
                 <p className="font-medium">
-                  {new Date(operacao.data_entrega + 'T00:00:00').toLocaleDateString('pt-BR')}
+                  {new Date(operacao.delivered_on + 'T00:00:00').toLocaleDateString('pt-BR')}
                 </p>
               </div>
             )}
-            {operacao.data_montagem && (
+            {operacao.assembly_on && (
               <div>
                 <p className="text-xs text-muted-foreground">Data Montagem</p>
                 <p className="font-medium">
-                  {new Date(operacao.data_montagem + 'T00:00:00').toLocaleDateString('pt-BR')}
+                  {new Date(operacao.assembly_on + 'T00:00:00').toLocaleDateString('pt-BR')}
                 </p>
               </div>
             )}
@@ -397,11 +397,11 @@ export const VendaDetailAccordion: React.FC<VendaDetailProps> = ({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Base de Cálculo</p>
-              <p className="font-medium">{formatCurrency(Number(comissao.valor_base))}</p>
+              <p className="font-medium">{formatCurrency(Number(comissao.base_amount))}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Valor</p>
-              <p className="font-bold text-primary">{formatCurrency(Number(comissao.valor_comissao))}</p>
+              <p className="font-bold text-primary">{formatCurrency(Number(comissao.commission_amount))}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Status</p>

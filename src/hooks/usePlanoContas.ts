@@ -9,7 +9,7 @@ export interface ContaPlano {
   name: string
   kind: 'active' | 'passivo' | 'patrimonio_liquido' | 'receita' | 'cost' | 'despesa'
   natureza: 'devedora' | 'credora'
-  conta_pai_id: string | null
+  parent_account_id: string | null
   sintetica: boolean
   padrao: boolean
   active: boolean
@@ -24,7 +24,7 @@ export function sugerirProximoCodigo(contas: ContaPlano[], paiId: string): strin
   const pai = contas.find(c => c.id === paiId)
   if (!pai) return ''
 
-  const filhos = contas.filter(c => c.conta_pai_id === paiId)
+  const filhos = contas.filter(c => c.parent_account_id === paiId)
   const paiDepth = pai.code.split('.').length
   const padded = paiDepth >= 2
 
@@ -60,7 +60,7 @@ export function usePlanoContas() {
     name: string
     kind: string
     natureza: string
-    conta_pai_id: string | null
+    parent_account_id: string | null
     sintetica: boolean
   }) => {
     if (!companyId) return { data: null, error: 'Sem empresa selecionada' }
@@ -93,7 +93,7 @@ export function usePlanoContas() {
       return { error: 'Contas padrão do sistema não podem ser excluídas.' }
     }
 
-    const temFilhos = contas.some(c => c.conta_pai_id === id)
+    const temFilhos = contas.some(c => c.parent_account_id === id)
     if (temFilhos) {
       return { error: 'Esta conta possui contas filhas. Exclua ou mova as contas filhas primeiro.' }
     }

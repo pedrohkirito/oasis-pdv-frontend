@@ -3,14 +3,14 @@ import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export interface LinhaBalancete {
-  conta_id: string
+  account_id: string
   code: string
   name: string
   kind: string
   natureza: 'devedora' | 'credora'
   sintetica: boolean
-  total_debito: number
-  total_credito: number
+  total_debit: number
+  total_credit: number
   saldo: number
 }
 

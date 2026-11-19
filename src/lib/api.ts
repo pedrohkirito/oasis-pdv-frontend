@@ -20,7 +20,7 @@ export interface User {
   aud: string;
   created_at: string;
   user_metadata: { name?: string | null; avatar_url?: string | null };
-  app_metadata: { empresa_id?: string | null; empresa_role?: string | null };
+  app_metadata: { company_id?: string | null; empresa_role?: string | null };
 }
 
 export interface Session {

@@ -10,31 +10,31 @@ export interface ContaPagar {
   company_id: string;
   descricao: string;
   valor: number;
-  valor_original?: number;
-  valor_juros?: number;
-  valor_multa?: number;
-  valor_desconto?: number;
-  valor_pago?: number;
-  data_vencimento: string;
-  data_pagamento?: string;
-  data_pagamento_efetivo?: string;
+  original_amount?: number;
+  interest_amount?: number;
+  penalty_amount?: number;
+  discount_amount?: number;
+  paid_amount?: number;
+  due_on: string;
+  paid_on?: string;
+  settled_on?: string;
   status: string;
   categoria?: string;
-  fornecedor_nome?: string;
-  fornecedor_id?: string;
-  conta_bancaria_id?: string;
-  forma_pagamento?: string;
-  comprovante_url?: string;
-  numero_documento?: string;
-  centro_custo?: string;
+  supplier_name?: string;
+  supplier_id?: string;
+  bank_account_id?: string;
+  payment_form?: string;
+  receipt_url?: string;
+  document_number?: string;
+  cost_center?: string;
   recorrente?: boolean;
-  recorrencia_tipo?: string;
-  recorrencia_fim?: string;
-  parcela_numero?: number;
-  parcela_total?: number;
-  conta_pai_id?: string;
-  aprovado_por?: string;
-  aprovado_em?: string;
+  recurrence_kind?: string;
+  recurrence_end_on?: string;
+  installment_number?: number;
+  installment_count?: number;
+  parent_account_id?: string;
+  approved_by?: string;
+  approved_at?: string;
   historico?: HistoricoItem[];
   created_at?: string;
   updated_at?: string;
@@ -43,7 +43,7 @@ export interface ContaPagar {
 export interface HistoricoItem {
   acao: string;
   data: string;
-  valor_pago?: number;
+  paid_amount?: number;
   juros?: number;
   multa?: number;
   desconto?: number;
@@ -68,7 +68,7 @@ export interface FiltrosContas {
   fornecedor?: string;
   dataInicio?: string;
   dataFim?: string;
-  campoData?: 'due_on' | 'data_pagamento_efetivo';
+  campoData?: 'due_on' | 'settled_on';
   centroCusto?: string;
   contaBancariaId?: string;
 }
@@ -118,7 +118,7 @@ export function useContasPagar() {
     const conta = contas.find(c => c.id === id);
     if (!conta) return { error: 'Conta não encontrada' };
 
-    const valorOriginal = conta.valor_original ?? conta.valor;
+    const valorOriginal = conta.original_amount ?? conta.valor;
     const juros    = dados.valorJuros    ?? 0;
     const multa    = dados.valorMulta    ?? 0;
     const desconto = dados.valorDesconto ?? 0;
@@ -129,7 +129,7 @@ export function useContasPagar() {
       {
         acao: 'pagamento_registrado',
         data: new Date().toISOString(),
-        valor_pago: valorPago,
+        paid_amount: valorPago,
         juros,
         multa,
         desconto,
@@ -142,16 +142,16 @@ export function useContasPagar() {
       .from('payable')
       .update({
         status: 'pago',
-        valor_original: valorOriginal,
-        valor_juros: juros,
-        valor_multa: multa,
-        valor_desconto: desconto,
-        valor_pago: valorPago,
-        data_pagamento_efetivo: dados.dataPagamentoEfetivo,
-        data_pagamento: dados.dataPagamentoEfetivo,
-        forma_pagamento: dados.formaPagamento,
-        conta_bancaria_id: dados.contaBancariaId ?? null,
-        comprovante_url: dados.comprovante ?? null,
+        original_amount: valorOriginal,
+        interest_amount: juros,
+        penalty_amount: multa,
+        discount_amount: desconto,
+        paid_amount: valorPago,
+        settled_on: dados.dataPagamentoEfetivo,
+        paid_on: dados.dataPagamentoEfetivo,
+        payment_form: dados.formaPagamento,
+        bank_account_id: dados.contaBancariaId ?? null,
+        receipt_url: dados.comprovante ?? null,
         historico: novoHistorico as unknown as never,
         updated_at: new Date().toISOString(),
       })
@@ -171,7 +171,7 @@ export function useContasPagar() {
     if (!companyId) return { error: 'Empresa não definida' };
 
     const parcelas: Partial<ContaPagar>[] = [];
-    let dataVencimento = new Date(dadosBase.data_vencimento + 'T00:00:00');
+    let dataVencimento = new Date(dadosBase.due_on + 'T00:00:00');
     const valorParcela = dadosBase.valor / numeroParcelas;
 
     for (let i = 1; i <= numeroParcelas; i++) {
@@ -180,10 +180,10 @@ export function useContasPagar() {
         company_id: companyId,
         descricao: `${dadosBase.descricao} (${i}/${numeroParcelas})`,
         valor: valorParcela,
-        valor_original: valorParcela,
-        data_vencimento: format(dataVencimento, 'yyyy-MM-dd'),
-        parcela_numero: i,
-        parcela_total: numeroParcelas,
+        original_amount: valorParcela,
+        due_on: format(dataVencimento, 'yyyy-MM-dd'),
+        installment_number: i,
+        installment_count: numeroParcelas,
         status: 'pendente',
         historico: [],
       });
@@ -234,10 +234,10 @@ export function useContasPagar() {
       q = q.lte(filtros.campoData, filtros.dataFim);
     }
     if (filtros.contaBancariaId) {
-      q = q.eq('conta_bancaria_id', filtros.contaBancariaId);
+      q = q.eq('bank_account_id', filtros.contaBancariaId);
     }
     if (filtros.centroCusto) {
-      q = q.eq('centro_custo', filtros.centroCusto);
+      q = q.eq('cost_center', filtros.centroCusto);
     }
     if (filtros.fornecedor) {
       q = q.ilike('supplier_name', `%${filtros.fornecedor}%`);
@@ -255,13 +255,13 @@ export function useContasPagar() {
     conta: ContaPagar,
     dataPagamento: string
   ): { juros: number; multa: number; diasAtraso: number } => {
-    const vencimento  = new Date(conta.data_vencimento + 'T00:00:00');
+    const vencimento  = new Date(conta.due_on + 'T00:00:00');
     const pagamento   = new Date(dataPagamento          + 'T00:00:00');
     const diasAtraso  = Math.max(0, differenceInDays(pagamento, vencimento));
 
     if (diasAtraso === 0) return { juros: 0, multa: 0, diasAtraso: 0 };
 
-    const valorBase = conta.valor_original ?? conta.valor;
+    const valorBase = conta.original_amount ?? conta.valor;
 
     // Multa: 2% uma vez (padrão legal brasileiro)
     const multa = valorBase * 0.02;
@@ -285,26 +285,26 @@ export function useContasPagar() {
     return {
       aVencer: lista.filter(c =>
         c.status === 'pendente' &&
-        c.data_vencimento > hojeStr
+        c.due_on > hojeStr
       ),
       venceHoje: lista.filter(c =>
         c.status === 'pendente' &&
-        c.data_vencimento === hojeStr
+        c.due_on === hojeStr
       ),
       vencido1a7: lista.filter(c => {
-        const dias = differenceInDays(hoje, new Date(c.data_vencimento + 'T00:00:00'));
+        const dias = differenceInDays(hoje, new Date(c.due_on + 'T00:00:00'));
         return c.status !== 'pago' && dias >= 1 && dias <= 7;
       }),
       vencido8a30: lista.filter(c => {
-        const dias = differenceInDays(hoje, new Date(c.data_vencimento + 'T00:00:00'));
+        const dias = differenceInDays(hoje, new Date(c.due_on + 'T00:00:00'));
         return c.status !== 'pago' && dias >= 8 && dias <= 30;
       }),
       vencido31a60: lista.filter(c => {
-        const dias = differenceInDays(hoje, new Date(c.data_vencimento + 'T00:00:00'));
+        const dias = differenceInDays(hoje, new Date(c.due_on + 'T00:00:00'));
         return c.status !== 'pago' && dias >= 31 && dias <= 60;
       }),
       vencidoMais60: lista.filter(c => {
-        const dias = differenceInDays(hoje, new Date(c.data_vencimento + 'T00:00:00'));
+        const dias = differenceInDays(hoje, new Date(c.due_on + 'T00:00:00'));
         return c.status !== 'pago' && dias > 60;
       }),
     };

@@ -174,9 +174,9 @@ function Completo({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova;
             {fmtPreco(p.preco, c.mostrarRS, c.mostrarCentavos)}
           </p>
         )}
-        {c.campos.includes('preco_custo') && p.preco_custo && (
+        {c.campos.includes('cost_price') && p.cost_price && (
           <p style={{ margin: 0, fontSize: fs - 2, color: '#999', fontFamily: c.fonte }}>
-            Custo: {fmtPreco(p.preco_custo, true, true)}
+            Custo: {fmtPreco(p.cost_price, true, true)}
           </p>
         )}
       </div>
@@ -270,8 +270,8 @@ function Gondola({ p, c, fs }: { p: ProdutoParaEtiqueta; c: ConfigEtiquetaNova; 
             {p.name}
           </p>
         )}
-        {c.campos.includes('unidade') && p.unidade_comercial && (
-          <span style={{ fontSize: fs - 2, color: '#666', fontFamily: c.fonte }}>{p.unidade_comercial}</span>
+        {c.campos.includes('unidade') && p.commercial_unit && (
+          <span style={{ fontSize: fs - 2, color: '#666', fontFamily: c.fonte }}>{p.commercial_unit}</span>
         )}
         {c.campos.includes('price') && (
           <p style={{ margin: 0, fontSize: fs + 3, fontWeight: 900, lineHeight: 1, fontFamily: c.fonte }}>
@@ -454,11 +454,11 @@ const DEMO_PRODUTO: ProdutoParaEtiqueta = {
   id: 'demo',
   name: 'Camiseta Básica',
   preco: 49.90,
-  preco_custo: 25.00,
+  cost_price: 25.00,
   code: '000123',
   ean: '7891234567890',
   categoria: 'Roupas',
-  unidade_comercial: 'UN',
+  commercial_unit: 'UN',
   tamanho: 'M',
   cor: 'Azul',
   preco_original: 69.90,
@@ -468,7 +468,7 @@ const DEMO_PRODUTO: ProdutoParaEtiqueta = {
 const MODELO_DEFAULTS: Record<string, { largura: number; altura: number; campos: string[] }> = {
   simples:  { largura: 40,  altura: 25, campos: ['name', 'price'] },
   padrao:   { largura: 80,  altura: 40, campos: ['name', 'codigo_barras', 'price'] },
-  completo: { largura: 100, altura: 50, campos: ['name', 'sku', 'codigo_barras', 'price', 'preco_custo', 'category'] },
+  completo: { largura: 100, altura: 50, campos: ['name', 'sku', 'codigo_barras', 'price', 'cost_price', 'category'] },
   roupas:   { largura: 50,  altura: 30, campos: ['name', 'price', 'tamanho', 'color', 'codigo_barras'] },
   promocao: { largura: 80,  altura: 50, campos: ['name', 'preco_original', 'price', 'desconto_pct', 'codigo_barras'] },
   gondola:  { largura: 100, altura: 30, campos: ['name', 'price', 'unidade', 'codigo_barras'] },

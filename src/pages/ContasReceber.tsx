@@ -83,21 +83,21 @@ const inputStyle: React.CSSProperties = {
 // ─── Estado inicial dos formulários ───────────────────────────────────────────
 
 const NOVA_INICIAL = {
-  cliente_id: '',
-  cliente_nome: '',
+  customer_id: '',
+  customer_name: '',
   clienteInput: '',
   descricao: '',
   valor: 0,
   categoria: '',
-  forma_recebimento: '' as ContaReceber['forma_recebimento'],
-  data_vencimento: format(new Date(), 'yyyy-MM-dd'),
+  receipt_form: '' as ContaReceber['receipt_form'],
+  due_on: format(new Date(), 'yyyy-MM-dd'),
   observacoes: '',
 };
 
 const RECEBER_INICIAL = {
-  valor_recebido: 0,
-  forma_recebimento: '' as ContaReceber['forma_recebimento'],
-  data_recebimento: format(new Date(), 'yyyy-MM-dd'),
+  received_amount: 0,
+  receipt_form: '' as ContaReceber['receipt_form'],
+  received_on: format(new Date(), 'yyyy-MM-dd'),
   observacoes: '',
 };
 
@@ -153,7 +153,7 @@ export default function ContasReceber() {
   const [numParcelas, setNumParcelas] = useState(2);
   const [periodicidade, setPeriodicidade] = useState<'mensal' | 'quinzenal' | 'semanal'>('mensal');
 
-  const [editConta, setEditConta] = useState({ ...NOVA_INICIAL, numero_parcela: '', total_parcelas: '' });
+  const [editConta, setEditConta] = useState({ ...NOVA_INICIAL, installment_number: '', installment_count: '' });
   const [recebimento, setRecebimento] = useState(RECEBER_INICIAL);
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -161,22 +161,22 @@ export default function ContasReceber() {
   // ─── Preview parcelas ────────────────────────────────────────────────────────
 
   const previewParcelas = useMemo(() => {
-    if (!parcelar || !novaConta.data_vencimento || !novaConta.valor || numParcelas < 2) return [];
-    const datas = gerarDatas(novaConta.data_vencimento, numParcelas, periodicidade);
+    if (!parcelar || !novaConta.due_on || !novaConta.valor || numParcelas < 2) return [];
+    const datas = gerarDatas(novaConta.due_on, numParcelas, periodicidade);
     const valorParcela = Number(novaConta.valor) / numParcelas;
     return datas.map((data, i) => ({ data, valor: valorParcela, num: i + 1 }));
-  }, [parcelar, novaConta.data_vencimento, novaConta.valor, numParcelas, periodicidade]);
+  }, [parcelar, novaConta.due_on, novaConta.valor, numParcelas, periodicidade]);
 
   // ─── Preview recebimento ─────────────────────────────────────────────────────
 
   const previewRecebimento = useMemo(() => {
     if (!contaAtiva) return null;
-    const jaRecebido = Number(contaAtiva.valor_recebido || 0);
-    const novoTotal = jaRecebido + Number(recebimento.valor_recebido || 0);
+    const jaRecebido = Number(contaAtiva.received_amount || 0);
+    const novoTotal = jaRecebido + Number(recebimento.received_amount || 0);
     const total = Number(contaAtiva.valor);
     const status: ContaReceber['status'] = novoTotal >= total ? 'recebido' : 'recebido_parcial';
     return { novoTotal, total, status };
-  }, [contaAtiva, recebimento.valor_recebido]);
+  }, [contaAtiva, recebimento.received_amount]);
 
   // ─── Resumos ─────────────────────────────────────────────────────────────────
 
@@ -189,30 +189,30 @@ export default function ContasReceber() {
   const totalAReceber = useMemo(() =>
     contas
       .filter(c => ['pendente', 'recebido_parcial'].includes(c.status) &&
-        isWithinInterval(parseDate(c.data_vencimento), { start: startOfDay(hoje), end: endOfDay(em30dias) }))
-      .reduce((s, c) => s + Number(c.valor) - Number(c.valor_recebido || 0), 0),
+        isWithinInterval(parseDate(c.due_on), { start: startOfDay(hoje), end: endOfDay(em30dias) }))
+      .reduce((s, c) => s + Number(c.valor) - Number(c.received_amount || 0), 0),
   [contas, hoje, em30dias]);
 
   const totalVencido = useMemo(() =>
     contas.filter(c => c.status === 'vencido')
-      .reduce((s, c) => s + Number(c.valor) - Number(c.valor_recebido || 0), 0),
+      .reduce((s, c) => s + Number(c.valor) - Number(c.received_amount || 0), 0),
   [contas]);
 
   const totalRecebidoMes = useMemo(() =>
-    contas.filter(c => c.status === 'recebido' && c.data_recebimento &&
-      isWithinInterval(parseDate(c.data_recebimento), { start: startOfDay(inicioMes), end: endOfDay(fimMes) }))
-      .reduce((s, c) => s + Number(c.valor_recebido || c.valor), 0),
+    contas.filter(c => c.status === 'recebido' && c.received_on &&
+      isWithinInterval(parseDate(c.received_on), { start: startOfDay(inicioMes), end: endOfDay(fimMes) }))
+      .reduce((s, c) => s + Number(c.received_amount || c.valor), 0),
   [contas, inicioMes, fimMes]);
 
   const totalEmAberto = useMemo(() =>
     contas.filter(c => ['pendente', 'recebido_parcial', 'vencido'].includes(c.status))
-      .reduce((s, c) => s + Number(c.valor) - Number(c.valor_recebido || 0), 0),
+      .reduce((s, c) => s + Number(c.valor) - Number(c.received_amount || 0), 0),
   [contas]);
 
   const vencendoBreve = useMemo(() =>
     contas.filter(c =>
       ['pendente', 'recebido_parcial'].includes(c.status) &&
-      isWithinInterval(parseDate(c.data_vencimento), { start: startOfDay(hoje), end: endOfDay(em7dias) })
+      isWithinInterval(parseDate(c.due_on), { start: startOfDay(hoje), end: endOfDay(em7dias) })
     ),
   [contas, hoje, em7dias]);
 
@@ -222,12 +222,12 @@ export default function ContasReceber() {
     contas.filter(c => {
       const matchSearch =
         (c.descricao || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.cliente_nome || '').toLowerCase().includes(searchTerm.toLowerCase());
+        (c.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus = filterStatus === 'todos' || c.status === filterStatus;
       // Filtro de data aplica só para status "recebido" (histórico); demais mostram tudo
       let matchDate = true;
       if (filterStatus === 'recebido') {
-        const dataRef = c.data_recebimento ? parseDate(c.data_recebimento) : parseDate(c.data_vencimento);
+        const dataRef = c.received_on ? parseDate(c.received_on) : parseDate(c.due_on);
         matchDate = isWithinInterval(dataRef, {
           start: startOfDay(dateRange.from),
           end: endOfDay(dateRange.to),
@@ -242,27 +242,27 @@ export default function ContasReceber() {
   const handleCriar = async () => {
     const nomeCliente = clienteNaoCadastrado
       ? novaConta.clienteInput
-      : clientes.find(c => c.id === novaConta.cliente_id)?.name || novaConta.clienteInput;
+      : clientes.find(c => c.id === novaConta.customer_id)?.name || novaConta.clienteInput;
 
-    if (!novaConta.descricao || !novaConta.valor || !novaConta.data_vencimento) {
+    if (!novaConta.descricao || !novaConta.valor || !novaConta.due_on) {
       toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
     }
 
     if (parcelar && numParcelas >= 2) {
-      const datas = gerarDatas(novaConta.data_vencimento, numParcelas, periodicidade);
+      const datas = gerarDatas(novaConta.due_on, numParcelas, periodicidade);
       const valorParcela = Number(novaConta.valor) / numParcelas;
       const inserts = datas.map((data, i) => ({
         company_id: companyId,
         descricao: `${novaConta.descricao} (Parcela ${i + 1}/${numParcelas})`,
-        cliente_id: clienteNaoCadastrado ? null : (novaConta.cliente_id || null),
-        cliente_nome: nomeCliente || null,
+        customer_id: clienteNaoCadastrado ? null : (novaConta.customer_id || null),
+        customer_name: nomeCliente || null,
         valor: valorParcela,
         categoria: novaConta.categoria || null,
-        forma_recebimento: novaConta.forma_recebimento || null,
-        data_vencimento: data,
-        numero_parcela: i + 1,
-        total_parcelas: numParcelas,
+        receipt_form: novaConta.receipt_form || null,
+        due_on: data,
+        installment_number: i + 1,
+        installment_count: numParcelas,
         observacoes: novaConta.observacoes || null,
       }));
       const { error } = await api.from('receivable').insert(inserts);
@@ -279,12 +279,12 @@ export default function ContasReceber() {
 
     const { error } = await criarConta({
       descricao: novaConta.descricao,
-      cliente_id: clienteNaoCadastrado ? null : (novaConta.cliente_id || null),
-      cliente_nome: nomeCliente || null,
+      customer_id: clienteNaoCadastrado ? null : (novaConta.customer_id || null),
+      customer_name: nomeCliente || null,
       valor: Number(novaConta.valor),
       categoria: novaConta.categoria || null,
-      forma_recebimento: novaConta.forma_recebimento || null,
-      data_vencimento: novaConta.data_vencimento,
+      receipt_form: novaConta.receipt_form || null,
+      due_on: novaConta.due_on,
       observacoes: novaConta.observacoes || null,
     });
     if (error) {
@@ -306,17 +306,17 @@ export default function ContasReceber() {
 
   const handleEditar = async () => {
     if (!contaAtiva) return;
-    if (!editConta.descricao || !editConta.valor || !editConta.data_vencimento) {
+    if (!editConta.descricao || !editConta.valor || !editConta.due_on) {
       toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' });
       return;
     }
     const { error } = await editarConta(contaAtiva.id, {
       descricao: editConta.descricao,
-      cliente_nome: editConta.clienteInput || editConta.cliente_nome || null,
+      customer_name: editConta.clienteInput || editConta.customer_name || null,
       valor: Number(editConta.valor),
       categoria: editConta.categoria || null,
-      forma_recebimento: editConta.forma_recebimento || null,
-      data_vencimento: editConta.data_vencimento,
+      receipt_form: editConta.receipt_form || null,
+      due_on: editConta.due_on,
       observacoes: editConta.observacoes || null,
     });
     if (error) {
@@ -330,20 +330,20 @@ export default function ContasReceber() {
 
   const handleReceber = async () => {
     if (!contaAtiva) return;
-    if (!recebimento.valor_recebido || !recebimento.forma_recebimento || !recebimento.data_recebimento) {
+    if (!recebimento.received_amount || !recebimento.receipt_form || !recebimento.received_on) {
       toast({ title: 'Preencha todos os campos', variant: 'destructive' });
       return;
     }
-    const saldo = Number(contaAtiva.valor) - Number(contaAtiva.valor_recebido || 0);
-    if (Number(recebimento.valor_recebido) > saldo + 0.001) {
+    const saldo = Number(contaAtiva.valor) - Number(contaAtiva.received_amount || 0);
+    if (Number(recebimento.received_amount) > saldo + 0.001) {
       toast({ title: 'Valor excede o saldo em aberto', variant: 'destructive' });
       return;
     }
     const { error } = await receberConta(
       contaAtiva.id,
-      Number(recebimento.valor_recebido),
-      recebimento.forma_recebimento,
-      recebimento.data_recebimento
+      Number(recebimento.received_amount),
+      recebimento.receipt_form,
+      recebimento.received_on
     );
     if (error) {
       toast({ title: 'Erro ao registrar recebimento', variant: 'destructive' });
@@ -358,9 +358,9 @@ export default function ContasReceber() {
   const handleExportarCSV = () => {
     const header = 'Cliente,Descrição,Status,Valor,Recebido,Vencimento,Recebimento\n';
     const rows = filteredContas.map(c =>
-      [c.cliente_nome || '', c.descricao, STATUS_CFG[c.status].label,
-        Number(c.valor).toFixed(2), Number(c.valor_recebido || 0).toFixed(2),
-        c.data_vencimento, c.data_recebimento || ''].join(',')
+      [c.customer_name || '', c.descricao, STATUS_CFG[c.status].label,
+        Number(c.valor).toFixed(2), Number(c.received_amount || 0).toFixed(2),
+        c.due_on, c.received_on || ''].join(',')
     ).join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -376,23 +376,23 @@ export default function ContasReceber() {
     setEditConta({
       ...NOVA_INICIAL,
       descricao: conta.descricao,
-      cliente_nome: conta.cliente_nome || '',
-      clienteInput: conta.cliente_nome || '',
+      customer_name: conta.customer_name || '',
+      clienteInput: conta.customer_name || '',
       valor: conta.valor,
       categoria: conta.categoria || '',
-      forma_recebimento: conta.forma_recebimento || null,
-      data_vencimento: conta.data_vencimento,
+      receipt_form: conta.receipt_form || null,
+      due_on: conta.due_on,
       observacoes: conta.observacoes || '',
-      numero_parcela: conta.numero_parcela?.toString() || '',
-      total_parcelas: conta.total_parcelas?.toString() || '',
+      installment_number: conta.installment_number?.toString() || '',
+      installment_count: conta.installment_count?.toString() || '',
     } as typeof editConta);
     setEditDialogOpen(true);
   };
 
   const openReceber = (conta: ContaReceber) => {
     setContaAtiva(conta);
-    const saldo = Number(conta.valor) - Number(conta.valor_recebido || 0);
-    setRecebimento({ ...RECEBER_INICIAL, valor_recebido: saldo });
+    const saldo = Number(conta.valor) - Number(conta.received_amount || 0);
+    setRecebimento({ ...RECEBER_INICIAL, received_amount: saldo });
     setReceberDialogOpen(true);
   };
 
@@ -530,7 +530,7 @@ export default function ContasReceber() {
               <span style={{ fontSize: '0.875rem', fontWeight: 600, fontFamily: 'Gilroy', color: '#92400E' }}>
                 {vencendoBreve.length} conta{vencendoBreve.length > 1 ? 's' : ''}{' '}
                 vence{vencendoBreve.length > 1 ? 'm' : ''} nos próximos 7 dias
-                {' '}— Total: {formatCurrency(vencendoBreve.reduce((s, c) => s + Number(c.valor) - Number(c.valor_recebido || 0), 0))}
+                {' '}— Total: {formatCurrency(vencendoBreve.reduce((s, c) => s + Number(c.valor) - Number(c.received_amount || 0), 0))}
               </span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -546,7 +546,7 @@ export default function ContasReceber() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {c.cliente_nome || c.descricao} — {format(parseDate(c.data_vencimento), 'dd/MM')}
+                  {c.customer_name || c.descricao} — {format(parseDate(c.due_on), 'dd/MM')}
                 </button>
               ))}
             </div>
@@ -664,7 +664,7 @@ export default function ContasReceber() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {(['pendente', 'recebido_parcial', 'vencido'] as const).map(s => {
                 const total = filteredContas.filter(c => c.status === s)
-                  .reduce((sum, c) => sum + Number(c.valor) - Number(c.valor_recebido || 0), 0);
+                  .reduce((sum, c) => sum + Number(c.valor) - Number(c.received_amount || 0), 0);
                 if (total === 0) return null;
                 const cfg = STATUS_CFG[s];
                 return (
@@ -716,8 +716,8 @@ export default function ContasReceber() {
             ) : (
               <div>
                 {filteredContas.map(conta => {
-                  const saldo = Number(conta.valor) - Number(conta.valor_recebido || 0);
-                  const progresso = conta.valor > 0 ? (Number(conta.valor_recebido || 0) / Number(conta.valor)) * 100 : 0;
+                  const saldo = Number(conta.valor) - Number(conta.received_amount || 0);
+                  const progresso = conta.valor > 0 ? (Number(conta.received_amount || 0) / Number(conta.valor)) * 100 : 0;
                   const isVencida = conta.status === 'vencido';
                   const isParcial = conta.status === 'recebido_parcial';
                   const canReceber = ['pendente', 'recebido_parcial', 'vencido'].includes(conta.status);
@@ -740,20 +740,20 @@ export default function ContasReceber() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                           <p style={{ fontSize: '0.875rem', fontWeight: 600, fontFamily: 'Gilroy', color: '#1F2937', margin: 0 }}>
-                            {conta.cliente_nome && (
-                              <span style={{ color: '#8E5FCF' }}>{conta.cliente_nome} — </span>
+                            {conta.customer_name && (
+                              <span style={{ color: '#8E5FCF' }}>{conta.customer_name} — </span>
                             )}
                             {conta.descricao}
                           </p>
                           <StatusBadge status={conta.status} />
-                          {conta.numero_parcela && conta.total_parcelas && (
+                          {conta.installment_number && conta.installment_count && (
                             <span style={{
                               fontSize: '0.7rem', fontFamily: 'Gilroy', fontWeight: 600,
                               padding: '2px 8px', borderRadius: 20,
                               background: 'rgba(142,95,207,0.08)', color: '#8E5FCF',
                               border: '1px solid rgba(142,95,207,0.2)',
                             }}>
-                              {conta.numero_parcela}/{conta.total_parcelas}
+                              {conta.installment_number}/{conta.installment_count}
                             </span>
                           )}
                           {conta.categoria && (
@@ -771,11 +771,11 @@ export default function ContasReceber() {
                             color: isVencida ? '#EF4444' : '#6B7280',
                           }}>
                             <CalendarIcon style={{ width: 12, height: 12 }} />
-                            Vence {format(parseDate(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                            Vence {format(parseDate(conta.due_on), 'dd/MM/yyyy', { locale: ptBR })}
                           </span>
-                          {conta.data_recebimento && (
+                          {conta.received_on && (
                             <span style={{ fontSize: '0.75rem', color: '#10B981', fontFamily: 'Gilroy', fontWeight: 500 }}>
-                              Recebido em {format(parseDate(conta.data_recebimento), 'dd/MM/yyyy', { locale: ptBR })}
+                              Recebido em {format(parseDate(conta.received_on), 'dd/MM/yyyy', { locale: ptBR })}
                             </span>
                           )}
                           <span style={{ fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Gilroy', color: '#1F2937' }}>
@@ -783,7 +783,7 @@ export default function ContasReceber() {
                           </span>
                           {isParcial && (
                             <span style={{ fontSize: '0.75rem', color: '#3B82F6', fontWeight: 600, fontFamily: 'Gilroy' }}>
-                              Recebido: {formatCurrency(Number(conta.valor_recebido))} — Saldo: {formatCurrency(saldo)}
+                              Recebido: {formatCurrency(Number(conta.received_amount))} — Saldo: {formatCurrency(saldo)}
                             </span>
                           )}
                         </div>
@@ -878,7 +878,7 @@ export default function ContasReceber() {
               {!clienteNaoCadastrado ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <Select value={novaConta.cliente_id} onValueChange={v => setNovaConta(p => ({ ...p, cliente_id: v }))}>
+                    <Select value={novaConta.customer_id} onValueChange={v => setNovaConta(p => ({ ...p, customer_id: v }))}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Selecione ou busque..." /></SelectTrigger>
                       <SelectContent>
                         {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -921,8 +921,8 @@ export default function ContasReceber() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Vencimento *</label>
-                <input type="date" value={novaConta.data_vencimento}
-                  onChange={e => setNovaConta(p => ({ ...p, data_vencimento: e.target.value }))} style={inputStyle} />
+                <input type="date" value={novaConta.due_on}
+                  onChange={e => setNovaConta(p => ({ ...p, due_on: e.target.value }))} style={inputStyle} />
               </div>
             </div>
 
@@ -942,7 +942,7 @@ export default function ContasReceber() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Forma esperada</label>
-                <Select value={novaConta.forma_recebimento || ''} onValueChange={v => setNovaConta(p => ({ ...p, forma_recebimento: v as ContaReceber['forma_recebimento'] }))}>
+                <Select value={novaConta.receipt_form || ''} onValueChange={v => setNovaConta(p => ({ ...p, receipt_form: v as ContaReceber['receipt_form'] }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dinheiro">Dinheiro</SelectItem>
@@ -1048,8 +1048,8 @@ export default function ContasReceber() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Vencimento *</label>
-                <input type="date" value={editConta.data_vencimento}
-                  onChange={e => setEditConta(p => ({ ...p, data_vencimento: e.target.value }))} style={inputStyle} />
+                <input type="date" value={editConta.due_on}
+                  onChange={e => setEditConta(p => ({ ...p, due_on: e.target.value }))} style={inputStyle} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1068,7 +1068,7 @@ export default function ContasReceber() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Forma esperada</label>
-                <Select value={editConta.forma_recebimento || ''} onValueChange={v => setEditConta(p => ({ ...p, forma_recebimento: v as ContaReceber['forma_recebimento'] }))}>
+                <Select value={editConta.receipt_form || ''} onValueChange={v => setEditConta(p => ({ ...p, receipt_form: v as ContaReceber['receipt_form'] }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dinheiro">Dinheiro</SelectItem>
@@ -1117,15 +1117,15 @@ export default function ContasReceber() {
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Resumo */}
               <div style={{ padding: 14, borderRadius: 12, background: 'rgba(142,95,207,0.05)', border: '1px solid rgba(142,95,207,0.1)' }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Gilroy', color: '#1F2937', marginBottom: 2 }}>{contaAtiva.cliente_nome || '—'}</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Gilroy', color: '#1F2937', marginBottom: 2 }}>{contaAtiva.customer_name || '—'}</p>
                 <p style={{ fontSize: '0.75rem', color: '#6B7280', fontFamily: 'Gilroy', marginBottom: 8 }}>{contaAtiva.descricao}</p>
                 <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', fontFamily: 'Gilroy' }}>
                   <span style={{ color: '#6B7280' }}>Total: <strong style={{ color: '#1F2937' }}>{formatCurrency(Number(contaAtiva.valor))}</strong></span>
-                  {Number(contaAtiva.valor_recebido) > 0 && (
-                    <span style={{ color: '#6B7280' }}>Recebido: <strong style={{ color: '#10B981' }}>{formatCurrency(Number(contaAtiva.valor_recebido))}</strong></span>
+                  {Number(contaAtiva.received_amount) > 0 && (
+                    <span style={{ color: '#6B7280' }}>Recebido: <strong style={{ color: '#10B981' }}>{formatCurrency(Number(contaAtiva.received_amount))}</strong></span>
                   )}
                   <span style={{ color: '#8E5FCF', fontWeight: 700 }}>
-                    Saldo: {formatCurrency(Number(contaAtiva.valor) - Number(contaAtiva.valor_recebido || 0))}
+                    Saldo: {formatCurrency(Number(contaAtiva.valor) - Number(contaAtiva.received_amount || 0))}
                   </span>
                 </div>
               </div>
@@ -1133,13 +1133,13 @@ export default function ContasReceber() {
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Valor a receber *</label>
                 <input type="text" inputMode="numeric" placeholder="0,00"
-                  value={formatMaskedValue(recebimento.valor_recebido)}
-                  onChange={e => setRecebimento(r => ({ ...r, valor_recebido: parseMaskedValue(e.target.value) }))} style={inputStyle} />
+                  value={formatMaskedValue(recebimento.received_amount)}
+                  onChange={e => setRecebimento(r => ({ ...r, received_amount: parseMaskedValue(e.target.value) }))} style={inputStyle} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Forma de recebimento *</label>
-                <Select value={recebimento.forma_recebimento || ''}
-                  onValueChange={v => setRecebimento(r => ({ ...r, forma_recebimento: v as ContaReceber['forma_recebimento'] }))}>
+                <Select value={recebimento.receipt_form || ''}
+                  onValueChange={v => setRecebimento(r => ({ ...r, receipt_form: v as ContaReceber['receipt_form'] }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="dinheiro">Dinheiro</SelectItem>
@@ -1153,8 +1153,8 @@ export default function ContasReceber() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Data do recebimento *</label>
-                <input type="date" value={recebimento.data_recebimento}
-                  onChange={e => setRecebimento(r => ({ ...r, data_recebimento: e.target.value }))} style={inputStyle} />
+                <input type="date" value={recebimento.received_on}
+                  onChange={e => setRecebimento(r => ({ ...r, received_on: e.target.value }))} style={inputStyle} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Observações</label>
@@ -1163,7 +1163,7 @@ export default function ContasReceber() {
                   style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }} />
               </div>
 
-              {previewRecebimento && recebimento.valor_recebido > 0 && (
+              {previewRecebimento && recebimento.received_amount > 0 && (
                 <div style={{
                   padding: 12, borderRadius: 12, fontSize: '0.75rem', fontFamily: 'Gilroy',
                   background: STATUS_CFG[previewRecebimento.status].bg,

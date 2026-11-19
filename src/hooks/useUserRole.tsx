@@ -202,7 +202,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
       if (companyId) {
         const { data: empresaRole, error: empresaError } = await api
           .from('company_user')
-          .select('role, nivel_acesso_id')
+          .select('role, access_level_id')
           .eq('user_id', user.id)
           .eq('company_id', companyId)
           .single();
@@ -211,18 +211,18 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
           setRole((empresaRole.role as AppRole) || null);
 
           // If user has "__no_access__" level, block all permissions
-          if (empresaRole.nivel_acesso_id === '__no_access__') {
+          if (empresaRole.access_level_id === '__no_access__') {
             setCustomPermissions([]);
             setLoading(false);
             return;
           }
 
           // If user has custom access level, fetch its permissions
-          if (empresaRole.nivel_acesso_id) {
+          if (empresaRole.access_level_id) {
             const { data: permData } = await api
               .from('access_level_permission')
               .select('module, can_view, can_create, can_edit, can_delete')
-              .eq('access_level_id', empresaRole.nivel_acesso_id);
+              .eq('access_level_id', empresaRole.access_level_id);
 
             if (permData) {
               setCustomPermissions(permData);

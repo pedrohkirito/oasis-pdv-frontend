@@ -398,7 +398,7 @@ export function GradeVariacoes({ productId, precoBase, precoCustoBase }: GradeVa
                     const estoque = Number(valorEdicao(variacao, 'stock') ?? 0);
                     const estoqueMin = Number(valorEdicao(variacao, 'minimum_stock') ?? 0);
                     const preco = valorEdicao(variacao, 'price');
-                    const precoCusto = valorEdicao(variacao, 'preco_custo');
+                    const precoCusto = valorEdicao(variacao, 'cost_price');
                     const baixoEstoque = estoque <= estoqueMin;
 
                     return (
@@ -477,7 +477,7 @@ export function GradeVariacoes({ productId, precoBase, precoCustoBase }: GradeVa
                               step="0.01"
                               value={precoCusto ?? ''}
                               onChange={e =>
-                                editarCampo(variacao.id, 'preco_custo', parseFloat(e.target.value))
+                                editarCampo(variacao.id, 'cost_price', parseFloat(e.target.value))
                               }
                               className={`h-7 pl-7 text-xs ${
                                 precoCusto !== precoCustoBase

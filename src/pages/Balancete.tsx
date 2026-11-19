@@ -81,8 +81,8 @@ function LinhaRow({
           {linha.name}
         </span>
       </div>
-      <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(linha.total_debito)}</span>
-      <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(linha.total_credito)}</span>
+      <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(linha.total_debit)}</span>
+      <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(linha.total_credit)}</span>
       <span className={`text-right text-sm font-mono tabular-nums font-semibold ${linha.saldo < 0 ? 'text-red-600' : 'text-foreground'}`}>
         {fmtBRL(linha.saldo)}
       </span>
@@ -96,7 +96,7 @@ function LinhaRow({
       {corpo}
       <CollapsibleContent>
         {filhos.map(filho => (
-          <LinhaRow key={filho.conta_id} linha={filho} depth={depth + 1} porPai={porPai} />
+          <LinhaRow key={filho.account_id} linha={filho} depth={depth + 1} porPai={porPai} />
         ))}
       </CollapsibleContent>
     </Collapsible>
@@ -123,8 +123,8 @@ export default function Balancete() {
   const porPai = useArvoreBalancete(linhas)
   const raizes = porPai.get(null) ?? []
 
-  const totalDebito = raizes.reduce((s, r) => s + r.total_debito, 0)
-  const totalCredito = raizes.reduce((s, r) => s + r.total_credito, 0)
+  const totalDebito = raizes.reduce((s, r) => s + r.total_debit, 0)
+  const totalCredito = raizes.reduce((s, r) => s + r.total_credit, 0)
   const balanceado = Math.abs(totalDebito - totalCredito) < 0.01
 
   const exportarCSV = () => {
@@ -133,7 +133,7 @@ export default function Balancete() {
       ...linhas
         .slice()
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
-        .map(l => [l.code, l.name, TIPO_LABEL[l.kind] ?? l.kind, l.total_debito, l.total_credito, l.saldo]),
+        .map(l => [l.code, l.name, TIPO_LABEL[l.kind] ?? l.kind, l.total_debit, l.total_credit, l.saldo]),
     ]
     const csv = linhasCSV.map(r => r.join(';')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -211,7 +211,7 @@ export default function Balancete() {
           ) : (
             <div>
               {raizes.map(raiz => (
-                <LinhaRow key={raiz.conta_id} linha={raiz} depth={0} porPai={porPai} />
+                <LinhaRow key={raiz.account_id} linha={raiz} depth={0} porPai={porPai} />
               ))}
 
               {/* Total geral */}

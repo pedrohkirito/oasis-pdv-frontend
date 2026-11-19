@@ -32,7 +32,7 @@ export const MODELOS_ETIQUETA: ModeloEtiqueta[] = [
     name: 'Completo',
     descricao: 'Todas as informações',
     largura: 100, altura: 50,
-    campos: ['name', 'sku', 'codigo_barras', 'price', 'preco_custo', 'category'],
+    campos: ['name', 'sku', 'codigo_barras', 'price', 'cost_price', 'category'],
     layout: 'completo',
   },
   {
@@ -137,11 +137,11 @@ export interface ProdutoParaEtiqueta {
   id: string;
   name: string;
   preco: number;
-  preco_custo?: number | null;
+  cost_price?: number | null;
   code?: string | null;   // código interno / SKU
   ean?: string | null;      // código de barras EAN
   categoria?: string | null;
-  unidade_comercial?: string | null;
+  commercial_unit?: string | null;
   tamanho?: string | null;
   cor?: string | null;
   preco_original?: number | null;
@@ -153,7 +153,7 @@ export interface ProdutoParaEtiqueta {
 export const CAMPOS_DISPONIVEIS: { id: string; label: string }[] = [
   { id: 'name',         label: 'Nome do produto'        },
   { id: 'price',        label: 'Preço de venda'          },
-  { id: 'preco_custo',  label: 'Preço de custo'          },
+  { id: 'cost_price',  label: 'Preço de custo'          },
   { id: 'codigo_barras',label: 'Código de barras (EAN/SKU)' },
   { id: 'qrcode',       label: 'QR Code'                 },
   { id: 'sku',          label: 'Código SKU (texto)'       },

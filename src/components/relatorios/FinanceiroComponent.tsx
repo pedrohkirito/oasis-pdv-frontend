@@ -105,10 +105,10 @@ function BarraIndicador({ valor, max = 100 }: { valor: number; max?: number }) {
 }
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
-interface VendaRow { valor_final: number; valor: number; valor_bruto: number | null; desconto: number | null; data_venda: string; metodo_pagamento: string; }
-interface ContaPagarRow { valor: number; categoria: string | null; data_pagamento: string | null; data_vencimento: string; status: string; }
-interface ContaReceberRow { id: string; cliente_nome: string | null; valor: number; valor_recebido: number; data_vencimento: string; data_recebimento: string | null; status: string; }
-interface TaxaRow { metodo_pagamento: string; taxa_percentual: number; parcelas: number; bandeira: string; }
+interface VendaRow { final_amount: number; valor: number; gross_amount: number | null; desconto: number | null; sold_on: string; payment_method: string; }
+interface ContaPagarRow { valor: number; categoria: string | null; paid_on: string | null; due_on: string; status: string; }
+interface ContaReceberRow { id: string; customer_name: string | null; valor: number; received_amount: number; due_on: string; received_on: string | null; status: string; }
+interface TaxaRow { payment_method: string; fee_percent: number; parcelas: number; bandeira: string; }
 
 interface Dados {
   // KPIs
@@ -229,21 +229,21 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       { data: taxas      },
       { data: comissoes  },
     ] = await Promise.all([
-      api.from('sale').select('valor_final,valor,valor_bruto,desconto,data_venda,metodo_pagamento')
+      api.from('sale').select('final_amount,valor,gross_amount,desconto,sold_on,payment_method')
         .eq('company_id', companyId).gte('sold_on', inicioStr).lte('sold_on', fimStr),
-      api.from('sale').select('valor_final,valor')
+      api.from('sale').select('final_amount,valor')
         .eq('company_id', companyId).gte('sold_on', iniAntStr).lte('sold_on', fimAntStr),
-      api.from('payable').select('valor,categoria,data_pagamento,data_vencimento,status')
+      api.from('payable').select('valor,categoria,paid_on,due_on,status')
         .eq('company_id', companyId).eq('status', 'pago')
         .gte('paid_on', inicioStr).lte('paid_on', fimStr),
       api.from('payable').select('amount')
         .eq('company_id', companyId).eq('status', 'pago')
         .gte('paid_on', iniAntStr).lte('paid_on', fimAntStr),
-      api.from('receivable').select('id,cliente_nome,valor,valor_recebido,data_vencimento,data_recebimento,status')
+      api.from('receivable').select('id,customer_name,valor,received_amount,due_on,received_on,status')
         .eq('company_id', companyId).order('due_on', { ascending: true }),
-      (api as any).from('payment_fee').select('metodo_pagamento,taxa_percentual,parcelas,bandeira')
+      (api as any).from('payment_fee').select('payment_method,fee_percent,parcelas,bandeira')
         .eq('company_id', companyId).eq('parcelas', 0),
-      (api as any).from('commission').select('valor_comissao,status').eq('company_id', companyId)
+      (api as any).from('commission').select('commission_amount,status').eq('company_id', companyId)
         .eq('status', 'pago').gte('created_at', inicioStr).lte('created_at', fimStr + 'T23:59:59'),
     ]);
 
@@ -253,12 +253,12 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
     const cpsAnt= (contasAnt  || []) as { valor: number }[];
     const crs   = (receber    || []) as ContaReceberRow[];
     const txs   = (taxas      || []) as TaxaRow[];
-    const cms   = (comissoes  || []) as { valor_comissao: number }[];
+    const cms   = (comissoes  || []) as { commission_amount: number }[];
 
     // ── KPIs ──────────────────────────────────────────────────────────────────
-    const receitaBruta   = vs.reduce((s,v) => s + (Number(v.valor_bruto) || Number(v.valor) || 0), 0);
+    const receitaBruta   = vs.reduce((s,v) => s + (Number(v.gross_amount) || Number(v.valor) || 0), 0);
     const descontos      = vs.reduce((s,v) => s + (Number(v.desconto) || 0), 0);
-    const receitaLiquida = vs.reduce((s,v) => s + (Number(v.valor_final) || Number(v.valor) || 0), 0);
+    const receitaLiquida = vs.reduce((s,v) => s + (Number(v.final_amount) || Number(v.valor) || 0), 0);
     const despesasPagas  = cps.reduce((s,c) => s + Number(c.valor), 0);
     const resultado      = receitaLiquida - despesasPagas;
     const margemLiquida  = receitaLiquida > 0 ? (resultado / receitaLiquida) * 100 : 0;
@@ -266,7 +266,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
     const ticketMedio    = qtdVendas > 0 ? receitaLiquida / qtdVendas : 0;
     const diasPeriodo    = Math.max(differenceInDays(fim, inicio) + 1, 1);
 
-    const receitaAnterior  = vsAnt.reduce((s,v) => s + (Number(v.valor_final) || Number(v.valor) || 0), 0);
+    const receitaAnterior  = vsAnt.reduce((s,v) => s + (Number(v.final_amount) || Number(v.valor) || 0), 0);
     const despesasAnterior = cpsAnt.reduce((s,c) => s + Number(c.valor), 0);
     const ticketAnterior   = vsAnt.length > 0 ? receitaAnterior / vsAnt.length : 0;
 
@@ -276,11 +276,11 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       const ini = startOfWeek(sem, { locale: ptBR });
       const end_ = endOfWeek(sem, { locale: ptBR });
       const sv = vs.filter(v => {
-        const d = parseISO(v.data_venda + 'T00:00:00');
+        const d = parseISO(v.sold_on + 'T00:00:00');
         return !isBefore(d, ini) && !isAfter(d, end_);
       });
-      const bruta   = sv.reduce((s,v) => s + (Number(v.valor_bruto) || Number(v.valor) || 0), 0);
-      const liquida = sv.reduce((s,v) => s + (Number(v.valor_final) || Number(v.valor) || 0), 0);
+      const bruta   = sv.reduce((s,v) => s + (Number(v.gross_amount) || Number(v.valor) || 0), 0);
+      const liquida = sv.reduce((s,v) => s + (Number(v.final_amount) || Number(v.valor) || 0), 0);
       return { periodo: semanas.length <= 6 ? format(ini, 'dd/MM', { locale: ptBR }) : `S${i+1}`, bruta, liquida };
     });
 
@@ -295,11 +295,11 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       .map(([name, value], i) => ({ name, value, color: CAT_COLORS[i % CAT_COLORS.length] }));
 
     // ── Comissões ─────────────────────────────────────────────────────────────
-    const custoComissoes = cms.reduce((s,c) => s + Number(c.valor_comissao), 0);
+    const custoComissoes = cms.reduce((s,c) => s + Number(c.commission_amount), 0);
 
     // ── Inadimplência e taxa de desconto ──────────────────────────────────────
     const totalReceber = crs.reduce((s,c) => s + Number(c.valor), 0);
-    const totalVencido = crs.filter(c => c.status === 'vencido' || (c.status === 'pendente' && c.data_vencimento < hoje))
+    const totalVencido = crs.filter(c => c.status === 'vencido' || (c.status === 'pendente' && c.due_on < hoje))
       .reduce((s,c) => s + Number(c.valor), 0);
     const inadimplencia = totalReceber > 0 ? (totalVencido / totalReceber) * 100 : 0;
     const taxaDesconto  = receitaBruta  > 0 ? (descontos   / receitaBruta) * 100 : 0;
@@ -311,21 +311,21 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       const iniS = format(ini,  'yyyy-MM-dd');
       const endS = format(end_, 'yyyy-MM-dd');
       const entradas = vs
-        .filter(v => v.data_venda >= iniS && v.data_venda <= endS)
-        .reduce((s,v) => s + (Number(v.valor_final) || 0), 0);
+        .filter(v => v.sold_on >= iniS && v.sold_on <= endS)
+        .reduce((s,v) => s + (Number(v.final_amount) || 0), 0);
       const saidas = cps
-        .filter(c => c.data_pagamento && c.data_pagamento >= iniS && c.data_pagamento <= endS)
+        .filter(c => c.paid_on && c.paid_on >= iniS && c.paid_on <= endS)
         .reduce((s,c) => s + Number(c.valor), 0);
       return { semana: semanas.length <= 6 ? format(ini,'dd/MM',{locale:ptBR}) : `S${i+1}`, entradas, saidas, saldo: entradas - saidas };
     });
 
     // ── Aging de recebíveis ───────────────────────────────────────────────────
     const agingDefs = [
-      { faixa: 'A vencer',         min: 1,   max: 9999, color: C.azul,  fn: (c: ContaReceberRow) => c.data_vencimento > hoje && (c.status === 'pendente') },
-      { faixa: 'Vence em 7 dias',  min: 0,   max: 7,    color: C.ambar, fn: (c: ContaReceberRow) => c.data_vencimento >= hoje && differenceInDays(parseISO(c.data_vencimento), new Date()) <= 7 && c.status === 'pendente' },
-      { faixa: '1-30 dias',        min: 1,   max: 30,   color: '#F97316', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.data_vencimento)); return d >= 1 && d <= 30 && c.status !== 'recebido' && c.status !== 'cancelado' && c.data_vencimento < hoje; } },
-      { faixa: '31-60 dias',       min: 31,  max: 60,   color: '#EF4444', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.data_vencimento)); return d >= 31 && d <= 60 && c.status !== 'recebido' && c.status !== 'cancelado'; } },
-      { faixa: '+60 dias',         min: 61,  max: 9999, color: '#991B1B', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.data_vencimento)); return d > 60 && c.status !== 'recebido' && c.status !== 'cancelado'; } },
+      { faixa: 'A vencer',         min: 1,   max: 9999, color: C.azul,  fn: (c: ContaReceberRow) => c.due_on > hoje && (c.status === 'pendente') },
+      { faixa: 'Vence em 7 dias',  min: 0,   max: 7,    color: C.ambar, fn: (c: ContaReceberRow) => c.due_on >= hoje && differenceInDays(parseISO(c.due_on), new Date()) <= 7 && c.status === 'pendente' },
+      { faixa: '1-30 dias',        min: 1,   max: 30,   color: '#F97316', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.due_on)); return d >= 1 && d <= 30 && c.status !== 'recebido' && c.status !== 'cancelado' && c.due_on < hoje; } },
+      { faixa: '31-60 dias',       min: 31,  max: 60,   color: '#EF4444', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.due_on)); return d >= 31 && d <= 60 && c.status !== 'recebido' && c.status !== 'cancelado'; } },
+      { faixa: '+60 dias',         min: 61,  max: 9999, color: '#991B1B', fn: (c: ContaReceberRow) => { const d = differenceInDays(new Date(), parseISO(c.due_on)); return d > 60 && c.status !== 'recebido' && c.status !== 'cancelado'; } },
     ];
     const aging = agingDefs.map(def => {
       const grupo = crs.filter(def.fn);
@@ -333,7 +333,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
     });
 
     const proximos30 = crs
-      .filter(c => c.status === 'pendente' && c.data_vencimento >= hoje && c.data_vencimento <= format(addDays(new Date(), 30), 'yyyy-MM-dd'))
+      .filter(c => c.status === 'pendente' && c.due_on >= hoje && c.due_on <= format(addDays(new Date(), 30), 'yyyy-MM-dd'))
       .reduce((s,c) => s + Number(c.valor), 0);
     const top5 = crs
       .filter(c => c.status === 'pendente' || c.status === 'vencido')
@@ -342,11 +342,11 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
 
     // ── Comparativo 6 meses ───────────────────────────────────────────────────
     const { data: v6 } = await api.from('sale')
-      .select('valor_final,valor,data_venda')
+      .select('final_amount,valor,sold_on')
       .eq('company_id', companyId)
       .gte('sold_on', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
     const { data: c6 } = await api.from('payable')
-      .select('valor,data_pagamento')
+      .select('valor,paid_on')
       .eq('company_id', companyId).eq('status', 'pago')
       .gte('paid_on', format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'));
 
@@ -354,21 +354,21 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
       const mes = subMonths(new Date(), 5 - i);
       const mesI = format(startOfMonth(mes), 'yyyy-MM-dd');
       const mesF = format(endOfMonth(mes),   'yyyy-MM-dd');
-      const rec = (v6 || []).filter((v:any) => v.data_venda >= mesI && v.data_venda <= mesF)
-        .reduce((s:number, v:any) => s + (Number(v.valor_final) || Number(v.valor) || 0), 0);
-      const desp = (c6 || []).filter((c:any) => c.data_pagamento && c.data_pagamento >= mesI && c.data_pagamento <= mesF)
+      const rec = (v6 || []).filter((v:any) => v.sold_on >= mesI && v.sold_on <= mesF)
+        .reduce((s:number, v:any) => s + (Number(v.final_amount) || Number(v.valor) || 0), 0);
+      const desp = (c6 || []).filter((c:any) => c.paid_on && c.paid_on >= mesI && c.paid_on <= mesF)
         .reduce((s:number, c:any) => s + Number(c.valor), 0);
       return { mes: format(mes, 'MMM', { locale: ptBR }), receita: rec, despesas: desp, resultado: rec - desp };
     });
 
     // ── Formas de pagamento ───────────────────────────────────────────────────
     const formaMap: Record<string, number> = {};
-    vs.forEach(v => { formaMap[v.metodo_pagamento] = (formaMap[v.metodo_pagamento] || 0) + (Number(v.valor_final) || 0); });
+    vs.forEach(v => { formaMap[v.payment_method] = (formaMap[v.payment_method] || 0) + (Number(v.final_amount) || 0); });
     const formas = Object.entries(formaMap)
       .sort((a,b) => b[1]-a[1])
       .map(([name, valor]) => {
-        const tx = txs.find(t => t.metodo_pagamento === name && t.parcelas === 0);
-        const taxaPerc = tx ? Number(tx.taxa_percentual) : 0;
+        const tx = txs.find(t => t.payment_method === name && t.parcelas === 0);
+        const taxaPerc = tx ? Number(tx.fee_percent) : 0;
         return { name, valor, taxaPerc, custoTaxa: valor * taxaPerc / 100 };
       });
 
@@ -758,7 +758,7 @@ export default function FinanceiroComponent({ dataInicio, dataFim }: { dataInici
                   {dados.top5.map(c => (
                     <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(142,95,207,0.06)' }}>
                       <span style={{ fontSize: '0.75rem', fontFamily: 'Gilroy', color: '#374151', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.cliente_nome || 'Cliente'}
+                        {c.customer_name || 'Cliente'}
                       </span>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: 'Gilroy', color: c.status === 'vencido' ? C.verm : C.ambar, flexShrink: 0 }}>
                         {fmt(Number(c.valor))}

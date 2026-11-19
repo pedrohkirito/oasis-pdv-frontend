@@ -60,7 +60,7 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
       .eq('reference_month', selectedMes)
       .maybeSingle();
 
-    setValorMeta(data ? String(data.valor_meta) : '');
+    setValorMeta(data ? String(data.goal_amount) : '');
     setLoading(false);
   };
 
@@ -79,12 +79,12 @@ const MetaConfigDialog: React.FC<MetaConfigDialogProps> = ({
       .upsert(
         {
           company_id: companyId,
-          vendedor_id: selectedVendedor,
-          mes_referencia: selectedMes,
-          valor_meta: valor,
-          criado_por: user.id,
+          seller_id: selectedVendedor,
+          reference_month: selectedMes,
+          goal_amount: valor,
+          created_by_name: user.id,
         } as any,
-        { onConflict: 'empresa_id,vendedor_id,mes_referencia' }
+        { onConflict: 'company_id,seller_id,reference_month' }
       );
 
     if (error) {

@@ -84,7 +84,7 @@ const validateCNPJ = (cnpj: string): boolean => {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FormData = {
-  name: string; razao_social: string; cnpj: string; email: string;
+  name: string; legal_name: string; cnpj: string; email: string;
   telefone: string; endereco: string; numero: string;
   cidade: string; estado: string; cep: string; categoria: string;
 };
@@ -118,8 +118,8 @@ const FormFields = ({ data, setData, loadingCepState, onCepChange }: FormFieldsP
       </div>
       <div>
         <Label htmlFor="legal_name" style={labelStyle}>Razão Social</Label>
-        <Input id="legal_name" placeholder="Razão social" value={data.razao_social}
-          onChange={(e) => setData(prev => ({ ...prev, razao_social: e.target.value }))}
+        <Input id="legal_name" placeholder="Razão social" value={data.legal_name}
+          onChange={(e) => setData(prev => ({ ...prev, legal_name: e.target.value }))}
           style={{ fontFamily: 'Gilroy' }} />
       </div>
     </div>
@@ -334,9 +334,9 @@ function FornecedorRow({ fornecedor, onEdit, onDelete, onToggleAtivo, onViewDeta
                 <MapPin size={12} color="#9CA3AF" /> {fornecedor.endereco}
               </span>
             )}
-            {fornecedor.razao_social && (
+            {fornecedor.legal_name && (
               <span style={{ fontSize: '0.78rem', color: '#9CA3AF', fontFamily: 'Gilroy', gridColumn: '1 / -1' }}>
-                Razão Social: {fornecedor.razao_social}
+                Razão Social: {fornecedor.legal_name}
               </span>
             )}
           </div>
@@ -585,7 +585,7 @@ const Fornecedores = () => {
   const [hovNovo,          setHovNovo]          = useState(false);
 
   const emptyForm = {
-    name: '', razao_social: '', cnpj: '', email: '', telefone: '',
+    name: '', legal_name: '', cnpj: '', email: '', telefone: '',
     endereco: '', numero: '', cidade: '', estado: '', cep: '', categoria: '',
   };
 
@@ -662,7 +662,7 @@ const Fornecedores = () => {
     const { error } = await api.from('supplier').insert({
       user_id: user.id, company_id: companyId,
       name: novoFornecedor.name,
-      razao_social: novoFornecedor.razao_social || null,
+      legal_name: novoFornecedor.legal_name || null,
       cnpj: novoFornecedor.cnpj,
       email: novoFornecedor.email || null,
       telefone: novoFornecedor.telefone || null,
@@ -686,7 +686,7 @@ const Fornecedores = () => {
     setEditingFornecedor(fornecedor);
     setEditFornecedor({
       name: fornecedor.name,
-      razao_social: fornecedor.razao_social || '',
+      legal_name: fornecedor.legal_name || '',
       cnpj: fornecedor.cnpj,
       email: fornecedor.email || '',
       telefone: fornecedor.telefone || '',
@@ -715,7 +715,7 @@ const Fornecedores = () => {
     const { error } = await api.from('supplier')
       .update({
         name: editFornecedor.name,
-        razao_social: editFornecedor.razao_social || null,
+        legal_name: editFornecedor.legal_name || null,
         cnpj: editFornecedor.cnpj,
         email: editFornecedor.email || null,
         telefone: editFornecedor.telefone || null,
@@ -757,7 +757,7 @@ const Fornecedores = () => {
 
   const filteredFornecedores = fornecedores.filter(f =>
     f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (f.razao_social && f.razao_social.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (f.legal_name && f.legal_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     f.cnpj.includes(searchTerm)
   );
 
@@ -1039,7 +1039,7 @@ const Fornecedores = () => {
                     { label: 'Telefone', value: detalheFornecedor.telefone, icon: Phone },
                     { label: 'E-mail', value: detalheFornecedor.email, icon: Mail },
                     { label: 'Categoria', value: detalheFornecedor.categoria, icon: Tag },
-                    { label: 'Razão Social', value: detalheFornecedor.razao_social, icon: Building2 },
+                    { label: 'Razão Social', value: detalheFornecedor.legal_name, icon: Building2 },
                     { label: 'Cidade', value: detalheFornecedor.cidade, icon: MapPin },
                     { label: 'Estado', value: detalheFornecedor.estado, icon: MapPin },
                   ].filter(item => item.value).map(item => (

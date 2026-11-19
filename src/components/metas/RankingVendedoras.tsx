@@ -8,7 +8,7 @@ import { ptBR } from 'date-fns/locale'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface VendedoraStats {
-  usuario_id: string
+  user_id: string
   name: string
   realizado: number
   meta?: number
@@ -57,7 +57,7 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     // Busca vendas do período agrupadas por vendedor
     const { data: vendas } = await (api
       .from('sale')
-      .select('valor, vendedor, vendedor_id, usuario_id') as any)
+      .select('valor, vendedor, seller_id, user_id') as any)
       .eq('company_id', companyId)
       .gte('created_at', ini + 'T00:00:00')
       .lte('created_at', fim + 'T23:59:59')
@@ -65,17 +65,17 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     // Busca metas de vendedoras do período
     const { data: metasData } = await (api
       .from('metas' as any)
-      .select('usuario_id, usuario_nome, valor') as any)
+      .select('user_id, user_name, valor') as any)
       .eq('company_id', companyId)
       .eq('kind', 'vendedora')
       .eq('active', true)
-      .lte('data_inicio', fim)
-      .gte('data_fim', ini)
+      .lte('start_on', fim)
+      .gte('end_on', ini)
 
     // Agrupa vendas por vendedor
     const porVendedor: Record<string, { name: string; total: number }> = {}
     for (const v of (vendas || [])) {
-      const chave = v.usuario_id || v.vendedor_id || v.vendedor || 'desconhecido'
+      const chave = v.user_id || v.seller_id || v.vendedor || 'desconhecido'
       const name  = v.vendedor || 'Não identificado'
       if (!porVendedor[chave]) porVendedor[chave] = { name, total: 0 }
       porVendedor[chave].total += v.valor || 0
@@ -84,14 +84,14 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
     // Monta ranking com meta individual quando disponível
     const metaMap: Record<string, number> = {}
     for (const m of (metasData || [])) {
-      if (m.usuario_id) metaMap[m.usuario_id] = m.valor
+      if (m.user_id) metaMap[m.user_id] = m.valor
     }
 
     const lista: VendedoraStats[] = Object.entries(porVendedor)
       .map(([uid, { name, total }]) => {
         const meta = metaMap[uid]
         return {
-          usuario_id: uid,
+          user_id: uid,
           name,
           realizado: total,
           meta,
@@ -127,7 +127,7 @@ export function RankingVendedoras({ dataInicio, dataFim }: RankingVendedorasProp
               const larguraBarra = (v.realizado / maiorValor) * 100
               const cor = v.percentual !== undefined ? corBarra(v.percentual) : '#8b5cf6'
               return (
-                <div key={v.usuario_id}>
+                <div key={v.user_id}>
                   {/* Linha: medalha + name + valor */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

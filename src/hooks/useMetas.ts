@@ -54,11 +54,11 @@ export function useMetas() {
       // dentro do período. Usa join implícito via PostgREST.
       const { data: itens } = await (api
         .from('sale_item')
-        .select('subtotal, produtos!inner(categoria, empresa_id), vendas!inner(data_venda, empresa_id)') as any)
+        .select('subtotal, produtos!inner(categoria, company_id), vendas!inner(sold_on, company_id)') as any)
         .eq('produtos.categoria', meta.categoria)
-        .eq('vendas.empresa_id', companyId)
-        .gte('vendas.data_venda', meta.data_inicio)
-        .lte('vendas.data_venda', meta.data_fim)
+        .eq('vendas.company_id', companyId)
+        .gte('vendas.sold_on', meta.start_on)
+        .lte('vendas.sold_on', meta.end_on)
 
       realizado = (itens || []).reduce(
         (acc: number, i: any) => acc + Number(i.subtotal || 0), 0
@@ -66,18 +66,18 @@ export function useMetas() {
     } else {
       let query = (api
         .from('sale')
-        .select('valor, valor_final, vendedor_id, data_venda') as any)
+        .select('valor, final_amount, seller_id, sold_on') as any)
         .eq('company_id', companyId)
-        .gte('sold_on', meta.data_inicio)
-        .lte('sold_on', meta.data_fim)
+        .gte('sold_on', meta.start_on)
+        .lte('sold_on', meta.end_on)
 
-      if (meta.kind === 'vendedora' && meta.usuario_id) {
-        query = query.eq('seller_id', meta.usuario_id)
+      if (meta.kind === 'vendedora' && meta.user_id) {
+        query = query.eq('seller_id', meta.user_id)
       }
 
       const { data: vendas } = await query
       realizado = (vendas || []).reduce(
-        (acc: number, v: any) => acc + Number(v.valor_final ?? v.valor ?? 0), 0
+        (acc: number, v: any) => acc + Number(v.final_amount ?? v.valor ?? 0), 0
       )
     }
 

@@ -144,7 +144,7 @@ export default function Lancamentos() {
                     <button className="text-muted-foreground hover:text-brand" onClick={() => alternar(l.id)}>
                       {aberto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </button>
-                    <span className="text-sm tabular-nums">{format(parseISO(l.data_lancamento), 'dd/MM/yyyy')}</span>
+                    <span className="text-sm tabular-nums">{format(parseISO(l.posted_on), 'dd/MM/yyyy')}</span>
                     <span className="text-sm truncate" title={l.historico}>{l.historico}</span>
                     <span className="flex items-center gap-1.5">
                       <Badge variant="outline" className={`text-xs ${ORIGEM_BADGE[l.origem] ?? ''}`}>

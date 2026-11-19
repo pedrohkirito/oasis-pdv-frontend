@@ -23,22 +23,22 @@ interface NotaDemo {
   numero: number;
   status: Status;
   ambiente: 'producao' | 'homologacao';
-  valor_total: number;
-  cliente_nome: string;
-  data_emissao: string;
+  total_amount: number;
+  customer_name: string;
+  issued_at: string;
 }
 
 // ─── Dados fictícios ──────────────────────────────────────────────────────────
 
 const NOTAS: NotaDemo[] = [
-  { id: 1, numero: 1052, status: 'autorizada', ambiente: 'producao', valor_total: 847.00,  cliente_nome: 'Maria S.',  data_emissao: '23/03/2026' },
-  { id: 2, numero: 1051, status: 'autorizada', ambiente: 'producao', valor_total: 1230.00, cliente_nome: 'João P.',   data_emissao: '23/03/2026' },
-  { id: 3, numero: 1050, status: 'cancelada',  ambiente: 'producao', valor_total: 520.00,  cliente_nome: 'Ana L.',    data_emissao: '22/03/2026' },
-  { id: 4, numero: 1049, status: 'autorizada', ambiente: 'producao', valor_total: 390.00,  cliente_nome: 'Carlos M.', data_emissao: '22/03/2026' },
-  { id: 5, numero: 1048, status: 'pendente',   ambiente: 'producao', valor_total: 960.00,  cliente_nome: 'Fernanda R.', data_emissao: '21/03/2026' },
-  { id: 6, numero: 1047, status: 'autorizada', ambiente: 'producao', valor_total: 1840.00, cliente_nome: 'Roberto A.', data_emissao: '21/03/2026' },
-  { id: 7, numero: 1046, status: 'autorizada', ambiente: 'producao', valor_total: 730.00,  cliente_nome: 'Lucia F.',  data_emissao: '20/03/2026' },
-  { id: 8, numero: 1045, status: 'pendente',   ambiente: 'producao', valor_total: 280.00,  cliente_nome: 'Pedro C.',  data_emissao: '20/03/2026' },
+  { id: 1, numero: 1052, status: 'autorizada', ambiente: 'producao', total_amount: 847.00,  customer_name: 'Maria S.',  issued_at: '23/03/2026' },
+  { id: 2, numero: 1051, status: 'autorizada', ambiente: 'producao', total_amount: 1230.00, customer_name: 'João P.',   issued_at: '23/03/2026' },
+  { id: 3, numero: 1050, status: 'cancelada',  ambiente: 'producao', total_amount: 520.00,  customer_name: 'Ana L.',    issued_at: '22/03/2026' },
+  { id: 4, numero: 1049, status: 'autorizada', ambiente: 'producao', total_amount: 390.00,  customer_name: 'Carlos M.', issued_at: '22/03/2026' },
+  { id: 5, numero: 1048, status: 'pendente',   ambiente: 'producao', total_amount: 960.00,  customer_name: 'Fernanda R.', issued_at: '21/03/2026' },
+  { id: 6, numero: 1047, status: 'autorizada', ambiente: 'producao', total_amount: 1840.00, customer_name: 'Roberto A.', issued_at: '21/03/2026' },
+  { id: 7, numero: 1046, status: 'autorizada', ambiente: 'producao', total_amount: 730.00,  customer_name: 'Lucia F.',  issued_at: '20/03/2026' },
+  { id: 8, numero: 1045, status: 'pendente',   ambiente: 'producao', total_amount: 280.00,  customer_name: 'Pedro C.',  issued_at: '20/03/2026' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -87,14 +87,14 @@ function NotaRow({ nota }: { nota: NotaDemo }) {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {nota.cliente_nome} · {nota.data_emissao}
+            {nota.customer_name} · {nota.issued_at}
           </p>
         </div>
       </div>
 
       {/* Direita */}
       <span className="font-semibold text-[#1F2937] whitespace-nowrap ml-8">
-        {fmtBRL(nota.valor_total)}
+        {fmtBRL(nota.total_amount)}
       </span>
     </div>
   );
@@ -109,7 +109,7 @@ export default function DemoNotasFiscais() {
   const filtered = NOTAS.filter((n) => {
     const matchSearch =
       String(n.numero).includes(search) ||
-      n.cliente_nome.toLowerCase().includes(search.toLowerCase());
+      n.customer_name.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === 'todos' || n.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -118,7 +118,7 @@ export default function DemoNotasFiscais() {
   const totalCanceladas  = NOTAS.filter(n => n.status === 'cancelada').length;
   const valorTotal       = NOTAS
     .filter(n => n.status === 'autorizada')
-    .reduce((s, n) => s + n.valor_total, 0);
+    .reduce((s, n) => s + n.total_amount, 0);
 
   return (
     <div className="min-h-screen bg-background">

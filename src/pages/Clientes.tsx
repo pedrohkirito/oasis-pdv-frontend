@@ -37,7 +37,7 @@ interface Cliente {
   telefone: string | null;
   telefone_adicional: string | null;
   email: string | null;
-  data_nascimento: string | null;
+  birth_date: string | null;
   endereco: string | null;
   complemento: string | null;
   bairro: string | null;
@@ -284,7 +284,7 @@ const Clientes = () => {
     telefone: '',
     telefone_adicional: '',
     email: '',
-    data_nascimento: '',
+    birth_date: '',
     endereco: '',
     numero: '',
     complemento: '',
@@ -301,7 +301,7 @@ const Clientes = () => {
     telefone: '',
     telefone_adicional: '',
     email: '',
-    data_nascimento: '',
+    birth_date: '',
     endereco: '',
     numero: '',
     complemento: '',
@@ -431,7 +431,7 @@ const Clientes = () => {
       telefone: novoCliente.telefone || null,
       telefone_adicional: novoCliente.telefone_adicional || null,
       email: novoCliente.email || null,
-      data_nascimento: novoCliente.data_nascimento || null,
+      birth_date: novoCliente.birth_date || null,
       endereco: enderecoCompleto || null,
       complemento: novoCliente.complemento || null,
       bairro: novoCliente.bairro || null,
@@ -450,7 +450,7 @@ const Clientes = () => {
         telefone: '',
         telefone_adicional: '',
         email: '',
-        data_nascimento: '',
+        birth_date: '',
         endereco: '',
         numero: '',
         complemento: '',
@@ -477,7 +477,7 @@ const Clientes = () => {
       telefone: cliente.telefone || '',
       telefone_adicional: cliente.telefone_adicional || '',
       email: cliente.email || '',
-      data_nascimento: cliente.data_nascimento || '',
+      birth_date: cliente.birth_date || '',
       endereco: cliente.endereco || '',
       numero: '',
       complemento: cliente.complemento || '',
@@ -522,7 +522,7 @@ const Clientes = () => {
       telefone: editCliente.telefone || null,
       telefone_adicional: editCliente.telefone_adicional || null,
       email: editCliente.email || null,
-      data_nascimento: editCliente.data_nascimento || null,
+      birth_date: editCliente.birth_date || null,
       endereco: enderecoCompleto || null,
       complemento: editCliente.complemento || null,
       bairro: editCliente.bairro || null,
@@ -918,12 +918,12 @@ const Clientes = () => {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="data_nascimento">Data de Nascimento</Label>
+                    <Label htmlFor="birth_date">Data de Nascimento</Label>
                     <Input 
-                      id="data_nascimento" 
+                      id="birth_date" 
                       type="date"
-                      value={novoCliente.data_nascimento} 
-                      onChange={e => setNovoCliente({ ...novoCliente, data_nascimento: e.target.value })} 
+                      value={novoCliente.birth_date} 
+                      onChange={e => setNovoCliente({ ...novoCliente, birth_date: e.target.value })} 
                     />
                   </div>
                 </div>
@@ -1243,8 +1243,8 @@ const Clientes = () => {
                   <Input 
                     id="edit_data_nascimento" 
                     type="date"
-                    value={editCliente.data_nascimento} 
-                    onChange={e => setEditCliente({ ...editCliente, data_nascimento: e.target.value })} 
+                    value={editCliente.birth_date} 
+                    onChange={e => setEditCliente({ ...editCliente, birth_date: e.target.value })} 
                   />
                 </div>
               </div>

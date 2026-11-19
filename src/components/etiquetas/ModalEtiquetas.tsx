@@ -29,9 +29,9 @@ export interface ProdutoLista {
   preco: number;
   code: string | null;
   ean: string | null;
-  unidade_comercial: string | null;
+  commercial_unit: string | null;
   codigo_interno?: string | null;
-  tem_variacoes?: boolean | null;
+  has_variants?: boolean | null;
 }
 
 interface VariacaoEtiqueta {
@@ -72,9 +72,9 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
   const [variacoesPorProduto, setVariacoesPorProduto] = useState<Record<string, VariacaoEtiqueta[]>>({});
   const [expandidos, setExpandidos] = useState<Record<string, boolean>>({});
 
-  // Carrega variações de produtos que tem_variacoes ao montar
+  // Carrega variações de produtos que has_variants ao montar
   useEffect(() => {
-    const produtosComVar = produtos.filter(p => p.tem_variacoes);
+    const produtosComVar = produtos.filter(p => p.has_variants);
     if (!produtosComVar.length) return;
     Promise.all(
       produtosComVar.map(p =>
@@ -111,7 +111,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
 
   const toggleTodos = () => {
     // Considera apenas produtos sem variações para o toggle global
-    const simples = produtos.filter(p => !p.tem_variacoes || !(variacoesPorProduto[p.id]?.length));
+    const simples = produtos.filter(p => !p.has_variants || !(variacoesPorProduto[p.id]?.length));
     const simplesIds = simples.map(p => p.id);
     const todosSelecionados = simplesIds.every(id => selecionados[id] !== undefined);
     if (todosSelecionados && simplesIds.length > 0) {
@@ -170,7 +170,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
         preco: p.preco,
         code: p.ean ?? p.code ?? undefined,
         codigo_interno: p.code ?? p.codigo_interno ?? undefined,
-        tamanho: p.unidade_comercial ?? undefined,
+        tamanho: p.commercial_unit ?? undefined,
         quantidade: qtd,
       };
     }).filter(Boolean) as ProdutoEtiqueta[];
@@ -251,7 +251,7 @@ export function ModalEtiquetas({ open, onOpenChange, produtos }: ModalEtiquetasP
 
             <div className="max-h-[380px] overflow-y-auto space-y-1 pr-1">
               {produtos.map((p) => {
-                const temVar = p.tem_variacoes && (variacoesPorProduto[p.id]?.length ?? 0) > 0;
+                const temVar = p.has_variants && (variacoesPorProduto[p.id]?.length ?? 0) > 0;
                 const variacoes = variacoesPorProduto[p.id] ?? [];
                 const expandido = !!expandidos[p.id];
 

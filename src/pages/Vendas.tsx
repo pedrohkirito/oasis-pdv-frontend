@@ -33,6 +33,7 @@ import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { format, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { diaCalendario } from '@/lib/dia';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -48,24 +49,24 @@ import { VendaDetailAccordion } from '@/components/vendas/VendaDetailAccordion';
 interface Venda {
   id: string;
   user_id: string;
-  cliente_nome: string;
-  cliente_telefone: string | null;
-  cliente_email: string | null;
-  produtos: string;
-  valor: number;
-  desconto: number | null;
-  desconto_geral: number | null;
-  desconto_geral_tipo: string | null;
-  valor_bruto: number | null;
-  valor_final: number | null;
-  metodo_pagamento: string;
-  parcelas: number | null;
-  data_venda: string;
-  observacoes: string | null;
-  vendedor: string | null;
-  vendedor_id: string | null;
-  bandeira: string | null;
-  valor_liquido: number | null;
+  customer_name: string;
+  customer_phone: string | null;
+  customer_email: string | null;
+  products_summary: string;
+  amount: number;
+  discount: number | null;
+  general_discount: number | null;
+  general_discount_kind: string | null;
+  gross_amount: number | null;
+  final_amount: number | null;
+  payment_method: string;
+  installments: number | null;
+  sold_on: string;
+  notes: string | null;
+  seller: string | null;
+  seller_id: string | null;
+  cardBrand: string | null;
+  net_amount: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,20 +85,20 @@ interface Produto {
   categoria: string | null;
   tipo?: string;
   recorrente?: boolean;
-  recorrencia_tipo?: string | null;
+  recurrence_kind?: string | null;
 }
 interface ItemVenda {
-  produto_id: string;
-  variacao_id?: string | null;
-  produto_nome: string;
+  product_id: string;
+  variant_id?: string | null;
+  product_name: string;
   quantidade: number;
-  preco_unitario: number;
+  unit_price: number;
   subtotal: number;
   desconto: number;
-  desconto_tipo: 'percentual' | 'amount';
+  discount_kind: 'percentual' | 'amount';
   observacao: string;
   obs_aberta: boolean;
-  recorrencia_periodos?: number | null;
+  recurrence_periods?: number | null;
 }
 interface Cliente {
   id: string;
@@ -172,7 +173,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [vendaParaCancelar, setVendaParaCancelar] = useState<string | null>(null);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
-  const [vendasComNfce, setVendasComNfce] = useState<Map<string, { status: string; numero: number | null; nuvem_fiscal_id: string | null; pdf_url: string | null; xml_url: string | null }>>(new Map());
+  const [vendasComNfce, setVendasComNfce] = useState<Map<string, { status: string; numero: number | null; cloud_fiscal_id: string | null; pdf_url: string | null; xml_url: string | null }>>(new Map());
   const [vendasComOperacao, setVendasComOperacao] = useState<Map<string, string>>(new Map());
   const [operacaoManualDialogOpen, setOperacaoManualDialogOpen] = useState(false);
   const [vendaParaOperacao, setVendaParaOperacao] = useState<Venda | null>(null);
@@ -206,13 +207,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const [editQuantidadeProduto, setEditQuantidadeProduto] = useState<number>(1);
 
   const updateEditItemField = (productId: string, updates: Partial<ItemVenda>) => {
-    setEditItensVenda(prev => prev.map(i => i.produto_id === productId ? { ...i, ...updates } : i));
+    setEditItensVenda(prev => prev.map(i => i.product_id === productId ? { ...i, ...updates } : i));
   };
   const [novaVenda, setNovaVenda] = useState({
-    cliente_nome: '',
-    cliente_telefone: '',
-    cliente_email: '',
-    metodo_pagamento: '',
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    payment_method: '',
     parcelas: 1,
     observacoes: '',
     vendedor: '',
@@ -229,17 +230,17 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   const FURNITURE_CATEGORIES = ['Móveis', 'Berço', 'Cama', 'Cômoda'];
   const temMoveis = useMemo(() => {
     return itensVenda.some(item => {
-      const produto = produtos.find(p => p.id === item.produto_id);
+      const produto = produtos.find(p => p.id === item.product_id);
       return produto?.categoria && FURNITURE_CATEGORIES.some(fc => 
         produto.categoria!.toLowerCase() === fc.toLowerCase()
       );
     });
   }, [itensVenda, produtos]);
   const [editVenda, setEditVenda] = useState({
-    cliente_nome: '',
-    cliente_telefone: '',
-    cliente_email: '',
-    metodo_pagamento: '',
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    payment_method: '',
     parcelas: 1,
     observacoes: '',
     vendedor: '',
@@ -309,7 +310,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       .eq('company_id', companyId)
       .eq('status', 'fechado');
     if (data) {
-      setMesesFechados(new Set(data.map((d: any) => d.mes_referencia)));
+      setMesesFechados(new Set(data.map((d: any) => d.reference_month)));
     }
   };
 
@@ -322,18 +323,18 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     if (!companyId) return;
     const { data, error } = await api
       .from('fiscal_document')
-      .select('venda_id, status, numero, nuvem_fiscal_id, pdf_url, xml_url')
+      .select('sale_id, status, numero, cloud_fiscal_id, pdf_url, xml_url')
       .eq('company_id', companyId)
       .not('sale_id', 'is', null);
     
     if (!error && data) {
-      const map = new Map<string, { status: string; numero: number | null; nuvem_fiscal_id: string | null; pdf_url: string | null; xml_url: string | null }>();
+      const map = new Map<string, { status: string; numero: number | null; cloud_fiscal_id: string | null; pdf_url: string | null; xml_url: string | null }>();
       data.forEach(nf => {
-        if (nf.venda_id) {
+        if (nf.sale_id) {
           // Prioriza nota autorizada sobre outras
-          const existing = map.get(nf.venda_id);
+          const existing = map.get(nf.sale_id);
           if (!existing || nf.status === 'autorizada') {
-            map.set(nf.venda_id, { status: nf.status, numero: nf.numero, nuvem_fiscal_id: nf.nuvem_fiscal_id, pdf_url: nf.pdf_url, xml_url: nf.xml_url });
+            map.set(nf.sale_id, { status: nf.status, numero: nf.numero, cloud_fiscal_id: nf.cloud_fiscal_id, pdf_url: nf.pdf_url, xml_url: nf.xml_url });
           }
         }
       });
@@ -345,12 +346,12 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     if (!companyId) return;
     const { data, error } = await api
       .from('operation')
-      .select('id, venda_id')
+      .select('id, sale_id')
       .eq('company_id', companyId)
       .not('sale_id', 'is', null);
     if (!error && data) {
       const map = new Map<string, string>();
-      data.forEach(o => { if (o.venda_id) map.set(o.venda_id, o.id); });
+      data.forEach(o => { if (o.sale_id) map.set(o.sale_id, o.id); });
       setVendasComOperacao(map);
     }
   };
@@ -363,7 +364,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       .eq('company_id', companyId)
       .not('sale_id', 'is', null);
     if (!error && data) {
-      setVendasComPedido(new Set(data.map((p: any) => p.venda_id).filter(Boolean)));
+      setVendasComPedido(new Set(data.map((p: any) => p.sale_id).filter(Boolean)));
     }
   };
 
@@ -385,14 +386,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       .insert({
         company_id: companyId,
         user_id: user.id,
-        venda_id: vendaParaOperacao.id,
-        cliente_nome: vendaParaOperacao.cliente_nome,
-        cliente_telefone: vendaParaOperacao.cliente_telefone || null,
-        cliente_email: vendaParaOperacao.cliente_email || null,
-        produtos: vendaParaOperacao.produtos,
+        sale_id: vendaParaOperacao.id,
+        customer_name: vendaParaOperacao.customer_name,
+        customer_phone: vendaParaOperacao.customer_phone || null,
+        customer_email: vendaParaOperacao.customer_email || null,
+        products_summary: vendaParaOperacao.products_summary,
         kind: operacaoManualTipo,
         status: operacaoManualStatus,
-        status_pagamento: 'pendente',
+        payment_status: 'pendente',
       } as any)
       .select()
       .single();
@@ -405,16 +406,16 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     if (opData) {
       const tarefas = DEFAULT_CHECKLIST.map((titulo, i) => ({
-        operacao_id: opData.id,
+        operation_id: opData.id,
         titulo,
         ordem: i,
       }));
       await api.from('operation_task').insert(tarefas as any);
       await api.from('operation_event').insert({
-        operacao_id: opData.id,
+        operation_id: opData.id,
         kind: 'status_change',
         descricao: 'Operação criada manualmente a partir da venda',
-        status_novo: operacaoManualStatus,
+        new_status: operacaoManualStatus,
         user_id: user.id,
       } as any);
     }
@@ -490,7 +491,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // por outro fluxo/aba que não atualizou este estado local).
     const { data: notaAtual, error: notaErr } = await api
       .from('fiscal_document')
-      .select('nuvem_fiscal_id, numero, status')
+      .select('cloud_fiscal_id, numero, status')
       .eq('sale_id', vendaParaCancelar)
       .eq('status', 'autorizada')
       .order('created_at', { ascending: false })
@@ -499,7 +500,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     console.log('Cancelamento - nota do banco:', JSON.stringify(notaAtual), 'erro:', notaErr);
 
-    if (!notaAtual?.nuvem_fiscal_id) {
+    if (!notaAtual?.cloud_fiscal_id) {
       toast({
         title: "Erro",
         description: "Nota autorizada não encontrada para esta venda",
@@ -516,7 +517,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         body: {
           action: 'cancelar',
           data: {
-            nuvem_fiscal_id: notaAtual.nuvem_fiscal_id,
+            cloud_fiscal_id: notaAtual.cloud_fiscal_id,
             justificativa: motivoCancelamento.trim()
           }
         }
@@ -606,7 +607,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   const editDescontoItensTotal = useMemo(() =>
     editItensVenda.reduce((sum, item) => {
-      const d = item.desconto_tipo === 'percentual'
+      const d = item.discount_kind === 'percentual'
         ? item.subtotal * (Math.min(item.desconto, 100) / 100)
         : Math.min(item.desconto, item.subtotal);
       return sum + d;
@@ -641,7 +642,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
 
     // Verificar se já existe o item
-    const itemExistente = itensVenda.find(i => i.produto_id === produtoSelecionado);
+    const itemExistente = itensVenda.find(i => i.product_id === produtoSelecionado);
     if (itemExistente) {
       const novaQuantidade = itemExistente.quantidade + quantidadeProduto;
       if (produto.estoque !== null && novaQuantidade > produto.estoque) {
@@ -652,20 +653,20 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         });
         return;
       }
-      setItensVenda(itensVenda.map(i => i.produto_id === produtoSelecionado ? {
+      setItensVenda(itensVenda.map(i => i.product_id === produtoSelecionado ? {
         ...i,
         quantidade: novaQuantidade,
-        subtotal: novaQuantidade * i.preco_unitario
+        subtotal: novaQuantidade * i.unit_price
       } : i));
     } else {
       setItensVenda([...itensVenda, {
-        produto_id: produto.id,
-        produto_nome: produto.name,
+        product_id: produto.id,
+        product_name: produto.name,
         quantidade: quantidadeProduto,
-        preco_unitario: Number(produto.preco),
+        unit_price: Number(produto.preco),
         subtotal: quantidadeProduto * Number(produto.preco),
         desconto: 0,
-        desconto_tipo: 'percentual',
+        discount_kind: 'percentual',
         observacao: '',
         obs_aberta: false,
       }]);
@@ -676,7 +677,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
   // Remover item da venda
   const handleRemoverItem = (productId: string) => {
-    setItensVenda(itensVenda.filter(i => i.produto_id !== productId));
+    setItensVenda(itensVenda.filter(i => i.product_id !== productId));
   };
 
   // Adicionar item à edição
@@ -691,26 +692,26 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
     const produto = produtos.find(p => p.id === editProdutoSelecionado);
     if (!produto) return;
-    const itemExistente = editItensVenda.find(i => i.produto_id === editProdutoSelecionado);
+    const itemExistente = editItensVenda.find(i => i.product_id === editProdutoSelecionado);
     if (itemExistente) {
-      setEditItensVenda(editItensVenda.map(i => i.produto_id === editProdutoSelecionado ? {
+      setEditItensVenda(editItensVenda.map(i => i.product_id === editProdutoSelecionado ? {
         ...i,
         quantidade: i.quantidade + editQuantidadeProduto,
-        subtotal: (i.quantidade + editQuantidadeProduto) * i.preco_unitario
+        subtotal: (i.quantidade + editQuantidadeProduto) * i.unit_price
       } : i));
     } else {
       setEditItensVenda([...editItensVenda, {
-        produto_id: produto.id,
-        produto_nome: produto.name,
+        product_id: produto.id,
+        product_name: produto.name,
         quantidade: editQuantidadeProduto,
-        preco_unitario: Number(produto.preco),
+        unit_price: Number(produto.preco),
         subtotal: editQuantidadeProduto * Number(produto.preco),
         desconto: 0,
-        desconto_tipo: 'percentual',
+        discount_kind: 'percentual',
         observacao: '',
         obs_aberta: false,
-        recorrencia_periodos: isServico(produto) && produto.recorrente
-          ? PERIODOS_PADRAO[produto.recorrencia_tipo as RecorrenciaTipo] ?? 1
+        recurrence_periods: isServico(produto) && produto.recorrente
+          ? PERIODOS_PADRAO[produto.recurrence_kind as RecorrenciaTipo] ?? 1
           : null,
       }]);
     }
@@ -718,10 +719,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setEditQuantidadeProduto(1);
   };
   const handleRemoverItemEdit = (productId: string) => {
-    setEditItensVenda(editItensVenda.filter(i => i.produto_id !== productId));
+    setEditItensVenda(editItensVenda.filter(i => i.product_id !== productId));
   };
   const handleSalvar = async () => {
-    if (!novaVenda.cliente_nome || itensVenda.length === 0 || !novaVenda.metodo_pagamento || !user) {
+    if (!novaVenda.customer_name || itensVenda.length === 0 || !novaVenda.payment_method || !user) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios e adicione pelo menos um produto",
@@ -744,7 +745,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
 
     // Criar descrição dos produtos
-    const produtosDescricao = itensVenda.map(i => `${i.quantidade}x ${i.produto_nome}`).join(', ');
+    const produtosDescricao = itensVenda.map(i => `${i.quantidade}x ${i.product_name}`).join(', ');
 
     // Inserir venda
     const valorBruto = valorTotalItens;
@@ -758,21 +759,21 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
      } = await api.from('sale').insert({
       user_id: user.id,
       company_id: companyId,
-      cliente_id: resolveClienteId(clientes as any, { name: novaVenda.cliente_nome, cpf: (novaVenda as any).cliente_cpf, telefone: novaVenda.cliente_telefone }),
-      cliente_nome: novaVenda.cliente_nome,
-      cliente_telefone: novaVenda.cliente_telefone || null,
-      cliente_email: novaVenda.cliente_email || null,
-      produtos: produtosDescricao,
-      valor: finalAmount,
-      valor_bruto: valorBruto,
-      desconto: desconto,
-      valor_final: finalAmount,
-      vendedor_id: vendedores.find(v => v.name === novaVenda.vendedor)?.id || user.id,
-      metodo_pagamento: novaVenda.metodo_pagamento,
-      parcelas: novaVenda.metodo_pagamento === 'Cartão de Crédito' ? novaVenda.parcelas : 1,
-      data_venda: format(soldOn, 'yyyy-MM-dd'),
-      observacoes: novaVenda.observacoes || null,
-      vendedor: novaVenda.vendedor || null
+      customer_id: resolveClienteId(clientes as any, { name: novaVenda.customer_name, cpf: (novaVenda as any).customer_tax_id, telefone: novaVenda.customer_phone }),
+      customer_name: novaVenda.customer_name,
+      customer_phone: novaVenda.customer_phone || null,
+      customer_email: novaVenda.customer_email || null,
+      products_summary: produtosDescricao,
+      amount: finalAmount,
+      gross_amount: valorBruto,
+      discount: desconto,
+      final_amount: finalAmount,
+      seller_id: vendedores.find(v => v.name === novaVenda.vendedor)?.id || user.id,
+      payment_method: novaVenda.payment_method,
+      installments: novaVenda.payment_method === 'Cartão de Crédito' ? novaVenda.parcelas : 1,
+      sold_on: format(soldOn, 'yyyy-MM-dd'),
+      notes: novaVenda.observacoes || null,
+      seller: novaVenda.vendedor || null
     } as any).select().single();
     if (vendaError) {
       toast({
@@ -785,10 +786,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Inserir itens da venda (trigger vai decrementar estoque)
     const itensParaInserir = itensVenda.map(item => ({
-      venda_id: vendaData.id,
-      produto_id: item.produto_id,
+      sale_id: vendaData.id,
+      product_id: item.product_id,
       quantidade: item.quantidade,
-      preco_unitario: item.preco_unitario,
+      unit_price: item.unit_price,
       subtotal: item.subtotal
     }));
     const {
@@ -818,14 +819,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         .insert({
           company_id: companyId,
           user_id: user.id,
-          venda_id: vendaData.id,
-          cliente_nome: novaVenda.cliente_nome,
-          cliente_telefone: novaVenda.cliente_telefone || null,
-          cliente_email: novaVenda.cliente_email || null,
+          sale_id: vendaData.id,
+          customer_name: novaVenda.customer_name,
+          customer_phone: novaVenda.customer_phone || null,
+          customer_email: novaVenda.customer_email || null,
           produtos: produtosDescricao,
           kind: operacaoTipo,
           status: operacaoStatus,
-          status_pagamento: 'pendente',
+          payment_status: 'pendente',
         } as any)
         .select()
         .single();
@@ -833,7 +834,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       if (!opError && opData) {
         // Create default checklist
         const tarefas = DEFAULT_CHECKLIST.map((titulo, i) => ({
-          operacao_id: opData.id,
+          operation_id: opData.id,
           titulo,
           ordem: i,
         }));
@@ -841,10 +842,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
         // Add history entry
         await api.from('operation_event').insert({
-          operacao_id: opData.id,
+          operation_id: opData.id,
           kind: 'status_change',
           descricao: `Operação criada automaticamente a partir da venda`,
-          status_novo: operacaoStatus,
+          new_status: operacaoStatus,
           user_id: user.id,
         } as any);
       }
@@ -853,7 +854,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // Auto-generate Pedido de Entrega for all sales
     if (user) {
       // Find client info from clientes table to get address
-      const clienteMatch = clientes.find(c => c.name === novaVenda.cliente_nome);
+      const clienteMatch = clientes.find(c => c.name === novaVenda.customer_name);
       let enderecoEntrega: string | null = null;
       let clienteCpf: string | null = null;
 
@@ -875,18 +876,18 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       const { data: pedidoData, error: pedidoError } = await api
         .from('delivery_order')
         .insert({
-          venda_id: vendaData.id,
+          sale_id: vendaData.id,
           company_id: companyId,
           user_id: user.id,
-          cliente_id: resolveClienteId(clientes as any, { name: novaVenda.cliente_nome, cpf: clienteCpf, telefone: novaVenda.cliente_telefone }),
-          cliente_nome: novaVenda.cliente_nome,
-          cliente_telefone: novaVenda.cliente_telefone || null,
-          cliente_email: novaVenda.cliente_email || null,
-          cliente_cpf: clienteCpf,
-          endereco_entrega: enderecoEntrega,
-          forma_pagamento: novaVenda.metodo_pagamento,
-          observacoes: novaVenda.observacoes || null,
-          vendedor: novaVenda.vendedor || null,
+          customer_id: resolveClienteId(clientes as any, { name: novaVenda.customer_name, cpf: clienteCpf, telefone: novaVenda.customer_phone }),
+          customer_name: novaVenda.customer_name,
+          customer_phone: novaVenda.customer_phone || null,
+          customer_email: novaVenda.customer_email || null,
+          customer_tax_id: clienteCpf,
+          delivery_address: enderecoEntrega,
+          payment_form: novaVenda.payment_method,
+          notes: novaVenda.observacoes || null,
+          seller: novaVenda.vendedor || null,
           status: 'pendente',
         } as any)
         .select()
@@ -894,19 +895,19 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       if (pedidoData && !pedidoError) {
         await api.from('delivery_order_event').insert({
-          pedido_id: pedidoData.id,
+          purchase_order_id: pedidoData.id,
           user_id: user.id,
-          status_novo: 'pendente',
-          descricao: 'Pedido de entrega gerado automaticamente a partir da venda',
+          new_status: 'pendente',
+          description: 'Pedido de entrega gerado automaticamente a partir da venda',
         } as any);
       }
     }
 
     setNovaVenda({
-      cliente_nome: '',
-      cliente_telefone: '',
-      cliente_email: '',
-      metodo_pagamento: '',
+      customer_name: '',
+      customer_phone: '',
+      customer_email: '',
+      payment_method: '',
       parcelas: 1,
       observacoes: '',
       vendedor: '',
@@ -937,7 +938,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         subtotal: valorTotalItens,
         desconto: novaVenda.desconto || 0,
         total: valorTotalItens - (novaVenda.desconto || 0),
-        formaPagamento: novaVenda.metodo_pagamento,
+        formaPagamento: novaVenda.payment_method,
         operador: novaVenda.vendedor || undefined,
       };
       imprimirCupomSimples(dadosEmpresa, dadosVenda).catch(() => {
@@ -960,7 +961,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
 
     // Month closed check
-    if (isMesFechado(venda.data_venda)) {
+    if (isMesFechado(venda.sold_on)) {
       toast({
         title: "Período fechado",
         description: "Este período já foi fechado. Reabra o mês para realizar alterações.",
@@ -970,7 +971,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     }
     setEditingVenda(venda);
     setEditDescontoTipo('amount');
-    const [y, m, d] = venda.data_venda.split('-').map(Number);
+    const [y, m, d] = venda.sold_on.split('-').map(Number);
     setEditDataVenda(new Date(y, m - 1, d));
 
     // Carregar itens da venda (com fallback se colunas novas não existirem)
@@ -982,7 +983,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     if (itensRes.error && (itensRes.error.code === '42703' || itensRes.error.message?.includes('column'))) {
       const fallback = await api
         .from('sale_item')
-        .select('produto_id, quantidade, preco_unitario, subtotal')
+        .select('product_id, quantidade, unit_price, subtotal')
         .eq('sale_id', venda.id);
       rawItens = fallback.data || [];
     } else {
@@ -991,36 +992,36 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Desconto por item já salvo no banco (soma dos valores em R$)
     const loadedItemsDiscount = rawItens.reduce((sum: number, item: any) =>
-      sum + (item.desconto != null ? Number(item.desconto) : 0), 0);
+      sum + (item.discount != null ? Number(item.discount) : 0), 0);
     // Desconto geral = total da venda menos o que já está nos itens
-    const generalDesconto = Math.max(0, Number(venda.desconto || 0) - loadedItemsDiscount);
+    const generalDesconto = Math.max(0, Number(venda.discount || 0) - loadedItemsDiscount);
 
     setEditVenda({
-      cliente_nome: venda.cliente_nome,
-      cliente_telefone: venda.cliente_telefone || '',
-      cliente_email: venda.cliente_email || '',
-      metodo_pagamento: venda.metodo_pagamento,
-      parcelas: venda.parcelas || 1,
-      observacoes: venda.observacoes || '',
-      vendedor: venda.vendedor || '',
+      customer_name: venda.customer_name,
+      customer_phone: venda.customer_phone || '',
+      customer_email: venda.customer_email || '',
+      payment_method: venda.payment_method,
+      parcelas: venda.installments || 1,
+      observacoes: venda.notes || '',
+      vendedor: venda.seller || '',
       desconto: generalDesconto,
     });
 
     if (rawItens.length > 0) {
       const itensComNomes = rawItens.map((item: any) => {
-        const produto = produtos.find(p => p.id === item.produto_id);
+        const produto = produtos.find(p => p.id === item.product_id);
         return {
-          produto_id: item.produto_id,
-          variacao_id: item.variacao_id ?? null,
-          produto_nome: produto?.name || 'Produto não encontrado',
-          quantidade: item.quantidade,
-          preco_unitario: Number(item.preco_unitario),
+          product_id: item.product_id,
+          variant_id: item.variant_id ?? null,
+          product_name: produto?.name || 'Produto não encontrado',
+          quantidade: item.quantity,
+          unit_price: Number(item.unit_price),
           subtotal: Number(item.subtotal),
-          desconto: item.desconto != null ? Number(item.desconto) : 0,
-          desconto_tipo: (item.desconto_tipo as 'percentual' | 'amount') || 'percentual',
-          observacao: item.observacao || '',
+          desconto: item.discount != null ? Number(item.discount) : 0,
+          discount_kind: (item.discount_kind as 'percentual' | 'amount') || 'percentual',
+          observacao: item.note || '',
           obs_aberta: false,
-          recorrencia_periodos: item.recorrencia_periodos != null ? Number(item.recorrencia_periodos) : null,
+          recurrence_periods: item.recurrence_periods != null ? Number(item.recurrence_periods) : null,
         };
       });
       setEditItensVenda(itensComNomes);
@@ -1030,7 +1031,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     setEditDialogOpen(true);
   };
   const handleSalvarEdicao = async () => {
-    if (!editingVenda || !editVenda.cliente_nome || !editVenda.metodo_pagamento || !editDataVenda || !user) {
+    if (!editingVenda || !editVenda.customer_name || !editVenda.payment_method || !editDataVenda || !user) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -1038,9 +1039,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       });
       return;
     }
-    const produtosDescricao = editItensVenda.length > 0 ? editItensVenda.map(i => `${i.quantidade}x ${i.produto_nome}`).join(', ') : editingVenda.produtos;
-    // valor_bruto = gross (before any discount); editValorTotalItens = after per-item discounts
-    const editValorBruto = editItensVenda.length > 0 ? editSubtotalBruto : Number(editingVenda.valor);
+    const produtosDescricao = editItensVenda.length > 0 ? editItensVenda.map(i => `${i.quantidade}x ${i.product_name}`).join(', ') : editingVenda.products_summary;
+    // gross_amount = gross (before any discount); editValorTotalItens = after per-item discounts
+    const editValorBruto = editItensVenda.length > 0 ? editSubtotalBruto : Number(editingVenda.amount);
     const editDescontoInput = editVenda.desconto || 0;
     const editDescontoGeral = editDescontoTipo === 'percentual' ? (editValorTotalItens * editDescontoInput / 100) : editDescontoInput;
     const editDesconto = (editItensVenda.length > 0 ? editDescontoItensTotal : 0) + editDescontoGeral;
@@ -1048,31 +1049,31 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     // Log changes
     const changes: { campo: string; anterior: string; novo: string }[] = [];
-    if (editVenda.cliente_nome !== editingVenda.cliente_nome) changes.push({ campo: 'customer_name', anterior: editingVenda.cliente_nome, novo: editVenda.cliente_nome });
-    if (editVenda.metodo_pagamento !== editingVenda.metodo_pagamento) changes.push({ campo: 'payment_method', anterior: editingVenda.metodo_pagamento, novo: editVenda.metodo_pagamento });
-    if (format(editDataVenda, 'yyyy-MM-dd') !== editingVenda.data_venda) changes.push({ campo: 'sold_on', anterior: editingVenda.data_venda, novo: format(editDataVenda, 'yyyy-MM-dd') });
-    if (editVenda.vendedor !== (editingVenda.vendedor || '')) changes.push({ campo: 'seller', anterior: editingVenda.vendedor || '', novo: editVenda.vendedor });
+    if (editVenda.customer_name !== editingVenda.customer_name) changes.push({ campo: 'customer_name', anterior: editingVenda.customer_name, novo: editVenda.customer_name });
+    if (editVenda.payment_method !== editingVenda.payment_method) changes.push({ campo: 'payment_method', anterior: editingVenda.payment_method, novo: editVenda.payment_method });
+    if (format(editDataVenda, 'yyyy-MM-dd') !== editingVenda.sold_on) changes.push({ campo: 'sold_on', anterior: editingVenda.sold_on, novo: format(editDataVenda, 'yyyy-MM-dd') });
+    if (editVenda.vendedor !== (editingVenda.seller || '')) changes.push({ campo: 'seller', anterior: editingVenda.seller || '', novo: editVenda.vendedor });
     const newValStr = editValorFinalCalc.toFixed(2);
-    const oldValStr = Number(editingVenda.valor).toFixed(2);
+    const oldValStr = Number(editingVenda.amount).toFixed(2);
     if (newValStr !== oldValStr) changes.push({ campo: 'amount', anterior: oldValStr, novo: newValStr });
-    if (editVenda.observacoes !== (editingVenda.observacoes || '')) changes.push({ campo: 'notes', anterior: editingVenda.observacoes || '', novo: editVenda.observacoes });
+    if (editVenda.observacoes !== (editingVenda.notes || '')) changes.push({ campo: 'notes', anterior: editingVenda.notes || '', novo: editVenda.observacoes });
 
     const { error } = await api.from('sale').update({
-      cliente_id: resolveClienteId(clientes as any, { name: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
-      cliente_nome: editVenda.cliente_nome,
-      cliente_telefone: editVenda.cliente_telefone || null,
-      cliente_email: editVenda.cliente_email || null,
-      produtos: produtosDescricao,
-      valor: editValorFinalCalc,
-      valor_bruto: editValorBruto,
-      desconto: editDesconto,
-      valor_final: editValorFinalCalc,
-      metodo_pagamento: editVenda.metodo_pagamento,
-      parcelas: editVenda.metodo_pagamento === 'Cartão de Crédito' ? editVenda.parcelas : 1,
-      data_venda: format(editDataVenda, 'yyyy-MM-dd'),
-      observacoes: editVenda.observacoes || null,
-      vendedor: editVenda.vendedor || null,
-      vendedor_id: vendedores.find(v => v.name === editVenda.vendedor)?.id || editingVenda.vendedor_id || null
+      customer_id: resolveClienteId(clientes as any, { name: editVenda.customer_name, cpf: (editVenda as any).customer_tax_id, telefone: editVenda.customer_phone }),
+      customer_name: editVenda.customer_name,
+      customer_phone: editVenda.customer_phone || null,
+      customer_email: editVenda.customer_email || null,
+      products_summary: produtosDescricao,
+      amount: editValorFinalCalc,
+      gross_amount: editValorBruto,
+      discount: editDesconto,
+      final_amount: editValorFinalCalc,
+      payment_method: editVenda.payment_method,
+      installments: editVenda.payment_method === 'Cartão de Crédito' ? editVenda.parcelas : 1,
+      sold_on: format(editDataVenda, 'yyyy-MM-dd'),
+      notes: editVenda.observacoes || null,
+      seller: editVenda.vendedor || null,
+      seller_id: vendedores.find(v => v.name === editVenda.vendedor)?.id || editingVenda.seller_id || null
     } as any).eq('id', editingVenda.id);
 
     if (error) {
@@ -1100,20 +1101,20 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       });
     } else if (editItensVenda.length > 0) {
       const itensParaInserir = editItensVenda.map(item => {
-        const discValor = item.desconto_tipo === 'percentual'
+        const discValor = item.discount_kind === 'percentual'
           ? item.subtotal * (Math.min(item.desconto, 100) / 100)
           : Math.min(item.desconto, item.subtotal);
         return {
-          venda_id: editingVenda.id,
-          produto_id: item.produto_id,
-          variacao_id: item.variacao_id ?? null,
+          sale_id: editingVenda.id,
+          product_id: item.product_id,
+          variant_id: item.variant_id ?? null,
           quantidade: item.quantidade,
-          preco_unitario: item.preco_unitario,
+          unit_price: item.unit_price,
           subtotal: Math.max(0, item.subtotal - discValor),
           desconto: item.desconto > 0 ? discValor : 0,
-          desconto_tipo: item.desconto > 0 ? item.desconto_tipo : null,
+          discount_kind: item.desconto > 0 ? item.discount_kind : null,
           observacao: item.observacao || null,
-          recorrencia_periodos: item.recorrencia_periodos ?? null,
+          recurrence_periods: item.recurrence_periods ?? null,
         };
       });
       let { error: insertError } = await api
@@ -1122,13 +1123,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       // Fallback se colunas novas não existirem
       if (insertError && (insertError.code === '42703' || insertError.message?.includes('column'))) {
         const fallback = editItensVenda.map(item => ({
-          venda_id: editingVenda.id,
-          produto_id: item.produto_id,
-          variacao_id: item.variacao_id ?? null,
+          sale_id: editingVenda.id,
+          product_id: item.product_id,
+          variant_id: item.variant_id ?? null,
           quantidade: item.quantidade,
-          preco_unitario: item.preco_unitario,
+          unit_price: item.unit_price,
           subtotal: item.subtotal,
-          recorrencia_periodos: item.recorrencia_periodos ?? null,
+          recurrence_periods: item.recurrence_periods ?? null,
         }));
         ({ error: insertError } = await api.from('sale_item').insert(fallback));
       }
@@ -1146,11 +1147,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // Save change log
     if (changes.length > 0) {
       const logEntries = changes.map(c => ({
-        venda_id: editingVenda.id,
+        sale_id: editingVenda.id,
         user_id: user.id,
-        campo_alterado: c.campo,
-        valor_anterior: c.anterior,
-        valor_novo: c.novo,
+        field_changed: c.campo,
+        previous_value: c.anterior,
+        new_value: c.novo,
       }));
       await api.from('sale_change').insert(logEntries as any);
     }
@@ -1168,11 +1169,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       await api
         .from('delivery_order')
         .update({
-          cliente_id: resolveClienteId(clientes as any, { name: editVenda.cliente_nome, cpf: (editVenda as any).cliente_cpf, telefone: editVenda.cliente_telefone }),
-          cliente_nome: editVenda.cliente_nome,
-          cliente_telefone: editVenda.cliente_telefone || null,
-          cliente_email: editVenda.cliente_email || null,
-          forma_pagamento: editVenda.metodo_pagamento,
+          customer_id: resolveClienteId(clientes as any, { name: editVenda.customer_name, cpf: (editVenda as any).customer_tax_id, telefone: editVenda.customer_phone }),
+          customer_name: editVenda.customer_name,
+          customer_phone: editVenda.customer_phone || null,
+          customer_email: editVenda.customer_email || null,
+          payment_form: editVenda.payment_method,
           observacoes: editVenda.observacoes || null,
         } as any)
         .eq('id', pedidoExistente.id);
@@ -1307,7 +1308,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       setOperacaoManualTipo('entrega');
       setOperacaoManualDialogOpen(true);
     } else if (confirmAction === 'excluir') {
-      await handleDelete(venda.id, venda.data_venda);
+      await handleDelete(venda.id, venda.sold_on);
     }
   };
 
@@ -1331,7 +1332,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       // Buscar itens da venda com dados dos produtos
       const { data: itensData, error: itensError } = await api
         .from('sale_item')
-        .select('produto_id, quantidade, preco_unitario, subtotal, desconto, desconto_tipo, observacao')
+        .select('product_id, quantidade, unit_price, subtotal, desconto, discount_kind, observacao')
         .eq('sale_id', venda.id);
       
       if (itensError || !itensData || itensData.length === 0) {
@@ -1339,7 +1340,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       }
 
       // Buscar dados completos dos produtos
-      const produtoIds = itensData.map(item => item.produto_id);
+      const produtoIds = itensData.map(item => item.product_id);
       const { data: produtosData, error: produtosError } = await api
         .from('product')
         .select('id, name, code, ncm, cfop, origem, commercial_unit, price, kind')
@@ -1356,20 +1357,20 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // Montar itens com dados fiscais, distribuindo o desconto geral da venda
       // proporcionalmente entre os itens (além do desconto próprio de cada item),
-      // para que a soma dos valor_final_item bata exatamente com venda.valor_final
+      // para que a soma dos valor_final_item bata exatamente com venda.final_amount
       // e a Becoming não precise "fechar a conta" com um pagamento extra.
 
       // 1. Subtotal bruto de cada item
       const itensComSubtotal = itensData.map(item => ({
         ...item,
-        subtotalBruto: item.quantidade * Number(item.preco_unitario)
+        subtotalBruto: item.quantidade * Number(item.unit_price)
       }));
 
       // 2. Desconto próprio de cada item (em R$)
       const itensComDescItem = itensComSubtotal.map(item => {
         let descItem = 0;
         if (item.desconto && item.desconto > 0) {
-          descItem = item.desconto_tipo === 'percentual'
+          descItem = item.discount_kind === 'percentual'
             ? item.subtotalBruto * (item.desconto / 100)
             : Math.min(item.desconto, item.subtotalBruto);
         }
@@ -1385,19 +1386,19 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // 4. Valor do desconto geral em R$
       let descGeralReais = 0;
-      if (venda.desconto_geral && venda.desconto_geral > 0) {
-        descGeralReais = venda.desconto_geral_tipo === 'percentual'
-          ? baseDescGeral * (venda.desconto_geral / 100)
-          : Math.min(venda.desconto_geral, baseDescGeral);
+      if (venda.general_discount && venda.general_discount > 0) {
+        descGeralReais = venda.general_discount_kind === 'percentual'
+          ? baseDescGeral * (venda.general_discount / 100)
+          : Math.min(venda.general_discount, baseDescGeral);
       }
 
       // 5. Distribui o desconto geral proporcionalmente e monta o item final para a NFC-e
       let somaFinalConferencia = 0;
 
       const itens = itensComDescItem.map(item => {
-        const produto = produtosData.find(p => p.id === item.produto_id);
+        const produto = produtosData.find(p => p.id === item.product_id);
         if (!produto) {
-          throw new Error(`Produto não encontrado: ${item.produto_id}`);
+          throw new Error(`Produto não encontrado: ${item.product_id}`);
         }
         if (!produto.ncm && !isServico(produto)) {
           throw new Error(`Produto "${produto.name}" não possui NCM cadastrado`);
@@ -1421,18 +1422,18 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         return {
           servico: isServico(produto),
           id: produto.id,
-          produto_id: produto.id,
+          product_id: produto.id,
           code: produto.code || produto.id.substring(0, 8),
           name: produto.name,
           descricao: produto.name,
           ncm: produto.ncm,
           cfop: produto.cfop || '5102',
-          unidade_comercial: produto.unidade_comercial || 'UN',
+          commercial_unit: produto.commercial_unit || 'UN',
           quantidade: item.quantidade,
-          preco_unitario: Number(item.preco_unitario),
-          valor_unitario: Number(item.preco_unitario),
+          unit_price: Number(item.unit_price),
+          unit_amount: Number(item.unit_price),
           subtotal: Number(item.subtotal),
-          valor_total: Number(item.subtotal),
+          total_amount: Number(item.subtotal),
           origem: produto.origem || '0',
           desconto_percentual: Math.round(percentualDesc * 100) / 100,
           valor_final_item: valorFinalItem,
@@ -1441,14 +1442,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       });
 
       // 6. Ajuste de arredondamento: joga a diferença de centavos no último item,
-      // garantindo que a soma dos valor_final_item bata exatamente com valor_final da venda.
-      const valorFinalVenda = Math.round((venda.valor_final || venda.valor) * 100) / 100;
+      // garantindo que a soma dos valor_final_item bata exatamente com final_amount da venda.
+      const valorFinalVenda = Math.round((venda.final_amount || venda.amount) * 100) / 100;
       const diferenca = Math.round((valorFinalVenda - somaFinalConferencia) * 100) / 100;
 
       if (Math.abs(diferenca) >= 0.01 && itens.length > 0) {
         const ultimo = itens[itens.length - 1];
         ultimo.valor_final_item = Math.round((ultimo.valor_final_item + diferenca) * 100) / 100;
-        const subtotalUltimo = ultimo.quantidade * ultimo.preco_unitario;
+        const subtotalUltimo = ultimo.quantidade * ultimo.unit_price;
         ultimo.desconto_percentual = subtotalUltimo > 0
           ? Math.round(((subtotalUltimo - ultimo.valor_final_item) / subtotalUltimo) * 10000) / 100
           : 0;
@@ -1460,7 +1461,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         diferencaAjustada: diferenca,
         itens: itens.map(i => ({
           name: i.name,
-          bruto: i.quantidade * i.preco_unitario,
+          bruto: i.quantidade * i.unit_price,
           final: i.valor_final_item,
           descPct: i.desconto_percentual
         }))
@@ -1468,11 +1469,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
       // Buscar dados do cliente se não for consumidor final
       let cliente = null;
-      if (venda.cliente_nome !== 'Consumidor') {
+      if (venda.customer_name !== 'Consumidor') {
         const { data: clienteData } = await api
           .from('customer')
           .select('id, name, cpf, telefone, email, cep, endereco, bairro, complemento')
-          .eq('name', venda.cliente_nome)
+          .eq('name', venda.customer_name)
           .maybeSingle();
 
         if (clienteData) {
@@ -1494,9 +1495,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       const itensNota = itens.filter(i => !i.servico).map(({ servico: _servico, ...item }) => item);
       const r2 = (v: number) => Math.round(v * 100) / 100;
       const totalNota = r2(itensNota.reduce((acc, i) => acc + i.valor_final_item, 0));
-      const brutoNota = r2(itensNota.reduce((acc, i) => acc + i.quantidade * i.preco_unitario, 0));
+      const brutoNota = r2(itensNota.reduce((acc, i) => acc + i.quantidade * i.unit_price, 0));
       const baseProdutos = itensComDescItem
-        .filter(item => !isServico((produtosData as any[]).find((p: any) => p.id === item.produto_id)))
+        .filter(item => !isServico((produtosData as any[]).find((p: any) => p.id === item.product_id)))
         .reduce((acc, i) => acc + i.subtotalAposItem, 0);
       const descGeralProdutos = baseDescGeral > 0 ? r2(descGeralReais * (baseProdutos / baseDescGeral)) : 0;
 
@@ -1505,15 +1506,15 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
         venda: {
           id: venda.id,
           user_id: venda.user_id,
-          cliente_nome: venda.cliente_nome,
-          valor: temServico ? totalNota : Number(venda.valor),
-          valor_bruto: temServico ? brutoNota : Number(venda.valor_bruto || venda.valor),
-          valor_final: temServico ? totalNota : Number(venda.valor_final || venda.valor),
-          metodo_pagamento: venda.metodo_pagamento,
-          observacoes: venda.observacoes,
+          customer_name: venda.customer_name,
+          valor: temServico ? totalNota : Number(venda.amount),
+          gross_amount: temServico ? brutoNota : Number(venda.gross_amount || venda.amount),
+          final_amount: temServico ? totalNota : Number(venda.final_amount || venda.amount),
+          payment_method: venda.payment_method,
+          observacoes: venda.notes,
           // Venda mista: só a fatia do desconto geral que coube aos produtos, em R$.
-          desconto_geral: temServico ? descGeralProdutos : (venda.desconto_geral || 0),
-          desconto_geral_tipo: temServico ? 'valor' : (venda.desconto_geral_tipo || 'percentual'),
+          general_discount: temServico ? descGeralProdutos : (venda.general_discount || 0),
+          general_discount_kind: temServico ? 'valor' : (venda.general_discount_kind || 'percentual'),
         },
         itens: itensNota,
         cliente,
@@ -1546,28 +1547,31 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       if (impressoraConfig.imprimirAposNFCe) {
         const dadosEmpresa = { name: empresaAtiva?.name ?? 'Empresa' };
         const itensImpressao = itensData.map(item => {
-          const prod = produtosData.find(p => p.id === item.produto_id);
+          const prod = produtosData.find(p => p.id === item.product_id);
           return {
-            produto_nome: prod?.name ?? 'Produto',
+            product_name: prod?.name ?? 'Produto',
             quantidade: item.quantidade,
-            preco_unitario: Number(item.preco_unitario),
+            unit_price: Number(item.unit_price),
             subtotal: Number(item.subtotal),
           };
         });
         const dadosVendaImpressao = {
           numero: venda.id.slice(-8).toUpperCase(),
-          data: format(new Date(venda.data_venda), 'dd/MM/yyyy'),
+          data: (() => {
+            const dia = diaCalendario(venda.sold_on);
+            return dia ? format(dia, 'dd/MM/yyyy') : '—';
+          })(),
           itens: itensImpressao,
-          subtotal: Number(venda.valor_bruto ?? venda.valor),
-          desconto: Number(venda.desconto ?? 0),
-          total: Number(venda.valor_final ?? venda.valor),
-          formaPagamento: venda.metodo_pagamento,
-          operador: venda.vendedor || undefined,
+          subtotal: Number(venda.gross_amount ?? venda.amount),
+          desconto: Number(venda.discount ?? 0),
+          total: Number(venda.final_amount ?? venda.amount),
+          formaPagamento: venda.payment_method,
+          operador: venda.seller || undefined,
         };
         const dadosNFCe = {
           numero: data.numero ?? '',
           serie: data.serie ?? '001',
-          chaveAcesso: data.chave_acesso ?? data.chaveAcesso ?? '',
+          chaveAcesso: data.access_key ?? data.chaveAcesso ?? '',
           dataEmissao: format(new Date(), 'dd/MM/yyyy HH:mm'),
           urlConsulta: data.url_consulta ?? data.urlConsulta,
           qrCode: data.qr_code ?? data.qrCode,
@@ -1601,7 +1605,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
     // (mesma correção aplicada em handleCancelarNfce).
     const { data: notaAtual, error: notaErr } = await api
       .from('fiscal_document')
-      .select('nuvem_fiscal_id')
+      .select('cloud_fiscal_id')
       .eq('sale_id', saleId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -1609,7 +1613,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
 
     console.log('Transmitir - nota do banco:', JSON.stringify(notaAtual), 'erro:', notaErr);
 
-    if (!notaAtual?.nuvem_fiscal_id) {
+    if (!notaAtual?.cloud_fiscal_id) {
       toast({
         title: "Erro",
         description: "ID da nota fiscal não encontrado.",
@@ -1618,8 +1622,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       return;
     }
 
-    // Extrair o id_nfce do nuvem_fiscal_id (formato: becoming_123)
-    const match = notaAtual.nuvem_fiscal_id.match(/becoming_(\d+)/);
+    // Extrair o id_nfce do cloud_fiscal_id (formato: becoming_123)
+    const match = notaAtual.cloud_fiscal_id.match(/becoming_(\d+)/);
     if (!match) {
       toast({
         title: "Erro",
@@ -1636,7 +1640,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
       const { data, error } = await api.functions.invoke('becoming-nfce', {
         body: {
           action: 'transmitir',
-          data: { id_nfce: idNfce, venda_id: saleId }
+          data: { id_nfce: idNfce, sale_id: saleId }
         }
       });
 
@@ -1667,28 +1671,29 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
   };
 
   const filteredVendas = vendas.filter(venda => {
-    const matchSearch = venda.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) || venda.produtos.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchMetodo = filterMetodo === 'todos' || venda.metodo_pagamento === filterMetodo;
+    const nome = venda.customer_name || '';
+    const resumo = venda.products_summary || '';
+    const matchSearch = nome.toLowerCase().includes(searchTerm.toLowerCase()) || resumo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchMetodo = filterMetodo === 'todos' || venda.payment_method === filterMetodo;
     let matchDateRange = true;
+    const soldOn = diaCalendario(venda.sold_on);
     if (dateRange.from && dateRange.to) {
-      const soldOn = new Date(venda.data_venda + 'T00:00:00');
-      matchDateRange = isWithinInterval(soldOn, {
+      matchDateRange = soldOn != null && isWithinInterval(soldOn, {
         start: startOfDay(dateRange.from),
         end: endOfDay(dateRange.to)
       });
     } else if (dateRange.from) {
-      const soldOn = new Date(venda.data_venda + 'T00:00:00');
-      matchDateRange = soldOn >= startOfDay(dateRange.from);
+      matchDateRange = soldOn != null && soldOn >= startOfDay(dateRange.from);
     }
     return matchSearch && matchMetodo && matchDateRange;
   });
-  const totalVendas = filteredVendas.reduce((sum, v) => sum + Number(v.valor), 0);
+  const totalVendas = filteredVendas.reduce((sum, v) => sum + Number(v.amount), 0);
 
   // Dados para gráfico por método de pagamento
   const dadosPorMetodo = useMemo(() => {
     const metodos: Record<string, number> = {};
     vendas.forEach(venda => {
-      metodos[venda.metodo_pagamento] = (metodos[venda.metodo_pagamento] || 0) + Number(venda.valor);
+      metodos[venda.payment_method] = (metodos[venda.payment_method] || 0) + Number(venda.amount);
     });
     return Object.entries(metodos).map(([name, value]) => ({
       name,
@@ -1969,33 +1974,36 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                         <div className="flex items-center gap-4">
                           <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200 shrink-0", isExpanded && "rotate-180")} />
                           <div>
-                            <p className="font-medium">{venda.cliente_nome}</p>
+                            <p className="font-medium">{venda.customer_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(venda.data_venda + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
-                              {venda.cliente_telefone && <span className="ml-2">• {venda.cliente_telefone}</span>}
+                              {(() => {
+                                const dia = diaCalendario(venda.sold_on);
+                                return dia ? format(dia, 'dd/MM/yyyy', { locale: ptBR }) : '—';
+                              })()}
+                              {venda.customer_phone && <span className="ml-2">• {venda.customer_phone}</span>}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {venda.vendedor && <Badge variant="outline" style={{
-                            backgroundColor: `${vendedorColors[venda.vendedor] || '#6b7280'}20`,
-                            borderColor: vendedorColors[venda.vendedor] || '#6b7280',
-                            color: vendedorColors[venda.vendedor] || '#6b7280'
+                          {venda.seller && <Badge variant="outline" style={{
+                            backgroundColor: `${vendedorColors[venda.seller] || '#6b7280'}20`,
+                            borderColor: vendedorColors[venda.seller] || '#6b7280',
+                            color: vendedorColors[venda.seller] || '#6b7280'
                           }}>
-                            {venda.vendedor}
+                            {venda.seller}
                           </Badge>}
                           <Badge variant="outline" style={{
-                            backgroundColor: `${getMetodoColor(venda.metodo_pagamento)}20`,
-                            borderColor: getMetodoColor(venda.metodo_pagamento),
-                            color: getMetodoColor(venda.metodo_pagamento)
+                            backgroundColor: `${getMetodoColor(venda.payment_method)}20`,
+                            borderColor: getMetodoColor(venda.payment_method),
+                            color: getMetodoColor(venda.payment_method)
                           }} className="flex items-center gap-1">
-                            {getMetodoIcon(venda.metodo_pagamento)}
-                            {venda.metodo_pagamento}
-                            {venda.bandeira && <span>· {venda.bandeira}</span>}
-                            {venda.metodo_pagamento === 'Cartão de Crédito' && venda.parcelas && venda.parcelas > 1 && <span className="ml-1">({venda.parcelas}x)</span>}
+                            {getMetodoIcon(venda.payment_method)}
+                            {venda.payment_method}
+                            {venda.cardBrand && <span>· {venda.cardBrand}</span>}
+                            {venda.payment_method === 'Cartão de Crédito' && venda.installments && venda.installments > 1 && <span className="ml-1">({venda.installments}x)</span>}
                           </Badge>
                           {/* Desconto badge */}
-                          {venda.desconto != null && Number(venda.desconto) > 0 && (
+                          {venda.discount != null && Number(venda.discount) > 0 && (
                             <Badge variant="outline" style={{
                               backgroundColor: 'rgba(16,185,129,0.1)',
                               borderColor: 'rgba(16,185,129,0.3)',
@@ -2006,8 +2014,8 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                               fontWeight: 700,
                             }}>
                               -{(() => {
-                                const d = Number(venda.desconto);
-                                const vf = Number(venda.valor_final ?? venda.valor);
+                                const d = Number(venda.discount);
+                                const vf = Number(venda.final_amount ?? venda.amount);
                                 const base = vf + d;
                                 if (base > 0) {
                                   const pct = (d / base) * 100;
@@ -2067,9 +2075,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                           )}
                           <div className="text-right min-w-[100px]">
                             {(() => {
-                              const temDesc = venda.desconto != null && Number(venda.desconto) > 0;
-                              const finalAmount = Number(venda.valor_final ?? venda.valor);
-                              const valorOriginal = temDesc ? finalAmount + Number(venda.desconto) : null;
+                              const temDesc = venda.discount != null && Number(venda.discount) > 0;
+                              const finalAmount = Number(venda.final_amount ?? venda.amount);
+                              const valorOriginal = temDesc ? finalAmount + Number(venda.discount) : null;
                               return (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px', flexWrap: 'wrap' }}>
                                   {temDesc && (
@@ -2083,9 +2091,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                                 </div>
                               );
                             })()}
-                            {venda.valor_liquido != null && (
+                            {venda.net_amount != null && (
                               <p className="text-[10px] text-muted-foreground">
-                                Líq. {formatCurrency(Number(venda.valor_liquido))}
+                                Líq. {formatCurrency(Number(venda.net_amount))}
                               </p>
                             )}
                           </div>
@@ -2233,16 +2241,16 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                         <div className="border-t">
                           <VendaDetailAccordion
                             saleId={venda.id}
-                            produtos={venda.produtos}
-                            paymentMethod={venda.metodo_pagamento}
-                            parcelas={venda.parcelas}
-                            valor={Number(venda.valor)}
-                            valorBruto={venda.valor_bruto ? Number(venda.valor_bruto) : null}
-                            desconto={venda.desconto ? Number(venda.desconto) : null}
-                            finalAmount={venda.valor_final ? Number(venda.valor_final) : null}
-                            observacoes={venda.observacoes}
-                            bandeira={venda.bandeira}
-                            valorLiquido={venda.valor_liquido != null ? Number(venda.valor_liquido) : null}
+                            produtos={venda.products_summary}
+                            paymentMethod={venda.payment_method}
+                            parcelas={venda.installments}
+                            valor={Number(venda.amount)}
+                            valorBruto={venda.gross_amount ? Number(venda.gross_amount) : null}
+                            desconto={venda.discount ? Number(venda.discount) : null}
+                            finalAmount={venda.final_amount ? Number(venda.final_amount) : null}
+                            observacoes={venda.notes}
+                            bandeira={venda.cardBrand}
+                            valorLiquido={venda.net_amount != null ? Number(venda.net_amount) : null}
                             isAdmin={isAdmin}
                           />
                         </div>
@@ -2285,7 +2293,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
               <Popover open={editClientePopoverOpen} onOpenChange={setEditClientePopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" aria-expanded={editClientePopoverOpen} className="justify-between w-full font-normal">
-                    {editVenda.cliente_nome || "Selecione ou digite o name do cliente..."}
+                    {editVenda.customer_name || "Selecione ou digite o name do cliente..."}
                     <User className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -2295,9 +2303,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                       if (!clientes.find(c => c.name.toLowerCase() === value.toLowerCase())) {
                         setEditVenda({
                           ...editVenda,
-                          cliente_nome: value,
-                          cliente_telefone: '',
-                          cliente_email: ''
+                          customer_name: value,
+                          customer_phone: '',
+                          customer_email: ''
                         });
                       }
                     }} />
@@ -2311,13 +2319,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                         {clientes.map(cliente => <CommandItem key={cliente.id} value={cliente.name} onSelect={() => {
                           setEditVenda({
                             ...editVenda,
-                            cliente_nome: cliente.name,
-                            cliente_telefone: cliente.telefone || '',
-                            cliente_email: cliente.email || ''
+                            customer_name: cliente.name,
+                            customer_phone: cliente.telefone || '',
+                            customer_email: cliente.email || ''
                           });
                           setEditClientePopoverOpen(false);
                         }}>
-                            <Check className={cn("mr-2 h-4 w-4", editVenda.cliente_nome === cliente.name ? "opacity-100" : "opacity-0")} />
+                            <Check className={cn("mr-2 h-4 w-4", editVenda.customer_name === cliente.name ? "opacity-100" : "opacity-0")} />
                             <div className="flex flex-col">
                               <span>{cliente.name}</span>
                               {cliente.telefone && <span className="text-xs text-muted-foreground">{cliente.telefone}</span>}
@@ -2331,17 +2339,17 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-cliente_telefone">Telefone</Label>
-                <Input id="edit-cliente_telefone" placeholder="(00) 00000-0000" value={editVenda.cliente_telefone} onChange={e => setEditVenda({
+                <Label htmlFor="edit-customer_phone">Telefone</Label>
+                <Input id="edit-customer_phone" placeholder="(00) 00000-0000" value={editVenda.customer_phone} onChange={e => setEditVenda({
                   ...editVenda,
-                  cliente_telefone: e.target.value
+                  customer_phone: e.target.value
                 })} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-cliente_email">E-mail</Label>
-                <Input id="edit-cliente_email" type="email" placeholder="email@exemplo.com" value={editVenda.cliente_email} onChange={e => setEditVenda({
+                <Label htmlFor="edit-customer_email">E-mail</Label>
+                <Input id="edit-customer_email" type="email" placeholder="email@exemplo.com" value={editVenda.customer_email} onChange={e => setEditVenda({
                   ...editVenda,
-                  cliente_email: e.target.value
+                  customer_email: e.target.value
                 })} />
               </div>
             </div>
@@ -2374,29 +2382,29 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
               {editItensVenda.length > 0 && (
                 <div className="border rounded-lg overflow-hidden" style={{ maxHeight: '320px', overflowY: 'auto' }}>
                   {editItensVenda.map(item => {
-                    const discValor = item.desconto_tipo === 'percentual'
+                    const discValor = item.discount_kind === 'percentual'
                       ? item.subtotal * (item.desconto / 100)
                       : Math.min(item.desconto, item.subtotal);
                     const totalItemFinal = Math.max(0, item.subtotal - discValor);
                     const temDesconto = item.desconto > 0;
-                    const invalido = item.desconto_tipo === 'percentual'
+                    const invalido = item.discount_kind === 'percentual'
                       ? item.desconto > 100
                       : item.desconto > item.subtotal;
                     return (
-                      <div key={item.produto_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div key={item.product_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                         {/* Main item row */}
                         <div className="flex items-center gap-2 p-3">
                           {(() => {
-                            const prod = produtos.find(p => p.id === item.produto_id);
+                            const prod = produtos.find(p => p.id === item.product_id);
                             return isServico(prod)
                               ? <Wrench className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               : <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />;
                           })()}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p className="font-medium text-sm truncate">{item.produto_nome}</p>
-                            <p className="text-xs text-muted-foreground">{item.quantidade}x {formatCurrency(item.preco_unitario)}</p>
+                            <p className="font-medium text-sm truncate">{item.product_name}</p>
+                            <p className="text-xs text-muted-foreground">{item.quantidade}x {formatCurrency(item.unit_price)}</p>
                             {(() => {
-                              const prod = produtos.find(p => p.id === item.produto_id);
+                              const prod = produtos.find(p => p.id === item.product_id);
                               if (!isServico(prod) || !prod?.recorrente) return null;
                               return (
                                 <label className="flex items-center gap-1.5 text-xs text-sky-700 mt-1">
@@ -2404,11 +2412,11 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                                   Cobrar por
                                   <input
                                     type="number" min={1} max={120}
-                                    value={item.recorrencia_periodos ?? 1}
-                                    onChange={e => updateEditItemField(item.produto_id, { recorrencia_periodos: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
+                                    value={item.recurrence_periods ?? 1}
+                                    onChange={e => updateEditItemField(item.product_id, { recurrence_periods: Math.max(1, Math.min(120, parseInt(e.target.value) || 1)) })}
                                     style={{ width: '52px', border: '1px solid rgba(14,165,233,0.4)', borderRadius: '6px', padding: '1px 4px', textAlign: 'center' }}
                                   />
-                                  períodos ({labelRecorrencia(prod.recorrencia_tipo).toLowerCase()})
+                                  períodos ({labelRecorrencia(prod.recurrence_kind).toLowerCase()})
                                 </label>
                               );
                             })()}
@@ -2416,25 +2424,25 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                           {/* Discount toggle + input */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                             <div style={{ display: 'flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(142,95,207,0.3)' }}>
-                              <button type="button" onClick={() => updateEditItemField(item.produto_id, { desconto_tipo: 'percentual' })}
+                              <button type="button" onClick={() => updateEditItemField(item.product_id, { discount_kind: 'percentual' })}
                                 style={{ padding: '3px 7px', fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 700,
-                                  background: item.desconto_tipo === 'percentual' ? '#8E5FCF' : 'transparent',
-                                  color: item.desconto_tipo === 'percentual' ? 'white' : '#8E5FCF',
+                                  background: item.discount_kind === 'percentual' ? '#8E5FCF' : 'transparent',
+                                  color: item.discount_kind === 'percentual' ? 'white' : '#8E5FCF',
                                   border: 'none', cursor: 'pointer', lineHeight: 1 }}>%</button>
-                              <button type="button" onClick={() => updateEditItemField(item.produto_id, { desconto_tipo: 'amount' })}
+                              <button type="button" onClick={() => updateEditItemField(item.product_id, { discount_kind: 'amount' })}
                                 style={{ padding: '3px 7px', fontSize: '0.68rem', fontFamily: 'Gilroy', fontWeight: 700,
-                                  background: item.desconto_tipo === 'amount' ? '#8E5FCF' : 'transparent',
-                                  color: item.desconto_tipo === 'amount' ? 'white' : '#8E5FCF',
+                                  background: item.discount_kind === 'amount' ? '#8E5FCF' : 'transparent',
+                                  color: item.discount_kind === 'amount' ? 'white' : '#8E5FCF',
                                   border: 'none', cursor: 'pointer', lineHeight: 1 }}>R$</button>
                             </div>
                             <input
                               type="number" min={0} step={0.01}
-                              max={item.desconto_tipo === 'percentual' ? 100 : item.subtotal}
+                              max={item.discount_kind === 'percentual' ? 100 : item.subtotal}
                               value={item.desconto || ''}
                               onChange={e => {
                                 const raw = parseFloat(e.target.value) || 0;
-                                const max = item.desconto_tipo === 'percentual' ? 100 : item.subtotal;
-                                updateEditItemField(item.produto_id, { desconto: Math.min(raw, max) });
+                                const max = item.discount_kind === 'percentual' ? 100 : item.subtotal;
+                                updateEditItemField(item.product_id, { desconto: Math.min(raw, max) });
                               }}
                               placeholder="0"
                               style={{ width: '68px', textAlign: 'center', background: 'rgba(255,255,255,0.8)',
@@ -2455,14 +2463,14 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                           </div>
                           {/* Obs toggle */}
                           <button type="button"
-                            onClick={() => updateEditItemField(item.produto_id, { obs_aberta: !item.obs_aberta })}
+                            onClick={() => updateEditItemField(item.product_id, { obs_aberta: !item.obs_aberta })}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
                               color: item.observacao ? '#8E5FCF' : '#9CA3AF' }}
                             title="Observação do item">
                             <MessageSquare className="h-4 w-4" />
                           </button>
                           <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive flex-shrink-0"
-                            onClick={() => handleRemoverItemEdit(item.produto_id)}>
+                            onClick={() => handleRemoverItemEdit(item.product_id)}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -2471,7 +2479,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                           <div style={{ padding: '0 12px 10px', background: 'rgba(142,95,207,0.02)' }}>
                             <textarea
                               value={item.observacao}
-                              onChange={e => updateEditItemField(item.produto_id, { observacao: e.target.value })}
+                              onChange={e => updateEditItemField(item.product_id, { observacao: e.target.value })}
                               placeholder="Observação deste item..."
                               style={{ width: '100%', minHeight: '60px', resize: 'vertical', padding: '8px 10px',
                                 background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(142,95,207,0.2)',
@@ -2556,9 +2564,9 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
               </div>
               <div className="grid gap-2">
                 <Label>Método de Pagamento *</Label>
-                <Select value={editVenda.metodo_pagamento} onValueChange={value => setEditVenda({
+                <Select value={editVenda.payment_method} onValueChange={value => setEditVenda({
                   ...editVenda,
-                  metodo_pagamento: value
+                  payment_method: value
                 })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o método" />
@@ -2573,7 +2581,7 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
                 </Select>
               </div>
             </div>
-            {editVenda.metodo_pagamento === 'Cartão de Crédito' && <div className="grid gap-2">
+            {editVenda.payment_method === 'Cartão de Crédito' && <div className="grid gap-2">
                 <Label>Número de Parcelas</Label>
                 <Select value={String(editVenda.parcelas)} onValueChange={value => setEditVenda({
                 ...editVenda,
@@ -2674,13 +2682,13 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'nfc' && (
-                <>Deseja realmente emitir a NFC-e para a venda de <strong>{confirmVenda?.cliente_nome}</strong> no valor de <strong>{confirmVenda ? formatCurrency(Number(confirmVenda.valor)) : ''}</strong>?</>
+                <>Deseja realmente emitir a NFC-e para a venda de <strong>{confirmVenda?.customer_name}</strong> no valor de <strong>{confirmVenda ? formatCurrency(Number(confirmVenda.amount)) : ''}</strong>?</>
               )}
               {confirmAction === 'operacao' && (
-                <>Deseja realmente criar uma operação para a venda de <strong>{confirmVenda?.cliente_nome}</strong>?</>
+                <>Deseja realmente criar uma operação para a venda de <strong>{confirmVenda?.customer_name}</strong>?</>
               )}
               {confirmAction === 'excluir' && (
-                <>Deseja realmente excluir a venda de <strong>{confirmVenda?.cliente_nome}</strong>? Esta ação não poderá ser desfeita.</>
+                <>Deseja realmente excluir a venda de <strong>{confirmVenda?.customer_name}</strong>? Esta ação não poderá ser desfeita.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2717,10 +2725,10 @@ const [dialogOpen, setDialogOpen] = useState(autoOpenNova);
           {vendaParaOperacao && (
             <div className="grid gap-4 py-2">
               <div className="rounded-lg border bg-muted/50 p-3">
-                <p className="font-medium">{vendaParaOperacao.cliente_nome}</p>
-                <p className="text-sm text-muted-foreground">{vendaParaOperacao.produtos}</p>
+                <p className="font-medium">{vendaParaOperacao.customer_name}</p>
+                <p className="text-sm text-muted-foreground">{vendaParaOperacao.products_summary}</p>
                 <p className="text-sm font-semibold mt-1">
-                  {formatCurrency(Number(vendaParaOperacao.valor))}
+                  {formatCurrency(Number(vendaParaOperacao.amount))}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">

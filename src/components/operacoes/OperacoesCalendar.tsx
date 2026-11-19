@@ -26,9 +26,9 @@ export function OperacoesCalendar({ operacoes, onCardClick }: OperacoesCalendarP
 
   const getOpsForDay = (day: Date) => {
     return operacoes.filter(op => {
-      if (op.data_prevista && isSameDay(new Date(op.data_prevista), day)) return true;
-      if (op.data_entrega && isSameDay(new Date(op.data_entrega), day)) return true;
-      if (op.data_montagem && isSameDay(new Date(op.data_montagem), day)) return true;
+      if (op.expected_on && isSameDay(new Date(op.expected_on), day)) return true;
+      if (op.delivered_on && isSameDay(new Date(op.delivered_on), day)) return true;
+      if (op.assembly_on && isSameDay(new Date(op.assembly_on), day)) return true;
       return false;
     });
   };
@@ -96,7 +96,7 @@ export function OperacoesCalendar({ operacoes, onCardClick }: OperacoesCalendarP
                       )}
                     >
                       {op.kind === 'entrega_montagem' ? <Wrench className="h-2.5 w-2.5 shrink-0" /> : <Truck className="h-2.5 w-2.5 shrink-0" />}
-                      <span className="truncate">{op.cliente_nome}</span>
+                      <span className="truncate">{op.customer_name}</span>
                     </button>
                   ))}
                   {ops.length > 3 && (

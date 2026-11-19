@@ -22,8 +22,8 @@ const STATUS_OPTIONS = [
 
 interface Historico {
   id: string;
-  status_anterior: string | null;
-  status_novo: string;
+  previous_status: string | null;
+  new_status: string;
   descricao: string;
   created_at: string;
 }
@@ -97,10 +97,10 @@ export const PedidoEntregaStatusDialog: React.FC<Props> = ({ open, onOpenChange,
     }
 
     await api.from('delivery_order_event').insert({
-      pedido_id: pedidoId,
+      purchase_order_id: pedidoId,
       user_id: user.id,
-      status_anterior: currentStatus,
-      status_novo: newStatus,
+      previous_status: currentStatus,
+      new_status: newStatus,
       descricao: `Status alterado de "${STATUS_OPTIONS.find(s => s.value === currentStatus)?.label}" para "${STATUS_OPTIONS.find(s => s.value === newStatus)?.label}"`,
     } as any);
 

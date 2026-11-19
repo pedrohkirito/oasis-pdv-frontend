@@ -32,8 +32,8 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
   const isUrgent = operacao.urgencia === 'urgente' || operacao.urgencia === 'atrasado';
-  const isOverdue = operacao.data_prevista && operacao.status !== 'finalizado'
-    && isPast(parseISO(operacao.data_prevista)) && !isToday(parseISO(operacao.data_prevista));
+  const isOverdue = operacao.expected_on && operacao.status !== 'finalizado'
+    && isPast(parseISO(operacao.expected_on)) && !isToday(parseISO(operacao.expected_on));
 
   const borderColor = isOverdue
     ? 'rgba(239,68,68,0.4)'
@@ -88,7 +88,7 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
         {/* Name + badges */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', lineHeight: 1.3, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-            {operacao.cliente_nome}
+            {operacao.customer_name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 1 }}>
             {isOverdue && (
@@ -112,11 +112,11 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           <span style={{
             fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '2px 8px',
-            background: operacao.status_pagamento === 'pago' ? 'rgba(16,185,129,0.12)' : 'transparent',
-            border: operacao.status_pagamento === 'pago' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(107,114,128,0.3)',
-            color: operacao.status_pagamento === 'pago' ? '#059669' : '#6B7280',
+            background: operacao.payment_status === 'pago' ? 'rgba(16,185,129,0.12)' : 'transparent',
+            border: operacao.payment_status === 'pago' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(107,114,128,0.3)',
+            color: operacao.payment_status === 'pago' ? '#059669' : '#6B7280',
           }}>
-            {operacao.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
+            {operacao.payment_status === 'pago' ? 'Pago' : 'Pendente'}
           </span>
           <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '2px 8px', background: 'rgba(142,95,207,0.08)', border: '1px solid rgba(142,95,207,0.2)', color: '#8E5FCF', display: 'flex', alignItems: 'center', gap: 3 }}>
             {operacao.kind === 'entrega_montagem' ? (
@@ -128,15 +128,15 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
         </div>
 
         {/* Date */}
-        {operacao.data_prevista && (
+        {operacao.expected_on && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#9CA3AF' }}>
             <Calendar style={{ width: 11, height: 11 }} />
-            {format(new Date(operacao.data_prevista), 'dd/MM/yyyy', { locale: ptBR })}
+            {format(new Date(operacao.expected_on), 'dd/MM/yyyy', { locale: ptBR })}
           </div>
         )}
 
         {/* Ver Pedido */}
-        {operacao.venda_id && (
+        {operacao.sale_id && (
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -176,7 +176,7 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
         )}
       </div>
     </div>
-    {operacao.venda_id && (
+    {operacao.sale_id && (
       <PedidoEntregaDialog
         open={pedidoOpen}
         onOpenChange={(o) => {
@@ -186,7 +186,7 @@ export function KanbanCard({ operacao, onClick, isDragging }: KanbanCardProps) {
             setTimeout(() => { suppressClickRef.current = false; }, 400);
           }
         }}
-        saleId={operacao.venda_id}
+        saleId={operacao.sale_id}
       />
     )}
     </>

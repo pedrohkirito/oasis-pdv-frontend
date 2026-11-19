@@ -53,7 +53,7 @@ function useArvore(contas: ContaPlano[]) {
   return useMemo(() => {
     const porPai = new Map<string | null, ContaPlano[]>()
     for (const c of contas) {
-      const chave = c.conta_pai_id
+      const chave = c.parent_account_id
       if (!porPai.has(chave)) porPai.set(chave, [])
       porPai.get(chave)!.push(c)
     }
@@ -155,7 +155,7 @@ function ModalNovaConta({
   open: boolean
   onClose: () => void
   contas: ContaPlano[]
-  onCriar: (dados: { code: string; name: string; kind: string; natureza: string; conta_pai_id: string; sintetica: boolean }) => Promise<{ error: string | null }>
+  onCriar: (dados: { code: string; name: string; kind: string; natureza: string; parent_account_id: string; sintetica: boolean }) => Promise<{ error: string | null }>
 }) {
   const { toast } = useToast()
   const [paiId, setPaiId] = useState('')
@@ -192,7 +192,7 @@ function ModalNovaConta({
 
     setSalvando(true)
     const { error } = await onCriar({
-      code, name, kind: pai.kind, natureza: pai.natureza, conta_pai_id: pai.id, sintetica,
+      code, name, kind: pai.kind, natureza: pai.natureza, parent_account_id: pai.id, sintetica,
     })
     setSalvando(false)
 

@@ -43,8 +43,8 @@ export function ResumoCategoriasCard({ companyId }: { companyId: string }) {
         .select('categoria, valor, kind') as any)
         .eq('company_id', companyId)
         .eq('kind', 'debito')
-        .gte('data_movimentacao', iniMes)
-        .lte('data_movimentacao', fimMes)
+        .gte('moved_on', iniMes)
+        .lte('moved_on', fimMes)
 
       const agrupado: Record<string, number> = {}
       for (const m of (data || [])) {

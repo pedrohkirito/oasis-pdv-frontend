@@ -3,7 +3,7 @@ import { api } from '@/lib/api'
 import { useEmpresa } from './useEmpresa'
 
 export interface ItemLancamento {
-  conta_id: string
+  account_id: string
   code: string
   name: string
   kind: 'debito' | 'credito'
@@ -12,10 +12,10 @@ export interface ItemLancamento {
 
 export interface LancamentoContabil {
   id: string
-  data_lancamento: string
+  posted_on: string
   historico: string
   origem: string
-  origem_id: string | null
+  source_id: string | null
   created_at: string
   total: number
   itens: ItemLancamento[]
@@ -24,7 +24,7 @@ export interface LancamentoContabil {
 }
 
 export interface SaldoPatrimonial {
-  conta_id: string
+  account_id: string
   code: string
   name: string
   natureza: 'devedora' | 'credora'
@@ -32,7 +32,7 @@ export interface SaldoPatrimonial {
 }
 
 export interface ItemNovoLancamento {
-  conta_id: string
+  account_id: string
   kind: 'debito' | 'credito'
   valor: number
 }
@@ -84,7 +84,7 @@ export function useLancamentosContabeis() {
     const { data, error } = await (api.rpc('create_journal_entry', {
       p_header: {
         company_id: companyId,
-        data_lancamento: params.data,
+        posted_on: params.data,
         historico: params.historico,
         origem: params.origem,
       },
@@ -118,7 +118,7 @@ export function useLancamentosContabeis() {
       .eq('company_id', companyId)
       .order('sold_on', { ascending: true })
       .limit(1)
-    return data?.[0]?.data_venda ?? null
+    return data?.[0]?.sold_on ?? null
   }, [companyId])
 
   return { listar, criar, estornar, saldosPatrimoniais, primeiraVenda }

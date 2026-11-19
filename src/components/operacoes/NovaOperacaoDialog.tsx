@@ -40,15 +40,15 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
   const { companyId } = useEmpresa();
   const [fornecedores, setFornecedores] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
-    cliente_nome: '',
-    cliente_telefone: '',
-    cliente_email: '',
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
     produtos: '',
     kind: 'entrega',
-    status_pagamento: 'pendente',
-    data_prevista: '',
-    fornecedor_id: '',
-    fornecedor_nome: '',
+    payment_status: 'pendente',
+    expected_on: '',
+    supplier_id: '',
+    supplier_name: '',
     urgencia: 'normal',
     observacoes: '',
   });
@@ -62,18 +62,18 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
   }, [open, companyId]);
 
   const handleSubmit = () => {
-    if (!form.cliente_nome || !form.produtos) return;
-    const fornecedor = fornecedores.find(f => f.id === form.fornecedor_id);
+    if (!form.customer_name || !form.produtos) return;
+    const fornecedor = fornecedores.find(f => f.id === form.supplier_id);
     onCreate({
       ...form,
-      data_prevista: form.data_prevista || null,
-      fornecedor_id: form.fornecedor_id || null,
-      fornecedor_nome: fornecedor?.name || form.fornecedor_nome || null,
+      expected_on: form.expected_on || null,
+      supplier_id: form.supplier_id || null,
+      supplier_name: fornecedor?.name || form.supplier_name || null,
     } as any);
     setForm({
-      cliente_nome: '', cliente_telefone: '', cliente_email: '', produtos: '',
-      kind: 'entrega', status_pagamento: 'pendente', data_prevista: '',
-      fornecedor_id: '', fornecedor_nome: '', urgencia: 'normal', observacoes: '',
+      customer_name: '', customer_phone: '', customer_email: '', produtos: '',
+      kind: 'entrega', payment_status: 'pendente', expected_on: '',
+      supplier_id: '', supplier_name: '', urgencia: 'normal', observacoes: '',
     });
     onOpenChange(false);
   };
@@ -122,8 +122,8 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
             <label style={labelStyle}>Cliente *</label>
             <input
               placeholder="Nome do cliente"
-              value={form.cliente_nome}
-              onChange={e => setForm(f => ({ ...f, cliente_nome: e.target.value }))}
+              value={form.customer_name}
+              onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
               style={inputStyle}
             />
           </div>
@@ -133,8 +133,8 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
               <label style={labelStyle}>Telefone</label>
               <input
                 placeholder="(00) 00000-0000"
-                value={form.cliente_telefone}
-                onChange={e => setForm(f => ({ ...f, cliente_telefone: e.target.value }))}
+                value={form.customer_phone}
+                onChange={e => setForm(f => ({ ...f, customer_phone: e.target.value }))}
                 style={inputStyle}
               />
             </div>
@@ -142,8 +142,8 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
               <label style={labelStyle}>Email</label>
               <input
                 placeholder="email@..."
-                value={form.cliente_email}
-                onChange={e => setForm(f => ({ ...f, cliente_email: e.target.value }))}
+                value={form.customer_email}
+                onChange={e => setForm(f => ({ ...f, customer_email: e.target.value }))}
                 style={inputStyle}
               />
             </div>
@@ -172,7 +172,7 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
             </div>
             <div>
               <label style={labelStyle}>Pagamento</label>
-              <Select value={form.status_pagamento} onValueChange={v => setForm(f => ({ ...f, status_pagamento: v }))}>
+              <Select value={form.payment_status} onValueChange={v => setForm(f => ({ ...f, payment_status: v }))}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pendente">Pendente</SelectItem>
@@ -188,8 +188,8 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
               <label style={labelStyle}>Data Prevista</label>
               <input
                 type="date"
-                value={form.data_prevista}
-                onChange={e => setForm(f => ({ ...f, data_prevista: e.target.value }))}
+                value={form.expected_on}
+                onChange={e => setForm(f => ({ ...f, expected_on: e.target.value }))}
                 style={inputStyle}
               />
             </div>
@@ -207,9 +207,9 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
 
           <div>
             <label style={labelStyle}>Fornecedor</label>
-            <Select value={form.fornecedor_id} onValueChange={v => {
+            <Select value={form.supplier_id} onValueChange={v => {
               const f = fornecedores.find(x => x.id === v);
-              setForm(prev => ({ ...prev, fornecedor_id: v, fornecedor_nome: f?.name || '' }));
+              setForm(prev => ({ ...prev, supplier_id: v, supplier_name: f?.name || '' }));
             }}>
               <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar fornecedor" /></SelectTrigger>
               <SelectContent>
@@ -241,8 +241,8 @@ export function NovaOperacaoDialog({ open, onOpenChange, onCreate }: NovaOperaca
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!form.cliente_nome || !form.produtos}
-            style={{ padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 10, border: 'none', background: (!form.cliente_nome || !form.produtos) ? 'rgba(142,95,207,0.3)' : 'linear-gradient(135deg, #47118F, #8E5FCF)', color: '#fff', cursor: (!form.cliente_nome || !form.produtos) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
+            disabled={!form.customer_name || !form.produtos}
+            style={{ padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 10, border: 'none', background: (!form.customer_name || !form.produtos) ? 'rgba(142,95,207,0.3)' : 'linear-gradient(135deg, #47118F, #8E5FCF)', color: '#fff', cursor: (!form.customer_name || !form.produtos) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
           >
             Criar Operação
           </button>

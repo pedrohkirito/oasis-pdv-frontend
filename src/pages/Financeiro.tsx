@@ -502,7 +502,7 @@ export default function Financeiro() {
                           <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.descricao || 'Conta'}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                             <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#EF4444', fontSize: '0.875rem' }}>{fmtBRL(c.valor)}</span>
-                            <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.data_vencimento}</span>
+                            <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.due_on}</span>
                           </div>
                         </div>
                       ))
@@ -523,10 +523,10 @@ export default function Financeiro() {
                       ? <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy' }}>Nenhuma entrada prevista</p>
                       : (visao.proximasEntradas || []).map((c: any, i: number) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #10B981', background: 'transparent', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.04)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.descricao || c.cliente_nome || 'Recebível'}</span>
+                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.descricao || c.customer_name || 'Recebível'}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                             <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#10B981', fontSize: '0.875rem' }}>{fmtBRL(c.valor)}</span>
-                            <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.data_vencimento}</span>
+                            <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.due_on}</span>
                           </div>
                         </div>
                       ))
@@ -651,10 +651,10 @@ export default function Financeiro() {
                 <Accordion type="multiple">
                   {(fluxo.semanas || []).map((s: any, i: number) => {
                     const pagarSem = (fluxo.pagarFuturas || []).filter(
-                      (c: any) => c.data_vencimento >= s.inicio && c.data_vencimento <= s.fim
+                      (c: any) => c.due_on >= s.inicio && c.due_on <= s.fim
                     )
                     const receberSem = (fluxo.receberFuturas || []).filter(
-                      (c: any) => c.data_vencimento >= s.inicio && c.data_vencimento <= s.fim
+                      (c: any) => c.due_on >= s.inicio && c.due_on <= s.fim
                     )
                     if (pagarSem.length === 0 && receberSem.length === 0) return null
                     return (
@@ -667,13 +667,13 @@ export default function Financeiro() {
                             {pagarSem.map((c: any, j: number) => (
                               <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#EF4444', padding: '4px 0' }}>
                                 <span>{c.descricao || 'Conta a pagar'}</span>
-                                <span>{fmtBRL(c.valor)} — {c.data_vencimento}</span>
+                                <span>{fmtBRL(c.valor)} — {c.due_on}</span>
                               </div>
                             ))}
                             {receberSem.map((c: any, j: number) => (
                               <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#10B981', padding: '4px 0' }}>
-                                <span>{c.descricao || c.cliente_nome || 'Conta a receber'}</span>
-                                <span>{fmtBRL(c.valor)} — {c.data_vencimento}</span>
+                                <span>{c.descricao || c.customer_name || 'Conta a receber'}</span>
+                                <span>{fmtBRL(c.valor)} — {c.due_on}</span>
                               </div>
                             ))}
                           </div>

@@ -81,7 +81,7 @@ export default function Operacoes() {
   };
 
   const fornecedores = useMemo(() => {
-    const names = new Set(operacoes.map(o => o.fornecedor_nome).filter(Boolean));
+    const names = new Set(operacoes.map(o => o.supplier_name).filter(Boolean));
     return Array.from(names) as string[];
   }, [operacoes]);
 

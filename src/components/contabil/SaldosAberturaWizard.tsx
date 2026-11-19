@@ -93,10 +93,10 @@ export function SaldosAberturaWizard({
 
   // Itens informados (valor > 0), no sentido natural de cada conta.
   const itensInformados: ItemNovoLancamento[] = saldos
-    .map(s => ({ s, c: paraCentavos(valores[s.conta_id] ?? '') }))
+    .map(s => ({ s, c: paraCentavos(valores[s.account_id] ?? '') }))
     .filter(x => x.c > 0)
     .map(({ s, c }) => ({
-      conta_id: s.conta_id,
+      account_id: s.account_id,
       kind: (s.natureza === 'devedora' ? 'debito' : 'credito') as 'debito' | 'credito',
       valor: deCentavos(c),
     }))
@@ -108,7 +108,7 @@ export function SaldosAberturaWizard({
   const itensFinais: ItemNovoLancamento[] = [...itensInformados]
   if (diferenca !== 0 && contrapartidaId) {
     itensFinais.push({
-      conta_id: contrapartidaId,
+      account_id: contrapartidaId,
       kind: diferenca > 0 ? 'credito' : 'debito',
       valor: deCentavos(Math.abs(diferenca)),
     })
@@ -176,15 +176,15 @@ export function SaldosAberturaWizard({
                     <span>Conta</span><span className="text-right">Saldo na data</span><span className="text-right">Saldo de abertura</span>
                   </div>
                   {doGrupo.map(s => (
-                    <div key={s.conta_id} className="grid grid-cols-[1fr_130px_150px] gap-2 items-center py-1.5 border-b border-border/60">
+                    <div key={s.account_id} className="grid grid-cols-[1fr_130px_150px] gap-2 items-center py-1.5 border-b border-border/60">
                       <span className="text-sm truncate">
                         <span className="font-mono text-xs text-muted-foreground mr-2">{s.code}</span>{s.name}
                       </span>
                       <span className="text-right text-sm font-mono tabular-nums">{fmtBRL(s.saldo)}</span>
                       <Input
                         inputMode="decimal" className="h-8 text-right" placeholder="0,00"
-                        value={valores[s.conta_id] ?? ''}
-                        onChange={e => setValores(v => ({ ...v, [s.conta_id]: e.target.value }))}
+                        value={valores[s.account_id] ?? ''}
+                        onChange={e => setValores(v => ({ ...v, [s.account_id]: e.target.value }))}
                       />
                     </div>
                   ))}
@@ -207,7 +207,7 @@ export function SaldosAberturaWizard({
                 <span>Conta</span><span>D/C</span><span className="text-right">Valor</span>
               </div>
               {itensFinais.map((i, k) => {
-                const c = contaPor(i.conta_id)
+                const c = contaPor(i.account_id)
                 return (
                   <div key={k} className="grid grid-cols-[1fr_70px_130px] gap-2 px-3 py-1.5 text-sm border-b border-border/60 last:border-0">
                     <span className="truncate">

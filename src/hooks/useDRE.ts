@@ -13,7 +13,7 @@ export function useDRE() {
     // 1. Receita bruta (vendas concluídas)
     const { data: vendas } = await (api
       .from('sale')
-      .select('valor_final, valor, desconto, created_at') as any)
+      .select('final_amount, valor, desconto, created_at') as any)
       .eq('company_id', companyId)
       .gte('created_at', dataInicio)
       .lte('created_at', dataFim)
@@ -22,22 +22,22 @@ export function useDRE() {
     // Busca itens de venda com preço de custo
     const { data: itensVenda } = await (api
       .from('sale_item')
-      .select('quantidade, custo_unitario, venda_id, vendas!inner(created_at, empresa_id)') as any)
-      .eq('vendas.empresa_id', companyId)
+      .select('quantidade, unit_cost, sale_id, vendas!inner(created_at, company_id)') as any)
+      .eq('vendas.company_id', companyId)
       .gte('vendas.created_at', dataInicio)
       .lte('vendas.created_at', dataFim)
 
     // 3. Despesas operacionais (contas a pagar pagas)
     const { data: despesas } = await api
       .from('payable')
-      .select('valor, categoria, data_pagamento')
+      .select('valor, categoria, paid_on')
       .eq('company_id', companyId)
       .eq('status', 'pago')
       .gte('paid_on', dataInicio.split('T')[0])
       .lte('paid_on', dataFim.split('T')[0])
 
     // 4. Comissões pagas
-    let comissoes: { valor_comissao: number }[] = []
+    let comissoes: { commission_amount: number }[] = []
     try {
       const { data } = await (api
         .from('commission')
@@ -54,7 +54,7 @@ export function useDRE() {
     // 5. Contas a receber recebidas
     const { data: recebimentos } = await api
       .from('receivable')
-      .select('valor, valor_recebido, categoria')
+      .select('valor, received_amount, categoria')
       .eq('company_id', companyId)
       .in('status', ['recebido', 'recebido_parcial'])
       .gte('received_on', dataInicio.split('T')[0])
@@ -62,7 +62,7 @@ export function useDRE() {
 
     // CÁLCULOS DO DRE:
     const receitaBruta = (vendas as any[])?.reduce(
-      (acc: number, v: any) => acc + (v.valor_final || v.valor || 0), 0) || 0
+      (acc: number, v: any) => acc + (v.final_amount || v.valor || 0), 0) || 0
 
     const totalDescontos = (vendas as any[])?.reduce(
       (acc: number, v: any) => acc + (v.desconto || 0), 0) || 0
@@ -70,7 +70,7 @@ export function useDRE() {
     const receitaLiquida = receitaBruta - totalDescontos
 
     const cmv = (itensVenda as any[])?.reduce(
-      (acc: number, i: any) => acc + ((i.custo_unitario || 0) * (i.quantidade || 0)), 0
+      (acc: number, i: any) => acc + ((i.unit_cost || 0) * (i.quantidade || 0)), 0
     ) || 0
 
     const lucroBruto = receitaLiquida - cmv
@@ -89,7 +89,7 @@ export function useDRE() {
       .reduce((acc, v) => acc + v, 0)
 
     const totalComissoes = comissoes?.reduce(
-      (acc, c) => acc + (c.valor_comissao || 0), 0) || 0
+      (acc, c) => acc + (c.commission_amount || 0), 0) || 0
 
     const resultadoOperacional = lucroBruto - totalDespesas - totalComissoes
 

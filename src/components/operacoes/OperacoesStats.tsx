@@ -17,12 +17,12 @@ export function OperacoesStats({ operacoes }: OperacoesStatsProps) {
   const stats = useMemo(() => {
     const ativas = operacoes.filter(o => o.status !== 'finalizado');
     const atrasadas = ativas.filter(o => {
-      if (!o.data_prevista) return false;
-      return isPast(parseISO(o.data_prevista)) && !isToday(parseISO(o.data_prevista));
+      if (!o.expected_on) return false;
+      return isPast(parseISO(o.expected_on)) && !isToday(parseISO(o.expected_on));
     });
     const entregasHoje = operacoes.filter(o => {
       if (o.status === 'finalizado') return false;
-      const date = o.data_prevista || o.data_entrega;
+      const date = o.expected_on || o.delivered_on;
       return date && isToday(parseISO(date));
     });
     const montagensPendentes = operacoes.filter(o => o.kind?.includes('montagem') && o.status !== 'finalizado');

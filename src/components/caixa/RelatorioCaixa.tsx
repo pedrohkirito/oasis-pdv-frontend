@@ -18,21 +18,21 @@ export interface MovimentacaoRelatorio {
 
 export interface DadosRelatorio {
   id: string;
-  operador_nome: string | null;
-  fechado_por_nome?: string | null;
-  valor_abertura: number;
-  valor_fechamento_fisico: number | null;
-  total_dinheiro: number;
-  total_debito: number;
-  total_credito: number;
+  operator_name: string | null;
+  closed_by_name?: string | null;
+  opening_amount: number;
+  physical_closing_amount: number | null;
+  total_cash: number;
+  total_debit: number;
+  total_credit: number;
   total_pix: number;
-  total_vendas: number;
-  total_sangrias: number;
-  total_suprimentos: number;
-  quebra_caixa: number | null;
-  observacao_fechamento: string | null;
-  aberto_em: string;
-  fechado_em: string | null;
+  total_sales: number;
+  total_withdrawals: number;
+  total_deposits: number;
+  cash_variance: number | null;
+  closing_note: string | null;
+  opened_at: string;
+  closed_at: string | null;
   movimentacoes?: MovimentacaoRelatorio[];
 }
 
@@ -58,12 +58,12 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const esperado =
-    Number(dados.valor_abertura) +
-    Number(dados.total_dinheiro) +
-    Number(dados.total_suprimentos) -
-    Number(dados.total_sangrias);
+    Number(dados.opening_amount) +
+    Number(dados.total_cash) +
+    Number(dados.total_deposits) -
+    Number(dados.total_withdrawals);
 
-  const quebra = Number(dados.quebra_caixa ?? 0);
+  const quebra = Number(dados.cash_variance ?? 0);
   const quebraPositiva = quebra >= 0;
 
   const handlePrint = () => {
@@ -140,32 +140,32 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
         <div className="space-y-2 mb-3 mt-3">
           <div className="linha flex justify-between">
             <span className="label">Data:</span>
-            <span className="amount">{fmtData(dados.aberto_em)}</span>
+            <span className="amount">{fmtData(dados.opened_at)}</span>
           </div>
           <div className="linha flex justify-between">
             <span className="label">Abertura:</span>
-            <span className="amount">{fmtHora(dados.aberto_em)}</span>
+            <span className="amount">{fmtHora(dados.opened_at)}</span>
           </div>
-          {dados.fechado_em && (
+          {dados.closed_at && (
             <div className="linha flex justify-between">
               <span className="label">Fechamento:</span>
-              <span className="amount">{fmtHora(dados.fechado_em)}</span>
+              <span className="amount">{fmtHora(dados.closed_at)}</span>
             </div>
           )}
           <div className="linha flex justify-between">
             <span className="label">Aberto por:</span>
-            <span className="amount">{dados.operador_nome ?? '—'}</span>
+            <span className="amount">{dados.operator_name ?? '—'}</span>
           </div>
-          {dados.fechado_por_nome && (
+          {dados.closed_by_name && (
             <div className="linha flex justify-between">
               <span className="label">Fechado por:</span>
-              <span className="amount">{dados.fechado_por_nome}</span>
+              <span className="amount">{dados.closed_by_name}</span>
             </div>
           )}
-          {!dados.fechado_por_nome && dados.fechado_em && (
+          {!dados.closed_by_name && dados.closed_at && (
             <div className="linha flex justify-between">
               <span className="label">Fechado por:</span>
-              <span className="amount">{dados.operador_nome ?? '—'}</span>
+              <span className="amount">{dados.operator_name ?? '—'}</span>
             </div>
           )}
         </div>
@@ -177,9 +177,9 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
         </p>
         <div className="space-y-2">
           {[
-            { label: 'Dinheiro:',       valor: dados.total_dinheiro  },
-            { label: 'Cartão Débito:',  valor: dados.total_debito    },
-            { label: 'Cartão Crédito:', valor: dados.total_credito   },
+            { label: 'Dinheiro:',       valor: dados.total_cash  },
+            { label: 'Cartão Débito:',  valor: dados.total_debit    },
+            { label: 'Cartão Crédito:', valor: dados.total_credit   },
             { label: 'Pix:',            valor: dados.total_pix       },
           ].map(({ label, valor }) => (
             <div key={label} className="linha flex justify-between">
@@ -189,7 +189,7 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
           ))}
           <div className="total-linha flex justify-between font-bold border-t border-border pt-2 mt-2">
             <span>TOTAL VENDAS:</span>
-            <span>{fmtBRL(dados.total_vendas)}</span>
+            <span>{fmtBRL(dados.total_sales)}</span>
           </div>
         </div>
 
@@ -200,10 +200,10 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
         </p>
         <div className="space-y-2">
           {[
-            { label: 'Troco inicial:',       valor: dados.valor_abertura,   sinal: '' },
-            { label: '(+) Suprimentos:',     valor: dados.total_suprimentos, sinal: '+' },
-            { label: '(-) Sangrias:',        valor: dados.total_sangrias,   sinal: '-' },
-            { label: '(+) Vendas dinheiro:', valor: dados.total_dinheiro,   sinal: '+' },
+            { label: 'Troco inicial:',       valor: dados.opening_amount,   sinal: '' },
+            { label: '(+) Suprimentos:',     valor: dados.total_deposits, sinal: '+' },
+            { label: '(-) Sangrias:',        valor: dados.total_withdrawals,   sinal: '-' },
+            { label: '(+) Vendas dinheiro:', valor: dados.total_cash,   sinal: '+' },
           ].map(({ label, valor }) => (
             <div key={label} className="linha flex justify-between">
               <span className="label text-foreground/70">{label}</span>
@@ -217,7 +217,7 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
           </div>
           <div className="flex justify-between font-semibold">
             <span>CONTADO NA GAVETA:</span>
-            <span>{fmtBRL(dados.valor_fechamento_fisico)}</span>
+            <span>{fmtBRL(dados.physical_closing_amount)}</span>
           </div>
 
           <div className="flex justify-between font-bold border-t border-border pt-2 mt-2">
@@ -252,13 +252,13 @@ export function RelatorioCaixa({ dados, empresaNome }: RelatorioCaixaProps) {
         )}
 
         {/* Observações */}
-        {dados.observacao_fechamento && (
+        {dados.closing_note && (
           <>
             <hr className="divisor border-dashed border-border my-5" />
             <p className="secao-titulo font-bold uppercase text-xs tracking-wide text-muted-foreground mt-2 mb-2">
               Observações
             </p>
-            <p className="text-foreground/70 text-sm">{dados.observacao_fechamento}</p>
+            <p className="text-foreground/70 text-sm">{dados.closing_note}</p>
           </>
         )}
 

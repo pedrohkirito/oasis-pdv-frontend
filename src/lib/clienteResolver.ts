@@ -1,4 +1,4 @@
-// Helper para resolver o cliente_id ao salvar uma venda/pedido.
+// Helper para resolver o customer_id ao salvar uma venda/pedido.
 // Estratégia (em ordem):
 //   1) Match por CPF (quando informado) — mais confiável, único por cadastro.
 //   2) Match por name + telefone — desempata homônimos.

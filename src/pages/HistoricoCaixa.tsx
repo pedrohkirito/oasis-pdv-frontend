@@ -96,15 +96,15 @@ export default function HistoricoCaixa() {
 
   const [editando, setEditando] = useState<SessaoFechada | null>(null);
   const [editForm, setEditForm] = useState({
-    valor_abertura: 0,
-    valor_fechamento_fisico: 0,
-    total_dinheiro: 0,
-    total_debito: 0,
-    total_credito: 0,
+    opening_amount: 0,
+    physical_closing_amount: 0,
+    total_cash: 0,
+    total_debit: 0,
+    total_credit: 0,
     total_pix: 0,
-    total_sangrias: 0,
-    total_suprimentos: 0,
-    observacao_fechamento: '',
+    total_withdrawals: 0,
+    total_deposits: 0,
+    closing_note: '',
   });
   const [salvando, setSalvando] = useState(false);
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
@@ -150,17 +150,17 @@ export default function HistoricoCaixa() {
         .order('created_at', { ascending: true }),
       api
         .from('sale')
-        .select('valor, metodo_pagamento')
-        .eq('company_id', sessao.empresa_id)
-        .gte('created_at', sessao.aberto_em)
-        .lte('created_at', sessao.fechado_em ?? new Date().toISOString()),
+        .select('valor, payment_method')
+        .eq('company_id', sessao.company_id)
+        .gte('created_at', sessao.opened_at)
+        .lte('created_at', sessao.closed_at ?? new Date().toISOString()),
     ]);
 
     const normalize = (s?: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     const totais = (vendas ?? []).reduce(
       (acc, v) => {
         const valor = Number(v.valor ?? 0);
-        const metodo = normalize(v.metodo_pagamento);
+        const metodo = normalize(v.payment_method);
         if (metodo.includes('dinheiro'))       acc.dinheiro += valor;
         else if (metodo.includes('debito'))    acc.debito += valor;
         else if (metodo.includes('credito'))   acc.credito += valor;
@@ -172,9 +172,9 @@ export default function HistoricoCaixa() {
 
     setSessaoSelecionada({
       ...sessao,
-      total_dinheiro: totais.dinheiro,
-      total_debito: totais.debito,
-      total_credito: totais.credito,
+      total_cash: totais.dinheiro,
+      total_debit: totais.debito,
+      total_credit: totais.credito,
       total_pix: totais.pix,
       movimentacoes: (movs ?? []) as MovimentacaoRelatorio[],
     });
@@ -186,15 +186,15 @@ export default function HistoricoCaixa() {
   const abrirEdicao = (sessao: SessaoFechada) => {
     setEditando(sessao);
     setEditForm({
-      valor_abertura: Number(sessao.valor_abertura),
-      valor_fechamento_fisico: Number(sessao.valor_fechamento_fisico ?? 0),
-      total_dinheiro: Number(sessao.total_dinheiro),
-      total_debito: Number(sessao.total_debito),
-      total_credito: Number(sessao.total_credito),
+      opening_amount: Number(sessao.opening_amount),
+      physical_closing_amount: Number(sessao.physical_closing_amount ?? 0),
+      total_cash: Number(sessao.total_cash),
+      total_debit: Number(sessao.total_debit),
+      total_credit: Number(sessao.total_credit),
       total_pix: Number(sessao.total_pix),
-      total_sangrias: Number(sessao.total_sangrias),
-      total_suprimentos: Number(sessao.total_suprimentos),
-      observacao_fechamento: sessao.observacao_fechamento ?? '',
+      total_withdrawals: Number(sessao.total_withdrawals),
+      total_deposits: Number(sessao.total_deposits),
+      closing_note: sessao.closing_note ?? '',
     });
   };
 
@@ -205,32 +205,32 @@ export default function HistoricoCaixa() {
     setSalvando(true);
 
     const esperado =
-      editForm.valor_abertura +
-      editForm.total_dinheiro +
-      editForm.total_suprimentos -
-      editForm.total_sangrias;
+      editForm.opening_amount +
+      editForm.total_cash +
+      editForm.total_deposits -
+      editForm.total_withdrawals;
 
-    const quebra = editForm.valor_fechamento_fisico - esperado;
+    const quebra = editForm.physical_closing_amount - esperado;
     const totalVendas =
-      editForm.total_dinheiro +
-      editForm.total_debito +
-      editForm.total_credito +
+      editForm.total_cash +
+      editForm.total_debit +
+      editForm.total_credit +
       editForm.total_pix;
 
     const { error } = await api
       .from('cash_session')
       .update({
-        valor_abertura: editForm.valor_abertura,
-        valor_fechamento_fisico: editForm.valor_fechamento_fisico,
-        total_dinheiro: editForm.total_dinheiro,
-        total_debito: editForm.total_debito,
-        total_credito: editForm.total_credito,
+        opening_amount: editForm.opening_amount,
+        physical_closing_amount: editForm.physical_closing_amount,
+        total_cash: editForm.total_cash,
+        total_debit: editForm.total_debit,
+        total_credit: editForm.total_credit,
         total_pix: editForm.total_pix,
-        total_sangrias: editForm.total_sangrias,
-        total_suprimentos: editForm.total_suprimentos,
-        total_vendas: totalVendas,
-        quebra_caixa: quebra,
-        observacao_fechamento: editForm.observacao_fechamento || null,
+        total_withdrawals: editForm.total_withdrawals,
+        total_deposits: editForm.total_deposits,
+        total_sales: totalVendas,
+        cash_variance: quebra,
+        closing_note: editForm.closing_note || null,
       })
       .eq('id', editando.id);
 
@@ -257,21 +257,21 @@ export default function HistoricoCaixa() {
     ].join(';');
 
     const linhas = sessoes.map(s => [
-      fmtData(s.aberto_em),
-      format(new Date(s.aberto_em), 'HH:mm'),
-      s.fechado_em ? fmtData(s.fechado_em) : '',
-      s.fechado_em ? format(new Date(s.fechado_em), 'HH:mm') : '',
-      s.operador_nome ?? '',
-      String(s.valor_abertura).replace('.', ','),
-      String(s.total_vendas).replace('.', ','),
-      String(s.total_dinheiro).replace('.', ','),
-      String(s.total_debito).replace('.', ','),
-      String(s.total_credito).replace('.', ','),
+      fmtData(s.opened_at),
+      format(new Date(s.opened_at), 'HH:mm'),
+      s.closed_at ? fmtData(s.closed_at) : '',
+      s.closed_at ? format(new Date(s.closed_at), 'HH:mm') : '',
+      s.operator_name ?? '',
+      String(s.opening_amount).replace('.', ','),
+      String(s.total_sales).replace('.', ','),
+      String(s.total_cash).replace('.', ','),
+      String(s.total_debit).replace('.', ','),
+      String(s.total_credit).replace('.', ','),
       String(s.total_pix).replace('.', ','),
-      String(s.total_sangrias).replace('.', ','),
-      String(s.total_suprimentos).replace('.', ','),
-      String(s.valor_fechamento_fisico ?? '').replace('.', ','),
-      String(s.quebra_caixa ?? '').replace('.', ','),
+      String(s.total_withdrawals).replace('.', ','),
+      String(s.total_deposits).replace('.', ','),
+      String(s.physical_closing_amount ?? '').replace('.', ','),
+      String(s.cash_variance ?? '').replace('.', ','),
     ].join(';'));
 
     const csv = [header, ...linhas].join('\n');
@@ -287,19 +287,19 @@ export default function HistoricoCaixa() {
   // ── Totais do período ─────────────────────────────────────────────────────
 
   const totalFechamentos = sessoes.length;
-  const totalVendasPeriodo = sessoes.reduce((acc, s) => acc + Number(s.total_vendas), 0);
+  const totalVendasPeriodo = sessoes.reduce((acc, s) => acc + Number(s.total_sales), 0);
   const mediaVendasDia = totalFechamentos > 0 ? totalVendasPeriodo / totalFechamentos : 0;
-  const totalQuebras = sessoes.reduce((acc, s) => acc + Number(s.quebra_caixa ?? 0), 0);
-  const totalDivergencias = sessoes.filter(s => Number(s.quebra_caixa ?? 0) !== 0).length;
+  const totalQuebras = sessoes.reduce((acc, s) => acc + Number(s.cash_variance ?? 0), 0);
+  const totalDivergencias = sessoes.filter(s => Number(s.cash_variance ?? 0) !== 0).length;
 
   // ── Helpers edição ────────────────────────────────────────────────────────
 
   const editEsperado =
-    editForm.valor_abertura +
-    editForm.total_dinheiro +
-    editForm.total_suprimentos -
-    editForm.total_sangrias;
-  const editQuebra = editForm.valor_fechamento_fisico - editEsperado;
+    editForm.opening_amount +
+    editForm.total_cash +
+    editForm.total_deposits -
+    editForm.total_withdrawals;
+  const editQuebra = editForm.physical_closing_amount - editEsperado;
 
   // ── KPI cards ─────────────────────────────────────────────────────────────
 
@@ -562,7 +562,7 @@ export default function HistoricoCaixa() {
 
               {/* Linhas */}
               {sessoes.map(s => {
-                const quebra = Number(s.quebra_caixa ?? 0);
+                const quebra = Number(s.cash_variance ?? 0);
                 const isHovered = hoveredRow === s.id;
                 return (
                   <div
@@ -585,17 +585,17 @@ export default function HistoricoCaixa() {
                     {/* Abertura */}
                     <div>
                       <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy', margin: 0 }}>
-                        {fmtData(s.aberto_em)}
+                        {fmtData(s.opened_at)}
                       </p>
                       <p style={{ fontSize: '0.75rem', color: '#6B7280', fontFamily: 'Gilroy', margin: 0 }}>
-                        {format(new Date(s.aberto_em), 'HH:mm')}
-                        {s.fechado_em && ` → ${format(new Date(s.fechado_em), 'HH:mm')}`}
+                        {format(new Date(s.opened_at), 'HH:mm')}
+                        {s.closed_at && ` → ${format(new Date(s.closed_at), 'HH:mm')}`}
                       </p>
                     </div>
 
                     {/* Operadora */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {s.operador_nome ? (
+                      {s.operator_name ? (
                         <>
                           <div style={{
                             width: 28, height: 28, borderRadius: 8, flexShrink: 0,
@@ -603,10 +603,10 @@ export default function HistoricoCaixa() {
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '0.65rem', fontWeight: 700, color: '#8E5FCF', fontFamily: 'Gilroy',
                           }}>
-                            {s.operador_nome.substring(0, 2).toUpperCase()}
+                            {s.operator_name.substring(0, 2).toUpperCase()}
                           </div>
                           <span style={{ fontSize: '0.8rem', color: '#1F2937', fontFamily: 'Gilroy', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {s.operador_nome}
+                            {s.operator_name}
                           </span>
                         </>
                       ) : (
@@ -616,27 +616,27 @@ export default function HistoricoCaixa() {
 
                     {/* Troco inicial */}
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy', textAlign: 'right', margin: 0 }}>
-                      {fmtBRL(s.valor_abertura)}
+                      {fmtBRL(s.opening_amount)}
                     </p>
 
                     {/* Total vendas */}
                     <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1F2937', fontFamily: 'Gilroy', textAlign: 'right', margin: 0 }}>
-                      {fmtBRL(s.total_vendas)}
+                      {fmtBRL(s.total_sales)}
                     </p>
 
                     {/* Dinheiro */}
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#10B981', fontFamily: 'Gilroy', textAlign: 'right', margin: 0 }}>
-                      {fmtBRL(s.total_dinheiro)}
+                      {fmtBRL(s.total_cash)}
                     </p>
 
                     {/* Sangrias */}
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#EF4444', fontFamily: 'Gilroy', textAlign: 'right', margin: 0 }}>
-                      {fmtBRL(s.total_sangrias)}
+                      {fmtBRL(s.total_withdrawals)}
                     </p>
 
                     {/* Contado */}
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy', textAlign: 'right', margin: 0 }}>
-                      {fmtBRL(s.valor_fechamento_fisico)}
+                      {fmtBRL(s.physical_closing_amount)}
                     </p>
 
                     {/* Quebra */}
@@ -768,10 +768,10 @@ export default function HistoricoCaixa() {
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Info */}
               <div style={{ background: 'rgba(142,95,207,0.04)', border: '1px solid rgba(142,95,207,0.1)', borderRadius: 12, padding: '12px 14px', fontSize: '0.8rem', fontFamily: 'Gilroy' }}>
-                <p style={{ margin: '0 0 4px', color: '#6B7280' }}>Operador: <span style={{ color: '#1F2937', fontWeight: 600 }}>{editando.operador_nome ?? '—'}</span></p>
-                <p style={{ margin: '0 0 4px', color: '#6B7280' }}>Aberto em: <span style={{ color: '#1F2937', fontWeight: 600 }}>{fmtDataHora(editando.aberto_em)}</span></p>
-                {editando.fechado_em && (
-                  <p style={{ margin: 0, color: '#6B7280' }}>Fechado em: <span style={{ color: '#1F2937', fontWeight: 600 }}>{fmtDataHora(editando.fechado_em)}</span></p>
+                <p style={{ margin: '0 0 4px', color: '#6B7280' }}>Operador: <span style={{ color: '#1F2937', fontWeight: 600 }}>{editando.operator_name ?? '—'}</span></p>
+                <p style={{ margin: '0 0 4px', color: '#6B7280' }}>Aberto em: <span style={{ color: '#1F2937', fontWeight: 600 }}>{fmtDataHora(editando.opened_at)}</span></p>
+                {editando.closed_at && (
+                  <p style={{ margin: 0, color: '#6B7280' }}>Fechado em: <span style={{ color: '#1F2937', fontWeight: 600 }}>{fmtDataHora(editando.closed_at)}</span></p>
                 )}
               </div>
 
@@ -781,8 +781,8 @@ export default function HistoricoCaixa() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={formatMaskedValueAlways(editForm.valor_abertura)}
-                  onChange={e => setEditForm(f => ({ ...f, valor_abertura: parseMaskedValue(e.target.value) }))}
+                  value={formatMaskedValueAlways(editForm.opening_amount)}
+                  onChange={e => setEditForm(f => ({ ...f, opening_amount: parseMaskedValue(e.target.value) }))}
                   style={inputStyle}
                 />
               </div>
@@ -792,9 +792,9 @@ export default function HistoricoCaixa() {
                 <p style={{ ...labelStyle, marginBottom: 10 }}>Vendas por Método</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {[
-                    { key: 'total_dinheiro' as const, label: 'Dinheiro' },
-                    { key: 'total_debito' as const,   label: 'Cartão Débito' },
-                    { key: 'total_credito' as const,  label: 'Cartão Crédito' },
+                    { key: 'total_cash' as const, label: 'Dinheiro' },
+                    { key: 'total_debit' as const,   label: 'Cartão Débito' },
+                    { key: 'total_credit' as const,  label: 'Cartão Crédito' },
                     { key: 'total_pix' as const,      label: 'Pix' },
                   ].map(({ key, label }) => (
                     <div key={key}>
@@ -814,8 +814,8 @@ export default function HistoricoCaixa() {
               {/* Movimentações */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { key: 'total_sangrias' as const,    label: 'Total Sangrias' },
-                  { key: 'total_suprimentos' as const, label: 'Total Suprimentos' },
+                  { key: 'total_withdrawals' as const,    label: 'Total Sangrias' },
+                  { key: 'total_deposits' as const, label: 'Total Suprimentos' },
                 ].map(({ key, label }) => (
                   <div key={key}>
                     <label style={labelStyle}>{label} (R$)</label>
@@ -836,8 +836,8 @@ export default function HistoricoCaixa() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={formatMaskedValueAlways(editForm.valor_fechamento_fisico)}
-                  onChange={e => setEditForm(f => ({ ...f, valor_fechamento_fisico: parseMaskedValue(e.target.value) }))}
+                  value={formatMaskedValueAlways(editForm.physical_closing_amount)}
+                  onChange={e => setEditForm(f => ({ ...f, physical_closing_amount: parseMaskedValue(e.target.value) }))}
                   style={inputStyle}
                 />
               </div>
@@ -861,7 +861,7 @@ export default function HistoricoCaixa() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#6B7280' }}>Total vendas:</span>
                   <span style={{ fontWeight: 600, color: '#1F2937' }}>
-                    {fmtBRL(editForm.total_dinheiro + editForm.total_debito + editForm.total_credito + editForm.total_pix)}
+                    {fmtBRL(editForm.total_cash + editForm.total_debit + editForm.total_credit + editForm.total_pix)}
                   </span>
                 </div>
               </div>
@@ -870,8 +870,8 @@ export default function HistoricoCaixa() {
               <div>
                 <label style={labelStyle}>Observações</label>
                 <Textarea
-                  value={editForm.observacao_fechamento}
-                  onChange={e => setEditForm(f => ({ ...f, observacao_fechamento: e.target.value }))}
+                  value={editForm.closing_note}
+                  onChange={e => setEditForm(f => ({ ...f, closing_note: e.target.value }))}
                   placeholder="Observações sobre o fechamento..."
                   style={{ ...inputStyle, resize: 'none', minHeight: 80 }}
                 />

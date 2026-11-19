@@ -9,9 +9,9 @@ export interface DadosEmpresa {
 }
 
 export interface ItemVenda {
-  produto_nome: string;
+  product_name: string;
   quantidade: number;
-  preco_unitario: number;
+  unit_price: number;
   subtotal: number;
 }
 
@@ -169,7 +169,7 @@ export function gerarCupomSimplesESCPOS(empresa: DadosEmpresa, venda: DadosVenda
   doc += line('-', WIDTH);
 
   for (const item of venda.itens) {
-    doc += itemRow(item.produto_nome, item.quantidade, item.preco_unitario, item.subtotal, WIDTH);
+    doc += itemRow(item.product_name, item.quantidade, item.unit_price, item.subtotal, WIDTH);
   }
 
   doc += line('-', WIDTH);
@@ -239,7 +239,7 @@ export function gerarDANFEESCPOS(
   doc += line('-', WIDTH);
 
   for (const item of venda.itens) {
-    doc += itemRow(item.produto_nome, item.quantidade, item.preco_unitario, item.subtotal, WIDTH);
+    doc += itemRow(item.product_name, item.quantidade, item.unit_price, item.subtotal, WIDTH);
   }
 
   doc += line('-', WIDTH);

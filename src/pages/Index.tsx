@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { api } from '@/lib/api';
+import { diaCalendario } from '@/lib/dia';
 import { cn } from '@/lib/utils';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { Link } from 'react-router-dom';
@@ -39,12 +40,25 @@ import { Link } from 'react-router-dom';
 
 interface Venda {
   id: string;
-  valor: number;
-  data_venda: string;
-  cliente_nome: string;
-  produtos: string;
-  metodo_pagamento?: string;
-  vendedor_id?: string | null;
+  amount?: number;
+  sold_on?: string;
+  customer_name?: string;
+  products_summary?: string;
+  payment_method?: string;
+  seller_id?: string | null;
+}
+
+function diaVenda(venda: Venda) {
+  return diaCalendario(venda.sold_on);
+}
+
+function diaConta(conta: { due_on?: string | null }) {
+  return diaCalendario(conta.due_on);
+}
+
+function valorDe(registro: { amount?: unknown }) {
+  const n = Number(registro.amount ?? 0);
+  return Number.isFinite(n) ? n : 0;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -168,7 +182,7 @@ function WidgetSaudeFinanceira() {
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="font-semibold text-red-600">{fmtBRL2(c.valor)}</span>
-                  <span className="text-muted-foreground/60">{c.data_vencimento?.slice(5).replace('-', '/')}</span>
+                  <span className="text-muted-foreground/60">{c.due_on?.slice(5).replace('-', '/')}</span>
                 </div>
               </div>
             ))}
@@ -478,7 +492,7 @@ const Index = () => {
     const hoje = new Date().toISOString().split('T')[0];
     const { data } = await api
       .from('receivable')
-      .select('id, descricao, cliente_nome, valor, valor_recebido, data_vencimento')
+      .select('id, descricao, customer_name, valor, received_amount, due_on')
       .eq('company_id', companyId)
       .eq('status', 'vencido')
       .order('due_on', { ascending: true });
@@ -491,7 +505,7 @@ const Index = () => {
       .from('operation').select('*')
       .eq('company_id', companyId)
       .not('status', 'eq', 'finalizado')
-      .order('data_prevista', { ascending: true, nullsFirst: false });
+      .order('expected_on', { ascending: true, nullsFirst: false });
     setOperacoesPendentes(data || []);
   };
 
@@ -502,14 +516,20 @@ const Index = () => {
   // Vendas hoje vs ontem
   const vendasHojeTotal = useMemo(() =>
     vendas
-      .filter(v => isToday(new Date(v.data_venda + 'T00:00:00')))
-      .reduce((s, v) => s + Number(v.valor), 0),
+      .filter(v => {
+        const dia = diaVenda(v);
+        return dia != null && isToday(dia);
+      })
+      .reduce((s, v) => s + valorDe(v), 0),
   [vendas]);
 
   const vendasOntemTotal = useMemo(() =>
     vendas
-      .filter(v => isYesterday(new Date(v.data_venda + 'T00:00:00')))
-      .reduce((s, v) => s + Number(v.valor), 0),
+      .filter(v => {
+        const dia = diaVenda(v);
+        return dia != null && isYesterday(dia);
+      })
+      .reduce((s, v) => s + valorDe(v), 0),
   [vendas]);
 
   const variacaoHoje = vendasOntemTotal > 0
@@ -518,14 +538,17 @@ const Index = () => {
 
   // Contas vencidas (status pendente + data passada)
   const contasVencidas = useMemo(() =>
-    contasPagar.filter(c => c.status === 'pendente' && new Date(c.data_vencimento) < startOfDay(hoje)),
+    contasPagar.filter(c => {
+      const venc = diaConta(c);
+      return c.status === 'pendente' && venc != null && venc < startOfDay(hoje);
+    }),
   [contasPagar]);
 
-  const totalVencidasValor = contasVencidas.reduce((s, c) => s + Number(c.valor), 0);
+  const totalVencidasValor = contasVencidas.reduce((s, c) => s + valorDe(c), 0);
 
   // Saldo disponível
-  const totalExpenses = contasPagar.filter(c => c.status === 'pago').reduce((s, c) => s + Number(c.valor), 0);
-  const totalVendas   = vendas.reduce((s, v) => s + Number(v.valor), 0);
+  const totalExpenses = contasPagar.filter(c => c.status === 'pago').reduce((s, c) => s + valorDe(c), 0);
+  const totalVendas   = vendas.reduce((s, v) => s + valorDe(v), 0);
   const currentBalance = totalVendas - totalExpenses;
 
   // Lucro do mês atual vs anterior
@@ -536,47 +559,47 @@ const Index = () => {
 
   const lucroMes = useMemo(() => {
     const entrada = vendas.filter(v => {
-      const d = new Date(v.data_venda);
-      return d >= inicioMes && d <= fimMes;
-    }).reduce((s, v) => s + Number(v.valor), 0);
+      const d = diaVenda(v);
+      return d != null && d >= inicioMes && d <= fimMes;
+    }).reduce((s, v) => s + valorDe(v), 0);
 
     const saida = contasPagar.filter(c => {
-      const d = new Date(c.data_vencimento);
-      return d >= inicioMes && d <= fimMes && c.status === 'pago';
-    }).reduce((s, c) => s + Number(c.valor), 0);
+      const d = diaConta(c);
+      return d != null && d >= inicioMes && d <= fimMes && c.status === 'pago';
+    }).reduce((s, c) => s + valorDe(c), 0);
 
     return entrada - saida;
   }, [vendas, contasPagar]);
 
   const lucroMesAnterior = useMemo(() => {
     const entrada = vendas.filter(v => {
-      const d = new Date(v.data_venda);
-      return d >= inicioMesAnterior && d <= fimMesAnterior;
-    }).reduce((s, v) => s + Number(v.valor), 0);
+      const d = diaVenda(v);
+      return d != null && d >= inicioMesAnterior && d <= fimMesAnterior;
+    }).reduce((s, v) => s + valorDe(v), 0);
 
     const saida = contasPagar.filter(c => {
-      const d = new Date(c.data_vencimento);
-      return d >= inicioMesAnterior && d <= fimMesAnterior && c.status === 'pago';
-    }).reduce((s, c) => s + Number(c.valor), 0);
+      const d = diaConta(c);
+      return d != null && d >= inicioMesAnterior && d <= fimMesAnterior && c.status === 'pago';
+    }).reduce((s, c) => s + valorDe(c), 0);
 
     return entrada - saida;
   }, [vendas, contasPagar]);
 
   // Dados do gráfico de evolução (6 meses)
   const dadosEvolucao = useMemo(() => {
-    const vendasFiltradas = isRestrito ? vendas.filter(v => v.vendedor_id === user?.id) : vendas;
+    const vendasFiltradas = isRestrito ? vendas.filter(v => v.seller_id === user?.id) : vendas;
     return Array.from({ length: 6 }, (_, i) => {
       const mes = subMonths(hoje, 5 - i);
       const inicio = startOfMonth(mes);
       const fim    = endOfMonth(mes);
       const entradas = vendasFiltradas.filter(v => {
-        const d = new Date(v.data_venda);
-        return d >= inicio && d <= fim;
-      }).reduce((s, v) => s + Number(v.valor), 0);
+        const d = diaVenda(v);
+        return d != null && d >= inicio && d <= fim;
+      }).reduce((s, v) => s + valorDe(v), 0);
       const saidas = contasPagar.filter(c => {
-        const d = new Date(c.data_vencimento);
-        return d >= inicio && d <= fim && c.status === 'pago';
-      }).reduce((s, c) => s + Number(c.valor), 0);
+        const d = diaConta(c);
+        return d != null && d >= inicio && d <= fim && c.status === 'pago';
+      }).reduce((s, c) => s + valorDe(c), 0);
       return {
         mes: format(mes, 'MMM', { locale: ptBR }),
         entradas,
@@ -588,14 +611,15 @@ const Index = () => {
   // Contas vencendo nos próximos 7 dias
   const contasVencendo = contasPagar.filter(c => {
     if (c.status !== 'pendente') return false;
-    const venc = new Date(c.data_vencimento);
+    const venc = diaConta(c);
+    if (!venc) return false;
     const diff = (venc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 7;
   });
 
   // Total pendente
   // Vendas exibidas (restrito vê só as suas)
-  const vendasExibidas = isRestrito ? vendas.filter(v => v.vendedor_id === user?.id) : vendas;
+  const vendasExibidas = isRestrito ? vendas.filter(v => v.seller_id === user?.id) : vendas;
 
   // Nome do usuário
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'usuário';
@@ -695,7 +719,10 @@ const Index = () => {
                 loading={loading}
                 label="Vendas Hoje"
                 value={fmtBRL(vendasHojeTotal)}
-                sub={`${vendas.filter(v => isToday(new Date(v.data_venda + 'T00:00:00'))).length} vendas realizadas`}
+                sub={`${vendas.filter(v => {
+                  const dia = diaVenda(v);
+                  return dia != null && isToday(dia);
+                }).length} vendas realizadas`}
                 icon={ShoppingCart}
                 iconBg="bg-primary/10"
                 iconColor="text-primary"
@@ -734,9 +761,9 @@ const Index = () => {
                   loading={loading}
                   label="Minhas Vendas (mês)"
                   value={fmtBRL(vendas.filter(v => {
-                    const d = new Date(v.data_venda);
-                    return d >= inicioMes && d <= fimMes && v.vendedor_id === user?.id;
-                  }).reduce((s, v) => s + Number(v.valor), 0))}
+                    const d = diaVenda(v);
+                    return d != null && d >= inicioMes && d <= fimMes && v.seller_id === user?.id;
+                  }).reduce((s, v) => s + valorDe(v), 0))}
                   sub="Vendas do mês corrente"
                   icon={TrendingUp}
                   iconBg="bg-success/10"
@@ -927,7 +954,7 @@ const Index = () => {
                   ) : operacoesPendentes.length > 0 ? (
                     <>
                       {operacoesPendentes.slice(0, 4).map((op) => {
-                        const dataPrevista = op.data_prevista ? new Date(op.data_prevista) : null;
+                        const dataPrevista = op.expected_on ? new Date(op.expected_on) : null;
                         const vencida = dataPrevista && dataPrevista < hoje;
                         return (
                           <button
@@ -938,7 +965,7 @@ const Index = () => {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
                                 <Truck className="h-3 w-3 text-text-secondary shrink-0" />
-                                <p className="text-sm font-medium truncate">{op.cliente_nome}</p>
+                                <p className="text-sm font-medium truncate">{op.customer_name}</p>
                               </div>
                               <p className="text-xs text-text-secondary truncate ml-[18px]">{getStatusLabel(op.status)}</p>
                             </div>
@@ -996,8 +1023,8 @@ const Index = () => {
                     ) : contasVencendo.length > 0 ? (
                       <>
                         {contasVencendo.slice(0, 4).map((conta) => {
-                          const venc = new Date(conta.data_vencimento);
-                          const vencida = venc < hoje;
+                          const venc = diaConta(conta);
+                          const vencida = venc != null && venc < hoje;
                           return (
                             <button
                               key={conta.id}
@@ -1006,10 +1033,10 @@ const Index = () => {
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium truncate">{conta.descricao}</p>
-                                <p className="text-xs text-text-secondary truncate">{conta.fornecedor_nome}</p>
+                                <p className="text-xs text-text-secondary truncate">{conta.supplier_name}</p>
                               </div>
                               <div className="text-right ml-3 shrink-0">
-                                <p className="text-sm font-semibold text-destructive">{fmtBRL(Number(conta.valor))}</p>
+                                <p className="text-sm font-semibold text-destructive">{fmtBRL(valorDe(conta))}</p>
                                 <span style={{
                                   background: vencida ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
                                   border: `1px solid ${vencida ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`,
@@ -1057,7 +1084,7 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="space-y-0.5">
                     {contasReceberVencidas.slice(0, 4).map((conta) => {
-                      const saldo = Number(conta.valor) - Number(conta.valor_recebido || 0);
+                      const saldo = Number(conta.valor) - Number(conta.received_amount || 0);
                       return (
                         <button
                           key={conta.id}
@@ -1066,7 +1093,7 @@ const Index = () => {
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{conta.descricao}</p>
-                            <p className="text-xs text-text-secondary truncate">{conta.cliente_nome || '—'}</p>
+                            <p className="text-xs text-text-secondary truncate">{conta.customer_name || '—'}</p>
                           </div>
                           <div className="text-right ml-3 shrink-0">
                             <p className="text-sm font-semibold" style={{ color: '#10B981' }}>{fmtBRL(saldo)}</p>
@@ -1156,21 +1183,22 @@ const Index = () => {
                       {vendasExibidas.slice(0, 7).map((venda: any) => (
                         <tr key={venda.id} className="hover:bg-muted/50 transition-colors duration-200 group border-b border-border/30 last:border-0">
                           <td className="px-6 py-3.5 whitespace-nowrap text-text-secondary text-xs">
-                            {venda.data_venda
-                              ? format(new Date(venda.data_venda + 'T00:00:00'), 'dd/MM/yyyy')
-                              : '—'}
+                            {(() => {
+                              const dia = diaVenda(venda);
+                              return dia ? format(dia, 'dd/MM/yyyy') : '—';
+                            })()}
                           </td>
                           <td className="px-3 py-3.5 font-medium text-foreground max-w-[160px] truncate">
-                            {venda.cliente_nome}
+                            {venda.customer_name}
                           </td>
                           <td className="px-3 py-3.5 text-text-secondary text-xs max-w-[200px] truncate hidden md:table-cell">
-                            {venda.produtos}
+                            {venda.products_summary}
                           </td>
                           <td className="px-3 py-3.5 hidden sm:table-cell">
-                            <MetodoBadge metodo={venda.metodo_pagamento} />
+                            <MetodoBadge metodo={venda.payment_method} />
                           </td>
                           <td className="px-6 py-3.5 text-right font-bold text-foreground whitespace-nowrap">
-                            {fmtBRL(Number(venda.valor))}
+                            {fmtBRL(valorDe(venda))}
                           </td>
                         </tr>
                       ))}

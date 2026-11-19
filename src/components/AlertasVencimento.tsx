@@ -7,15 +7,16 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresa } from '@/hooks/useEmpresa';
 import { differenceInDays, format, startOfDay } from 'date-fns';
+import { diaCalendario } from '@/lib/dia';
 import { ajustarParaProximoDiaUtil } from '@/utils/feriadosUtils';
 import { useNavigate } from 'react-router-dom';
 
 interface ContaAlerta {
   id: string;
   descricao: string;
-  fornecedor_nome: string;
+  supplier_name: string;
   valor: number;
-  data_vencimento: string;
+  due_on: string;
   status: string;
   diasRestantes: number;
 }
@@ -54,7 +55,8 @@ export const AlertasVencimento = () => {
       const contasParaAtualizar: string[] = [];
 
       data.forEach(conta => {
-        const dataVencOriginal = new Date(conta.data_vencimento);
+        const dataVencOriginal = diaCalendario(conta.due_on);
+        if (!dataVencOriginal) return;
         const dataVencAjustada = ajustarParaProximoDiaUtil(dataVencOriginal);
         const diasRestantes = differenceInDays(dataVencAjustada, hoje);
 

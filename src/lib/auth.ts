@@ -1,7 +1,7 @@
 /**
  * Helpers de autenticação e autorização multi-tenant.
  *
- * empresa_id vem do JWT app_metadata (definido pelo custom_access_token_hook).
+ * company_id vem do JWT app_metadata (definido pelo custom_access_token_hook).
  * app_metadata é server-side only — não pode ser editado pelo usuário.
  *
  * USO:
@@ -23,15 +23,15 @@ export interface EmpresaContext {
 }
 
 // ---------------------------------------------------------------------------
-// Extrair empresa_id do JWT (sincrono — usa sessão em cache)
+// Extrair company_id do JWT (sincrono — usa sessão em cache)
 // ---------------------------------------------------------------------------
 
 /**
- * Retorna o empresa_id do JWT da sessão atual, ou null se não estiver presente.
+ * Retorna o company_id do JWT da sessão atual, ou null se não estiver presente.
  * Não faz chamada ao banco — lê do token em memória.
  */
 export function getEmpresaIdFromSession(session: Session | null): string | null {
-  return (session?.user?.app_metadata?.empresa_id as string | undefined) ?? null;
+  return (session?.user?.app_metadata?.company_id as string | undefined) ?? null;
 }
 
 /**
@@ -46,10 +46,10 @@ export function getEmpresaRoleFromSession(session: Session | null): AppRole | nu
 // ---------------------------------------------------------------------------
 
 /**
- * Retorna o empresa_id do usuário autenticado atual.
+ * Retorna o company_id do usuário autenticado atual.
  * Lê do JWT — sem query ao banco.
  *
- * @returns empresa_id (uuid string) ou null se não autenticado / sem empresa
+ * @returns company_id (uuid string) ou null se não autenticado / sem empresa
  */
 export async function getEmpresaId(): Promise<string | null> {
   const { data } = await api.auth.getSession();
@@ -57,8 +57,8 @@ export async function getEmpresaId(): Promise<string | null> {
 }
 
 /**
- * Retorna o empresa_id ou lança erro se não estiver disponível.
- * Use em contextos onde empresa_id é obrigatório (ex: ao criar registros).
+ * Retorna o company_id ou lança erro se não estiver disponível.
+ * Use em contextos onde company_id é obrigatório (ex: ao criar registros).
  *
  * @throws Error se o usuário não estiver autenticado ou sem empresa associada
  */
@@ -67,7 +67,7 @@ export async function requireEmpresaId(): Promise<string> {
 
   if (!companyId) {
     throw new Error(
-      'empresa_id não encontrado no JWT. ' +
+      'company_id não encontrado no JWT. ' +
         'Verifique se o Custom Access Token Hook está configurado e se o usuário ' +
         'está associado a uma empresa em user_empresas.'
     );
@@ -92,7 +92,7 @@ export async function getEmpresaContext(): Promise<EmpresaContext> {
 
   if (!companyId) {
     throw new Error(
-      'empresa_id não encontrado no JWT. Configure o Custom Access Token Hook.'
+      'company_id não encontrado no JWT. Configure o Custom Access Token Hook.'
     );
   }
 
@@ -130,7 +130,7 @@ export function canWrite(session: Session | null): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Helper para garantir que inserts/updates incluam empresa_id
+// Helper para garantir que inserts/updates incluam company_id
 // ---------------------------------------------------------------------------
 
 /**
@@ -143,7 +143,7 @@ export async function tenantFields(): Promise<{ company_id: string; user_id: str
   if (error || !data.session) throw new Error('Usuário não autenticado.');
 
   const companyId = getEmpresaIdFromSession(data.session);
-  if (!companyId) throw new Error('empresa_id não disponível no JWT.');
+  if (!companyId) throw new Error('company_id não disponível no JWT.');
 
   return {
     company_id: companyId,
@@ -164,13 +164,13 @@ export async function debugJwtClaims(): Promise<void> {
   const meta = data.session?.user?.app_metadata;
 
   console.group('[Auth Debug] JWT app_metadata');
-  console.log('empresa_id  :', meta?.empresa_id ?? '⚠️  NÃO ENCONTRADO');
+  console.log('company_id  :', meta?.company_id ?? '⚠️  NÃO ENCONTRADO');
   console.log('empresa_role:', meta?.empresa_role ?? '⚠️  NÃO ENCONTRADO');
   console.log('user_id     :', data.session?.user?.id ?? 'não autenticado');
 
-  if (!meta?.empresa_id) {
+  if (!meta?.company_id) {
     console.warn(
-      'empresa_id ausente. Verifique:\n' +
+      'company_id ausente. Verifique:\n' +
         '  1. custom_access_token_hook está registrado no Dashboard?\n' +
         '  2. O usuário está em user_empresas?\n' +
         '  3. Faça logout + login para forçar novo JWT.'

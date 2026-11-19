@@ -22,7 +22,7 @@ export function useFinanceiro() {
     // Vendas do mês
     const { data: vendas } = await api
       .from('sale')
-      .select('valor_final, data_venda')
+      .select('final_amount, sold_on')
       .eq('company_id', companyId)
       .gte('sold_on', inicio)
       .lte('sold_on', fim)
@@ -30,7 +30,7 @@ export function useFinanceiro() {
     // Contas a pagar do mês
     const { data: contasPagar } = await api
       .from('payable')
-      .select('valor, status, data_vencimento, data_pagamento')
+      .select('valor, status, due_on, paid_on')
       .eq('company_id', companyId)
       .gte('due_on', inicio)
       .lte('due_on', fim)
@@ -38,14 +38,14 @@ export function useFinanceiro() {
     // Contas a receber do mês
     const { data: contasReceber } = await api
       .from('receivable')
-      .select('valor, valor_recebido, status, data_vencimento')
+      .select('valor, received_amount, status, due_on')
       .eq('company_id', companyId)
       .gte('due_on', inicio)
       .lte('due_on', fim)
 
     // Cálculos
     const receitaRealizada = vendas?.reduce(
-      (acc, v) => acc + (v.valor_final || 0), 0) || 0
+      (acc, v) => acc + (v.final_amount || 0), 0) || 0
 
     const despesasPagas = contasPagar
       ?.filter(c => c.status === 'pago')
@@ -59,7 +59,7 @@ export function useFinanceiro() {
       ?.filter(c =>
         c.status !== 'pago' &&
         c.status !== 'cancelado' &&
-        c.data_vencimento < hoje
+        c.due_on < hoje
       )
       .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
 
@@ -82,11 +82,11 @@ export function useFinanceiro() {
       ), 'yyyy-MM-dd')
 
       const entradas = vendas
-        ?.filter(v => v.data_venda?.startsWith(dia))
-        .reduce((acc, v) => acc + (v.valor_final || 0), 0) || 0
+        ?.filter(v => v.sold_on?.startsWith(dia))
+        .reduce((acc, v) => acc + (v.final_amount || 0), 0) || 0
 
       const saidas = contasPagar
-        ?.filter(c => c.data_pagamento === dia && c.status === 'pago')
+        ?.filter(c => c.paid_on === dia && c.status === 'pago')
         .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
 
       return { dia, entradas, saidas, saldo: entradas - saidas }
@@ -119,7 +119,7 @@ export function useFinanceiro() {
     // Contas a pagar futuras
     const { data: pagarFuturas } = await api
       .from('payable')
-      .select('valor, data_vencimento, descricao, categoria')
+      .select('valor, due_on, descricao, categoria')
       .eq('company_id', companyId)
       .in('status', ['pendente', 'vencido'])
       .gte('due_on', hojeStr)
@@ -129,7 +129,7 @@ export function useFinanceiro() {
     // Contas a receber futuras
     const { data: receberFuturas } = await api
       .from('receivable')
-      .select('valor, data_vencimento, descricao, cliente_nome')
+      .select('valor, due_on, descricao, customer_name')
       .eq('company_id', companyId)
       .in('status', ['pendente'])
       .gte('due_on', hojeStr)
@@ -146,7 +146,7 @@ export function useFinanceiro() {
 
     const mediaDiariaVendas = vendasHistorico?.length
       ? vendasHistorico.reduce(
-          (acc, v) => acc + (v.valor_final || 0), 0) / 30
+          (acc, v) => acc + (v.final_amount || 0), 0) / 30
       : 0
 
     // Monta linha do tempo semanal
@@ -161,8 +161,8 @@ export function useFinanceiro() {
 
       const entradasPrevistas = receberFuturas
         ?.filter(c =>
-          c.data_vencimento >= inicioSemana &&
-          c.data_vencimento <= fimSemana
+          c.due_on >= inicioSemana &&
+          c.due_on <= fimSemana
         )
         .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
 
@@ -170,8 +170,8 @@ export function useFinanceiro() {
 
       const saidasPrevistas = pagarFuturas
         ?.filter(c =>
-          c.data_vencimento >= inicioSemana &&
-          c.data_vencimento <= fimSemana
+          c.due_on >= inicioSemana &&
+          c.due_on <= fimSemana
         )
         .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
 
@@ -241,7 +241,7 @@ export function useFinanceiro() {
     // Prazo médio de recebimento
     const { data: recebimentos } = await api
       .from('receivable')
-      .select('created_at, data_recebimento')
+      .select('created_at, received_on')
       .eq('company_id', companyId)
       .eq('status', 'recebido')
       .not('received_on', 'is', null)
@@ -250,7 +250,7 @@ export function useFinanceiro() {
     const pmr = recebimentos?.length
       ? recebimentos.reduce((acc, r) => {
           const criado = parseISO(r.created_at)
-          const recebido = parseISO(r.data_recebimento)
+          const recebido = parseISO(r.received_on)
           return acc + differenceInDays(recebido, criado)
         }, 0) / recebimentos.length
       : 0
@@ -258,7 +258,7 @@ export function useFinanceiro() {
     // Prazo médio de pagamento
     const { data: pagamentos } = await api
       .from('payable')
-      .select('created_at, data_pagamento')
+      .select('created_at, paid_on')
       .eq('company_id', companyId)
       .eq('status', 'pago')
       .not('paid_on', 'is', null)
@@ -267,7 +267,7 @@ export function useFinanceiro() {
     const pmp = pagamentos?.length
       ? pagamentos.reduce((acc, p) => {
           const criado = parseISO(p.created_at)
-          const pago = parseISO(p.data_pagamento)
+          const pago = parseISO(p.paid_on)
           return acc + differenceInDays(pago, criado)
         }, 0) / pagamentos.length
       : 0

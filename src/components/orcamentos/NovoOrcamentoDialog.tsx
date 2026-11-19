@@ -20,12 +20,12 @@ interface Produto  { id: string; name: string; price: number; stock: number | nu
 
 interface ItemOrcamento {
   _key: string
-  produto_id: string | null
-  produto_nome: string
+  product_id: string | null
+  product_name: string
   variacao: string
   quantidade: number
-  preco_unitario: number
-  desconto_item: number
+  unit_price: number
+  item_discount: number
   total: number
 }
 
@@ -42,12 +42,12 @@ const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', cur
 
 const novaLinha = (): ItemOrcamento => ({
   _key: crypto.randomUUID(),
-  produto_id: null,
-  produto_nome: '',
+  product_id: null,
+  product_name: '',
   variacao: '',
   quantidade: 1,
-  preco_unitario: 0,
-  desconto_item: 0,
+  unit_price: 0,
+  item_discount: 0,
   total: 0,
 })
 
@@ -98,7 +98,7 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
   // ── Cálculos ───────────────────────────────────────────────────────────────
 
   const calcularTotal = (i: ItemOrcamento) =>
-    Math.max(0, i.quantidade * i.preco_unitario - i.desconto_item)
+    Math.max(0, i.quantidade * i.unit_price - i.item_discount)
 
   const subtotal = itens.reduce((acc, i) => acc + i.total, 0)
   const total    = Math.max(0, subtotal - desconto)
@@ -118,11 +118,11 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
     const p = produtos.find(x => x.id === productId)
     if (!p) return
     atualizarItem(key, {
-      produto_id: p.id,
-      produto_nome: p.name,
-      preco_unitario: p.preco,
+      product_id: p.id,
+      product_name: p.name,
+      unit_price: p.preco,
       // Serviço recorrente: a periodicidade vai para o PDF pela coluna de variação.
-      ...(isServico(p) && p.recorrente ? { variacao: `Cobrança ${labelRecorrencia(p.recorrencia_tipo).toLowerCase()}` } : {}),
+      ...(isServico(p) && p.recorrente ? { variacao: `Cobrança ${labelRecorrencia(p.recurrence_kind).toLowerCase()}` } : {}),
     })
   }
 
@@ -144,28 +144,28 @@ export function NovoOrcamentoDialog({ open, onOpenChange, onSalvo, criarOrcament
 
   const salvar = async (gerarPDF = false) => {
     if (!clienteNome.trim()) return
-    const itensValidos = itens.filter(i => i.produto_nome.trim() || i.produto_id)
+    const itensValidos = itens.filter(i => i.product_name.trim() || i.product_id)
     if (itensValidos.length === 0) return
 
     setSalvando(true)
     const orcamento = {
-      cliente_id: customerId,
-      cliente_nome: clienteNome,
-      cliente_email: clienteEmail || null,
-      cliente_telefone: clienteTelefone || null,
+      customer_id: customerId,
+      customer_name: clienteNome,
+      customer_email: clienteEmail || null,
+      customer_phone: clienteTelefone || null,
       validade: validade || null,
-      condicao_pagamento: condicao || null,
+      payment_terms: condicao || null,
       observacoes: observacoes || null,
       desconto,
       status: 'rascunho',
     }
     const itensPayload = itensValidos.map(i => ({
-      produto_id: i.produto_id,
-      produto_nome: i.produto_nome,
+      product_id: i.product_id,
+      product_name: i.product_name,
       variacao: i.variacao || null,
       quantidade: i.quantidade,
-      preco_unitario: i.preco_unitario,
-      desconto_item: i.desconto_item,
+      unit_price: i.unit_price,
+      item_discount: i.item_discount,
       total: i.total,
     }))
 
@@ -510,7 +510,7 @@ function ItemRow({
         <Popover open={pop} onOpenChange={setPop} modal>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="w-full justify-start font-normal text-xs h-8 truncate" style={{ fontFamily: 'Gilroy', borderColor: 'rgba(142,95,207,0.2)' }}>
-              {item.produto_nome || <span className="text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" />Selecionar…</span>}
+              {item.product_name || <span className="text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" />Selecionar…</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-0" align="start">
@@ -525,7 +525,7 @@ function ItemRow({
             }}>
               <CommandInput
                 placeholder="Buscar produto…"
-                onValueChange={v => onUpdate({ produto_nome: v })}
+                onValueChange={v => onUpdate({ product_name: v })}
               />
               <CommandList>
                 <CommandEmpty>Nenhum encontrado.</CommandEmpty>
@@ -553,10 +553,10 @@ function ItemRow({
         <Input type="number" min="1" value={item.quantidade} onChange={e => onUpdate({ quantidade: Number(e.target.value) || 1 })} className="h-8 text-xs text-right w-16" style={{ fontFamily: 'Gilroy' }} />
       </td>
       <td style={{ padding: '8px 6px' }}>
-        <Input type="number" min="0" step="0.01" value={item.preco_unitario || ''} onChange={e => onUpdate({ preco_unitario: Number(e.target.value) || 0 })} className="h-8 text-xs text-right" style={{ fontFamily: 'Gilroy' }} />
+        <Input type="number" min="0" step="0.01" value={item.unit_price || ''} onChange={e => onUpdate({ unit_price: Number(e.target.value) || 0 })} className="h-8 text-xs text-right" style={{ fontFamily: 'Gilroy' }} />
       </td>
       <td style={{ padding: '8px 6px' }}>
-        <Input type="number" min="0" step="0.01" value={item.desconto_item || ''} onChange={e => onUpdate({ desconto_item: Number(e.target.value) || 0 })} className="h-8 text-xs text-right" style={{ fontFamily: 'Gilroy' }} />
+        <Input type="number" min="0" step="0.01" value={item.item_discount || ''} onChange={e => onUpdate({ item_discount: Number(e.target.value) || 0 })} className="h-8 text-xs text-right" style={{ fontFamily: 'Gilroy' }} />
       </td>
       <td style={{ padding: '8px 12px 8px 6px', textAlign: 'right', fontFamily: 'Gilroy', fontSize: '0.8rem', fontWeight: 600, color: '#1F2937' }}>
         {item.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

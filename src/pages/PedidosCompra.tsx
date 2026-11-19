@@ -136,7 +136,7 @@ interface KanbanCardProps {
 
 function KanbanCard({ pedido, onVerDetalhes, onAvancar, onCancelar }: KanbanCardProps) {
   const [hov, setHov] = useState(false);
-  const atrasado = isAtrasado(pedido.prazo_entrega);
+  const atrasado = isAtrasado(pedido.delivery_deadline_on);
   const itens = pedido.pedidos_compra_itens?.length ?? 0;
 
   return (
@@ -161,10 +161,10 @@ function KanbanCard({ pedido, onVerDetalhes, onAvancar, onCancelar }: KanbanCard
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {pedido.numero_pedido ?? `#${pedido.id.slice(0, 8)}`}
+            {pedido.order_number ?? `#${pedido.id.slice(0, 8)}`}
           </p>
           <p style={{ fontSize: 11, color: '#6B7280', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {pedido.fornecedor_nome ?? '—'}
+            {pedido.supplier_name ?? '—'}
           </p>
         </div>
         <div onClick={e => e.stopPropagation()}>
@@ -173,7 +173,7 @@ function KanbanCard({ pedido, onVerDetalhes, onAvancar, onCancelar }: KanbanCard
       </div>
 
       <p style={{ fontSize: 15, fontWeight: 700, color: '#1F2937', margin: 0 }}>
-        {fmtBRL(Number(pedido.valor_total))}
+        {fmtBRL(Number(pedido.total_amount))}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: '#6B7280' }}>
@@ -181,11 +181,11 @@ function KanbanCard({ pedido, onVerDetalhes, onAvancar, onCancelar }: KanbanCard
           <Package style={{ width: 11, height: 11 }} />
           {itens} {itens === 1 ? 'item' : 'itens'}
         </span>
-        {pedido.prazo_entrega && (
+        {pedido.delivery_deadline_on && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: atrasado ? '#EF4444' : '#6B7280', fontWeight: atrasado ? 600 : 400 }}>
             {atrasado && <AlertTriangle style={{ width: 11, height: 11 }} />}
             <Calendar style={{ width: 11, height: 11 }} />
-            {fmtData(pedido.prazo_entrega)}
+            {fmtData(pedido.delivery_deadline_on)}
           </span>
         )}
       </div>
@@ -306,7 +306,7 @@ function TabelaView({ pedidos, onVerDetalhes, onAvancar, onCancelar }: TabelaVie
         </thead>
         <tbody>
           {pedidos.map(p => {
-            const atrasado = isAtrasado(p.prazo_entrega);
+            const atrasado = isAtrasado(p.delivery_deadline_on);
             const itens = p.pedidos_compra_itens?.length ?? 0;
             return (
               <tr
@@ -318,16 +318,16 @@ function TabelaView({ pedidos, onVerDetalhes, onAvancar, onCancelar }: TabelaVie
               >
                 <td style={{ padding: '16px 20px' }}>
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                    {p.numero_pedido ?? `#${p.id.slice(0, 8)}`}
+                    {p.order_number ?? `#${p.id.slice(0, 8)}`}
                   </span>
                 </td>
                 <td style={{ padding: '16px 20px', maxWidth: 180 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(142,95,207,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#8E5FCF', flexShrink: 0 }}>
-                      {(p.fornecedor_nome ?? 'FN').slice(0, 2).toUpperCase()}
+                      {(p.supplier_name ?? 'FN').slice(0, 2).toUpperCase()}
                     </div>
                     <span style={{ fontWeight: 600, color: '#1F2937', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                      {p.fornecedor_nome ?? '—'}
+                      {p.supplier_name ?? '—'}
                     </span>
                   </div>
                 </td>
@@ -337,13 +337,13 @@ function TabelaView({ pedidos, onVerDetalhes, onAvancar, onCancelar }: TabelaVie
                   </span>
                 </td>
                 <td style={{ padding: '16px 20px', fontWeight: 700, color: '#1F2937', whiteSpace: 'nowrap' as const, fontSize: 14 }}>
-                  {fmtBRL(Number(p.valor_total))}
+                  {fmtBRL(Number(p.total_amount))}
                 </td>
                 <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' as const }}>
-                  {p.prazo_entrega ? (
+                  {p.delivery_deadline_on ? (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: atrasado ? '#EF4444' : '#6B7280', fontWeight: atrasado ? 600 : 400 }}>
                       {atrasado && <AlertTriangle style={{ width: 12, height: 12 }} />}
-                      {fmtData(p.prazo_entrega)}
+                      {fmtData(p.delivery_deadline_on)}
                     </span>
                   ) : <span style={{ color: '#9CA3AF' }}>—</span>}
                 </td>
@@ -397,19 +397,19 @@ export default function PedidosCompra() {
   // ── Filtros ───────────────────────────────────────────────────────────────
 
   const fornecedores = useMemo(() => {
-    const nomes = new Set(pedidos.map(p => p.fornecedor_nome).filter(Boolean));
+    const nomes = new Set(pedidos.map(p => p.supplier_name).filter(Boolean));
     return Array.from(nomes) as string[];
   }, [pedidos]);
 
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter(p => {
       if (filtroStatus !== 'todos' && p.status !== filtroStatus) return false;
-      if (filtroFornecedor && p.fornecedor_nome !== filtroFornecedor) return false;
+      if (filtroFornecedor && p.supplier_name !== filtroFornecedor) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
-          (p.numero_pedido ?? '').toLowerCase().includes(q) ||
-          (p.fornecedor_nome ?? '').toLowerCase().includes(q)
+          (p.order_number ?? '').toLowerCase().includes(q) ||
+          (p.supplier_name ?? '').toLowerCase().includes(q)
         );
       }
       return true;
@@ -421,14 +421,14 @@ export default function PedidosCompra() {
   const hoje = new Date();
   const ativos = pedidos.filter(p => !['rascunho', 'cancelado', 'recebido'].includes(p.status));
   const atrasados = pedidos.filter(p =>
-    p.prazo_entrega &&
-    isPast(parseISO(p.prazo_entrega)) &&
+    p.delivery_deadline_on &&
+    isPast(parseISO(p.delivery_deadline_on)) &&
     !['recebido', 'cancelado'].includes(p.status),
   );
   const aguardando = pedidos.filter(p =>
     p.status === 'em_transito' || p.status === 'recebido_parcial',
   );
-  const valorAberto = ativos.reduce((acc, p) => acc + Number(p.valor_total), 0);
+  const valorAberto = ativos.reduce((acc, p) => acc + Number(p.total_amount), 0);
 
   // ── Ações ────────────────────────────────────────────────────────────────
 
@@ -439,7 +439,7 @@ export default function PedidosCompra() {
   };
 
   const handleCancelar = async (pedido: PedidoCompra) => {
-    if (!confirm(`Cancelar o pedido ${pedido.numero_pedido ?? pedido.id.slice(0, 8)}?`)) return;
+    if (!confirm(`Cancelar o pedido ${pedido.order_number ?? pedido.id.slice(0, 8)}?`)) return;
     await atualizarStatus(pedido.id, 'cancelado', 'Cancelado pelo usuário');
   };
 
@@ -451,7 +451,7 @@ export default function PedidosCompra() {
   const handleStatusChangeDrawer = async (pedidoId: string, status: StatusPedido, obs?: string) => {
     const result = await atualizarStatus(pedidoId, status, obs);
     setPedidoSelecionado(prev =>
-      prev?.id === pedidoId ? { ...prev, status, ...(status === 'recebido' ? { recebido_em: new Date().toISOString() } : {}) } : prev
+      prev?.id === pedidoId ? { ...prev, status, ...(status === 'recebido' ? { received_on: new Date().toISOString() } : {}) } : prev
     );
     return result ?? { error: null };
   };

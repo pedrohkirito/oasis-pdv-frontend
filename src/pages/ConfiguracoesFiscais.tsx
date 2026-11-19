@@ -19,30 +19,30 @@ import {
 // --- Schemas (unchanged) ---
 const empresaSchema = z.object({
   cnpj: z.string().min(14, "CNPJ deve ter 14 dígitos").max(18, "CNPJ inválido"),
-  razao_social: z.string().min(3, "Razão social é obrigatória"),
-  nome_fantasia: z.string().optional(),
-  inscricao_estadual: z.string().min(1, "Inscrição estadual é obrigatória"),
-  inscricao_municipal: z.string().optional(),
-  regime_tributario: z.string().min(1, "Regime tributário é obrigatório"),
-  endereco_logradouro: z.string().min(1, "Logradouro é obrigatório"),
-  endereco_numero: z.string().min(1, "Número é obrigatório"),
-  endereco_complemento: z.string().optional(),
-  endereco_bairro: z.string().min(1, "Bairro é obrigatório"),
-  endereco_cidade: z.string().min(1, "Cidade é obrigatória"),
-  endereco_uf: z.string().length(2, "UF deve ter 2 caracteres"),
-  endereco_cep: z.string().min(8, "CEP é obrigatório"),
-  endereco_codigo_municipio: z.string().min(7, "Código do município é obrigatório"),
+  legal_name: z.string().min(3, "Razão social é obrigatória"),
+  trade_name: z.string().optional(),
+  state_registration: z.string().min(1, "Inscrição estadual é obrigatória"),
+  municipal_registration: z.string().optional(),
+  tax_regime: z.string().min(1, "Regime tributário é obrigatório"),
+  address_street: z.string().min(1, "Logradouro é obrigatório"),
+  address_number: z.string().min(1, "Número é obrigatório"),
+  address_complement: z.string().optional(),
+  address_district: z.string().min(1, "Bairro é obrigatório"),
+  address_city: z.string().min(1, "Cidade é obrigatória"),
+  address_state: z.string().length(2, "UF deve ter 2 caracteres"),
+  address_postal_code: z.string().min(8, "CEP é obrigatório"),
+  address_municipality_code: z.string().min(7, "Código do município é obrigatório"),
 });
 
 const nfceSchema = z.object({
   ambiente: z.string().min(1, "Ambiente é obrigatório"),
-  serie_nfce: z.number().min(1, "Série deve ser maior que 0"),
-  numero_nfce: z.number().min(1, "Número deve ser maior que 0"),
+  nfce_series: z.number().min(1, "Série deve ser maior que 0"),
+  nfce_number: z.number().min(1, "Número deve ser maior que 0"),
   csc: z.string().optional(),
   csc_id: z.string().optional(),
-  provedor_nfce: z.string().optional(),
-  crt_codigo: z.number().optional(),
-  cnae_codigo: z.string().optional(),
+  nfce_provider: z.string().optional(),
+  crt_code: z.number().optional(),
+  cnae_code: z.string().optional(),
 });
 
 type EmpresaFormData = z.infer<typeof empresaSchema>;
@@ -129,20 +129,20 @@ export default function ConfiguracoesFiscais() {
   const empresaForm = useForm<EmpresaFormData>({
     resolver: zodResolver(empresaSchema),
     defaultValues: {
-      cnpj: "", razao_social: "", nome_fantasia: "",
-      inscricao_estadual: "", inscricao_municipal: "",
-      regime_tributario: "simples_nacional",
-      endereco_logradouro: "", endereco_numero: "", endereco_complemento: "",
-      endereco_bairro: "", endereco_cidade: "", endereco_uf: "",
-      endereco_cep: "", endereco_codigo_municipio: "",
+      cnpj: "", legal_name: "", trade_name: "",
+      state_registration: "", municipal_registration: "",
+      tax_regime: "simples_nacional",
+      address_street: "", address_number: "", address_complement: "",
+      address_district: "", address_city: "", address_state: "",
+      address_postal_code: "", address_municipality_code: "",
     },
   });
 
   const nfceForm = useForm<NfceFormData>({
     resolver: zodResolver(nfceSchema),
     defaultValues: {
-      ambiente: "homologacao", serie_nfce: 1, numero_nfce: 1,
-      csc: "", csc_id: "", provedor_nfce: "becoming", crt_codigo: 1, cnae_codigo: "",
+      ambiente: "homologacao", nfce_series: 1, nfce_number: 1,
+      csc: "", csc_id: "", nfce_provider: "becoming", crt_code: 1, cnae_code: "",
     },
   });
 
@@ -150,29 +150,29 @@ export default function ConfiguracoesFiscais() {
     if (empresaFiscal) {
       empresaForm.reset({
         cnpj: empresaFiscal.cnpj || "",
-        razao_social: empresaFiscal.razao_social || "",
-        nome_fantasia: empresaFiscal.nome_fantasia || "",
-        inscricao_estadual: empresaFiscal.inscricao_estadual || "",
-        inscricao_municipal: empresaFiscal.inscricao_municipal || "",
-        regime_tributario: empresaFiscal.regime_tributario || "simples_nacional",
-        endereco_logradouro: empresaFiscal.endereco_logradouro || "",
-        endereco_numero: empresaFiscal.endereco_numero || "",
-        endereco_complemento: empresaFiscal.endereco_complemento || "",
-        endereco_bairro: empresaFiscal.endereco_bairro || "",
-        endereco_cidade: empresaFiscal.endereco_cidade || "",
-        endereco_uf: empresaFiscal.endereco_uf || "",
-        endereco_cep: empresaFiscal.endereco_cep || "",
-        endereco_codigo_municipio: empresaFiscal.endereco_codigo_municipio || "",
+        legal_name: empresaFiscal.legal_name || "",
+        trade_name: empresaFiscal.trade_name || "",
+        state_registration: empresaFiscal.state_registration || "",
+        municipal_registration: empresaFiscal.municipal_registration || "",
+        tax_regime: empresaFiscal.tax_regime || "simples_nacional",
+        address_street: empresaFiscal.address_street || "",
+        address_number: empresaFiscal.address_number || "",
+        address_complement: empresaFiscal.address_complement || "",
+        address_district: empresaFiscal.address_district || "",
+        address_city: empresaFiscal.address_city || "",
+        address_state: empresaFiscal.address_state || "",
+        address_postal_code: empresaFiscal.address_postal_code || "",
+        address_municipality_code: empresaFiscal.address_municipality_code || "",
       });
       nfceForm.reset({
         ambiente: empresaFiscal.ambiente || "homologacao",
-        serie_nfce: empresaFiscal.serie_nfce || 1,
-        numero_nfce: empresaFiscal.numero_nfce || 1,
+        nfce_series: empresaFiscal.nfce_series || 1,
+        nfce_number: empresaFiscal.nfce_number || 1,
         csc: empresaFiscal.csc || "",
         csc_id: empresaFiscal.csc_id || "",
-        provedor_nfce: "becoming",
-        crt_codigo: (empresaFiscal as any).crt_codigo || 1,
-        cnae_codigo: (empresaFiscal as any).cnae_codigo || "",
+        nfce_provider: "becoming",
+        crt_code: (empresaFiscal as any).crt_code || 1,
+        cnae_code: (empresaFiscal as any).cnae_code || "",
       });
     }
   }, [empresaFiscal]);
@@ -185,13 +185,13 @@ export default function ConfiguracoesFiscais() {
         if (error) throw error;
       } else {
         const { error } = await api.from("company_fiscal_profile").insert({
-          cnpj: data.cnpj, razao_social: data.razao_social, nome_fantasia: data.nome_fantasia || null,
-          inscricao_estadual: data.inscricao_estadual, inscricao_municipal: data.inscricao_municipal || null,
-          regime_tributario: data.regime_tributario, endereco_logradouro: data.endereco_logradouro,
-          endereco_numero: data.endereco_numero, endereco_complemento: data.endereco_complemento || null,
-          endereco_bairro: data.endereco_bairro, endereco_cidade: data.endereco_cidade,
-          endereco_uf: data.endereco_uf, endereco_cep: data.endereco_cep,
-          endereco_codigo_municipio: data.endereco_codigo_municipio,
+          cnpj: data.cnpj, legal_name: data.legal_name, trade_name: data.trade_name || null,
+          state_registration: data.state_registration, municipal_registration: data.municipal_registration || null,
+          tax_regime: data.tax_regime, address_street: data.address_street,
+          address_number: data.address_number, address_complement: data.address_complement || null,
+          address_district: data.address_district, address_city: data.address_city,
+          address_state: data.address_state, address_postal_code: data.address_postal_code,
+          address_municipality_code: data.address_municipality_code,
           user_id: user.id, company_id: companyId,
         });
         if (error) throw error;
@@ -226,8 +226,8 @@ export default function ConfiguracoesFiscais() {
       if (!empresaFiscal) throw new Error("Configure os dados da empresa primeiro");
       const testData = {
         empresaFiscal: { ...empresaFiscal, ambiente: "homologacao" },
-        venda: { id: null, user_id: user.id, cliente_nome: "CONSUMIDOR TESTE", valor: 1.00, valor_bruto: 1.00, valor_final: 1.00, metodo_pagamento: "dinheiro", observacoes: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" },
-        itens: [{ id: "teste-001", code: "TESTE001", name: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL", ncm: "00000000", cfop: "5102", unidade_comercial: "UN", quantidade: 1, preco_unitario: 1.00, subtotal: 1.00, origem: "0" }],
+        venda: { id: null, user_id: user.id, customer_name: "CONSUMIDOR TESTE", valor: 1.00, gross_amount: 1.00, final_amount: 1.00, payment_method: "dinheiro", observacoes: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL" },
+        itens: [{ id: "teste-001", code: "TESTE001", name: "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL", ncm: "00000000", cfop: "5102", commercial_unit: "UN", quantidade: 1, unit_price: 1.00, subtotal: 1.00, origem: "0" }],
         cliente: null,
       };
       const { data, error } = await api.functions.invoke("becoming-nfce", { body: { action: "emitir", data: testData } });
@@ -240,7 +240,7 @@ export default function ConfiguracoesFiscais() {
         toast.success("Teste realizado com sucesso! NFC-e emitida em homologação.");
         queryClient.invalidateQueries({ queryKey: ["empresa-fiscal", companyId] });
       } else if (data.status === "rejeitado" || data.status === "rejeitada") {
-        setTestResult({ success: false, message: `NFC-e rejeitada: ${data.motivo_rejeicao || "Verifique os dados fiscais"}`, details: data });
+        setTestResult({ success: false, message: `NFC-e rejeitada: ${data.rejection_reason || "Verifique os dados fiscais"}`, details: data });
         toast.error("NFC-e rejeitada pela SEFAZ");
       } else {
         setTestResult({ success: false, message: `Status: ${data.status}`, details: data });
@@ -348,10 +348,10 @@ export default function ConfiguracoesFiscais() {
 
           {/* Certificado Digital */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}
-            style={{ ...glassCard, padding: 24, borderTop: `4px solid ${empresaFiscal?.certificado_valido ? "#10B981" : "#EF4444"}` }}>
+            style={{ ...glassCard, padding: 24, borderTop: `4px solid ${empresaFiscal?.certificate_valid ? "#10B981" : "#EF4444"}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: empresaFiscal?.certificado_valido ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {empresaFiscal?.certificado_valido
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: empresaFiscal?.certificate_valid ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {empresaFiscal?.certificate_valid
                   ? <ShieldCheck style={{ width: 20, height: 20, color: "#10B981" }} />
                   : <ShieldX style={{ width: 20, height: 20, color: "#EF4444" }} />}
               </div>
@@ -359,8 +359,8 @@ export default function ConfiguracoesFiscais() {
                 <p style={{ fontSize: 11, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px", fontFamily: "Gilroy, sans-serif" }}>
                   Certificado Digital
                 </p>
-                <span style={{ background: empresaFiscal?.certificado_valido ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: empresaFiscal?.certificado_valido ? "#10B981" : "#EF4444", border: `1px solid ${empresaFiscal?.certificado_valido ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`, borderRadius: 20, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 600, fontFamily: "Gilroy, sans-serif" }}>
-                  {empresaFiscal?.certificado_valido ? "Válido" : "Não configurado"}
+                <span style={{ background: empresaFiscal?.certificate_valid ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: empresaFiscal?.certificate_valid ? "#10B981" : "#EF4444", border: `1px solid ${empresaFiscal?.certificate_valid ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`, borderRadius: 20, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 600, fontFamily: "Gilroy, sans-serif" }}>
+                  {empresaFiscal?.certificate_valid ? "Válido" : "Não configurado"}
                 </span>
               </div>
             </div>
@@ -422,7 +422,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="inscricao_estadual" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="state_registration" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Inscrição Estadual *</label>
                         <FormControl>
@@ -449,7 +449,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="inscricao_municipal" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="municipal_registration" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Inscrição Municipal</label>
                         <FormControl>
@@ -458,7 +458,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="regime_tributario" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="tax_regime" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Regime Tributário *</label>
                         <Select onValueChange={field.onChange} value={field.value}>
@@ -515,7 +515,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="endereco_complemento" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_complement" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Complemento</label>
                         <FormControl>
@@ -562,7 +562,7 @@ export default function ConfiguracoesFiscais() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={empresaForm.control} name="endereco_codigo_municipio" render={({ field }) => (
+                    <FormField control={empresaForm.control} name="address_municipality_code" render={({ field }) => (
                       <FormItem>
                         <label style={labelStyle}>Cód. Município *</label>
                         <FormControl>
@@ -621,7 +621,7 @@ export default function ConfiguracoesFiscais() {
                       </p>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                        <FormField control={nfceForm.control} name="crt_codigo" render={({ field }) => (
+                        <FormField control={nfceForm.control} name="crt_code" render={({ field }) => (
                           <FormItem>
                             <label style={labelStyle}>CRT (Código de Regime Tributário)</label>
                             <Select onValueChange={(val) => field.onChange(parseInt(val))} value={field.value?.toString()}>
@@ -640,7 +640,7 @@ export default function ConfiguracoesFiscais() {
                           </FormItem>
                         )} />
 
-                        <FormField control={nfceForm.control} name="cnae_codigo" render={({ field }) => (
+                        <FormField control={nfceForm.control} name="cnae_code" render={({ field }) => (
                           <FormItem>
                             <label style={labelStyle}>CNAE</label>
                             <FormControl>
@@ -678,7 +678,7 @@ export default function ConfiguracoesFiscais() {
                           </FormItem>
                         )} />
 
-                        <FormField control={nfceForm.control} name="serie_nfce" render={({ field }) => (
+                        <FormField control={nfceForm.control} name="nfce_series" render={({ field }) => (
                           <FormItem>
                             <label style={labelStyle}>Série NFC-e *</label>
                             <FormControl>
@@ -688,7 +688,7 @@ export default function ConfiguracoesFiscais() {
                           </FormItem>
                         )} />
 
-                        <FormField control={nfceForm.control} name="numero_nfce" render={({ field }) => (
+                        <FormField control={nfceForm.control} name="nfce_number" render={({ field }) => (
                           <FormItem>
                             <label style={labelStyle}>Próximo Número *</label>
                             <FormControl>

@@ -25,15 +25,11 @@ export function labelRecorrencia(tipo: string | null | undefined): string {
 
 /** Sufixo de preço, ex.: "/mês". Vazio para serviço avulso ou produto. */
 export function sufixoRecorrencia(item: {
-  recorrente?: boolean | null;
-  recorrencia_tipo?: string | null;
   recurring?: boolean | null;
   recurrence_kind?: string | null;
 }): string {
-  const recorrente = item.recorrente ?? item.recurring;
-  const tipo = item.recorrencia_tipo ?? item.recurrence_kind;
-  if (!recorrente) return '';
-  return RECORRENCIA_OPCOES.find((o) => o.value === tipo)?.sufixo ?? '';
+  if (!item.recurring) return '';
+  return RECORRENCIA_OPCOES.find((o) => o.value === item.recurrence_kind)?.sufixo ?? '';
 }
 
 export function isServico(item: { tipo?: string | null; kind?: string | null } | null | undefined): boolean {

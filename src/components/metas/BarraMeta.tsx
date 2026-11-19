@@ -8,10 +8,10 @@ export interface ProgressoMeta {
     kind: string
     periodo: string
     valor: number
-    usuario_nome?: string
+    user_name?: string
     categoria?: string
-    data_inicio: string
-    data_fim: string
+    start_on: string
+    end_on: string
   }
   realizado: number
   percentual: number
@@ -45,7 +45,7 @@ function labelPeriodo(periodo: string): string {
 }
 
 function labelTipo(meta: ProgressoMeta['meta']): string {
-  if (meta.kind === 'vendedora' && meta.usuario_nome) return meta.usuario_nome
+  if (meta.kind === 'vendedora' && meta.user_name) return meta.user_name
   if (meta.kind === 'category' && meta.categoria) return `Categoria: ${meta.categoria}`
   return 'Meta da Loja'
 }

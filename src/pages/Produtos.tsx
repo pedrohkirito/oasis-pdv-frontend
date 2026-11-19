@@ -48,24 +48,24 @@ interface Produto {
   preco: number;
   custo: number | null;
   estoque: number | null;
-  estoque_minimo: number | null;
+  minimum_stock: number | null;
   categoria: string | null;
   active: boolean | null;
-  fornecedor_id: string | null;
+  supplier_id: string | null;
   fornecedores: Fornecedor | null;
   ncm: string | null;
   cfop: string | null;
   origem: string | null;
-  unidade_comercial: string | null;
+  commercial_unit: string | null;
   ean: string | null;
-  tem_variacoes: boolean | null;
+  has_variants: boolean | null;
   created_at: string;
   updated_at: string;
 }
 
 interface UltimaVenda {
-  produto_id: string;
-  data_venda: string;
+  product_id: string;
+  sold_on: string;
 }
 
 const FALLBACK_COLORS: Record<string, string> = {
@@ -152,33 +152,33 @@ const Produtos = () => {
   const [novoProduto, setNovoProduto] = useState({
     name: '',
     code: '',
-    fornecedor_id: '',
+    supplier_id: '',
     preco: 0,
     custo: 0,
     estoque: 0,
-    estoque_minimo: 0,
+    minimum_stock: 0,
     categoria: '',
     active: true,
     ncm: '',
     cfop: '5102',
     origem: '0',
-    unidade_comercial: 'UN',
+    commercial_unit: 'UN',
     ean: ''
   });
   const [editProduto, setEditProduto] = useState({
     name: '',
     code: '',
-    fornecedor_id: '',
+    supplier_id: '',
     preco: 0,
     custo: 0,
     estoque: 0,
-    estoque_minimo: 0,
+    minimum_stock: 0,
     categoria: '',
     active: true,
     ncm: '',
     cfop: '5102',
     origem: '0',
-    unidade_comercial: 'UN',
+    commercial_unit: 'UN',
     ean: ''
   });
   const [eanSearch, setEanSearch] = useState('');
@@ -208,15 +208,15 @@ const Produtos = () => {
     // Get the most recent sale date for each product via itens_venda
     const { data } = await api
       .from('sale_item')
-      .select('produto_id, venda_id, vendas!inner(data_venda, empresa_id)')
-      .eq('vendas.empresa_id', companyId)
+      .select('product_id, sale_id, vendas!inner(sold_on, company_id)')
+      .eq('vendas.company_id', companyId)
       .order('created_at', { ascending: false });
 
     if (data) {
       const map: Record<string, string> = {};
       for (const item of data) {
-        const prodId = item.produto_id;
-        const soldOn = (item as any).vendas?.data_venda;
+        const prodId = item.product_id;
+        const soldOn = (item as any).vendas?.sold_on;
         if (soldOn && !map[prodId]) {
           map[prodId] = soldOn;
         }
@@ -353,17 +353,17 @@ const Produtos = () => {
       kind: 'produto',
       name: novoProduto.name,
       code: codigoFinal,
-      fornecedor_id: novoProduto.fornecedor_id || null,
+      supplier_id: novoProduto.supplier_id || null,
       preco: novoProduto.preco,
       custo: novoProduto.custo || null,
       estoque: novoProduto.estoque || 0,
-      estoque_minimo: novoProduto.estoque_minimo || 0,
+      minimum_stock: novoProduto.minimum_stock || 0,
       categoria: novoProduto.categoria || 'Outros',
       active: novoProduto.active,
       ncm: novoProduto.ncm || null,
       cfop: novoProduto.cfop || '5102',
       origem: novoProduto.origem || '0',
-      unidade_comercial: novoProduto.unidade_comercial || 'UN',
+      commercial_unit: novoProduto.commercial_unit || 'UN',
       ean: novoProduto.ean || null
     });
     if (error) {
@@ -377,7 +377,7 @@ const Produtos = () => {
   };
 
   const resetCreateDialog = () => {
-    setNovoProduto({ name: '', code: '', fornecedor_id: '', preco: 0, custo: 0, estoque: 0, estoque_minimo: 0, categoria: '', active: true, ncm: '', cfop: '5102', origem: '0', unidade_comercial: 'UN', ean: '' });
+    setNovoProduto({ name: '', code: '', supplier_id: '', preco: 0, custo: 0, estoque: 0, minimum_stock: 0, categoria: '', active: true, ncm: '', cfop: '5102', origem: '0', commercial_unit: 'UN', ean: '' });
     setEanSearch('');
     setProdutoEncontrado(null);
     setCreateStep('search');
@@ -388,17 +388,17 @@ const Produtos = () => {
     setEditProduto({
       name: produto.name,
       code: produto.code || '',
-      fornecedor_id: produto.fornecedor_id || '',
+      supplier_id: produto.supplier_id || '',
       preco: Number(produto.preco),
       custo: Number(produto.custo) || 0,
       estoque: produto.estoque || 0,
-      estoque_minimo: produto.estoque_minimo || 0,
+      minimum_stock: produto.minimum_stock || 0,
       categoria: produto.categoria || '',
       active: produto.active ?? true,
       ncm: produto.ncm || '',
       cfop: produto.cfop || '5102',
       origem: produto.origem || '0',
-      unidade_comercial: produto.unidade_comercial || 'UN',
+      commercial_unit: produto.commercial_unit || 'UN',
       ean: produto.ean || ''
     });
     setEditTab('informacoes');
@@ -406,9 +406,9 @@ const Produtos = () => {
   };
 
   const handleAtivarVariacoes = async (produto: Produto) => {
-    await api.from('product').update({ tem_variacoes: true }).eq('id', produto.id);
+    await api.from('product').update({ has_variants: true }).eq('id', produto.id);
     fetchProdutos();
-    setEditingProduto({ ...produto, tem_variacoes: true });
+    setEditingProduto({ ...produto, has_variants: true });
   };
 
   const handleSalvarEdicao = async () => {
@@ -420,17 +420,17 @@ const Produtos = () => {
     const { error } = await api.from('product').update({
       name: editProduto.name,
       code: codigoFinal,
-      fornecedor_id: editProduto.fornecedor_id || null,
+      supplier_id: editProduto.supplier_id || null,
       preco: editProduto.preco,
       custo: editProduto.custo || null,
       estoque: editProduto.estoque || 0,
-      estoque_minimo: editProduto.estoque_minimo || 0,
+      minimum_stock: editProduto.minimum_stock || 0,
       categoria: editProduto.categoria || 'Outros',
       active: editProduto.active,
       ncm: editProduto.ncm || null,
       cfop: editProduto.cfop || '5102',
       origem: editProduto.origem || '0',
-      unidade_comercial: editProduto.unidade_comercial || 'UN'
+      commercial_unit: editProduto.commercial_unit || 'UN'
     }).eq('id', editingProduto.id);
     if (error) {
       toast({ title: "Erro", description: error.code === '23505' ? "Este código já está em uso" : "Erro ao atualizar produto", variant: "destructive" });
@@ -472,17 +472,17 @@ const Produtos = () => {
       kind: 'produto',
       name: `${produto.name} (cópia)`,
       code: novoCodigo,
-      fornecedor_id: produto.fornecedor_id,
+      supplier_id: produto.supplier_id,
       preco: produto.preco,
       custo: produto.custo,
       estoque: 0,
-      estoque_minimo: produto.estoque_minimo || 0,
+      minimum_stock: produto.minimum_stock || 0,
       categoria: produto.categoria || 'Outros',
       active: true,
       ncm: produto.ncm,
       cfop: produto.cfop || '5102',
       origem: produto.origem || '0',
-      unidade_comercial: produto.unidade_comercial || 'UN'
+      commercial_unit: produto.commercial_unit || 'UN'
     });
     if (error) {
       toast({ title: "Erro", description: "Erro ao duplicar produto", variant: "destructive" });
@@ -500,10 +500,10 @@ const Produtos = () => {
   const CHART_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#10b981', '#f97316', '#6366f1', '#84cc16'];
   const produtosPorFornecedor = fornecedores.map((f, index) => ({
     name: f.name,
-    value: produtos.filter(p => p.fornecedor_id === f.id).length,
+    value: produtos.filter(p => p.supplier_id === f.id).length,
     color: CHART_COLORS[index % CHART_COLORS.length]
   })).filter(item => item.value > 0);
-  const produtosSemFornecedor = produtos.filter(p => !p.fornecedor_id).length;
+  const produtosSemFornecedor = produtos.filter(p => !p.supplier_id).length;
   if (produtosSemFornecedor > 0) {
     produtosPorFornecedor.push({ name: 'Sem Fornecedor', value: produtosSemFornecedor, color: '#6b7280' });
   }
@@ -538,7 +538,7 @@ const Produtos = () => {
   const parseRows = (headers: string[], rows: string[][]) => {
     const nomeIndex = findColIndex(headers, ['name', 'produto', 'description', 'descrição', 'description', 'item', 'mercadoria']);
     const precoIndex = findColIndex(headers, ['price', 'preço', 'amount', 'price', 'preco_venda', 'preco venda', 'valor venda', 'valor unitario']);
-    const custoIndex = findColIndex(headers, ['cost', 'cost', 'preco_custo', 'preco custo', 'valor custo']);
+    const custoIndex = findColIndex(headers, ['cost', 'cost_price', 'preco_custo', 'preco custo', 'valor custo']);
     const estoqueIndex = findColIndex(headers, ['stock', 'quantity', 'qtd', 'stock', 'qtde', 'quant', 'saldo']);
     const categoriaIndex = findColIndex(headers, ['category', 'category', 'grupo', 'kind']);
     const fornecedorIndex = findColIndex(headers, ['fornecedor', 'supplier', 'fabricante', 'marca']);
@@ -564,7 +564,7 @@ const Produtos = () => {
       const fornecedorNome = fornecedorIndex !== -1 ? values[fornecedorIndex]?.trim() : '';
       const code = codigoIndex !== -1 ? values[codigoIndex]?.trim() : '';
       const fornecedor = fornecedores.find(f => f.name.toLowerCase() === fornecedorNome?.toLowerCase());
-      parsedProdutos.push({ name, preco, custo, estoque, categoria: categoria || 'Outros', code: code || null, fornecedor_id: fornecedor?.id || null, fornecedor_nome: fornecedorNome || null, active: true });
+      parsedProdutos.push({ name, preco, custo, estoque, categoria: categoria || 'Outros', code: code || null, supplier_id: fornecedor?.id || null, supplier_name: fornecedorNome || null, active: true });
     }
 
     setImportedProdutos(parsedProdutos);
@@ -644,7 +644,7 @@ const Produtos = () => {
         custo: produto.custo || null,
         estoque: produto.estoque || 0,
         categoria: produto.categoria || 'Outros',
-        fornecedor_id: produto.fornecedor_id,
+        supplier_id: produto.supplier_id,
         active: true
       }, { onConflict: 'company_id,code' });
       if (error) { errorCount++; } else { successCount++; }
@@ -668,7 +668,7 @@ const Produtos = () => {
         fornecedorId = existing.id;
       } else {
         const { data: newFornecedor, error: fornError } = await api.from('supplier').insert({
-          user_id: user.id, company_id: companyId, name: fornecedor.nomeFantasia || fornecedor.razaoSocial, razao_social: fornecedor.razaoSocial, cnpj: fornecedor.cnpj, endereco: fornecedor.endereco || null, cidade: fornecedor.cidade || null, estado: fornecedor.estado || null, active: true,
+          user_id: user.id, company_id: companyId, name: fornecedor.nomeFantasia || fornecedor.razaoSocial, legal_name: fornecedor.razaoSocial, cnpj: fornecedor.cnpj, endereco: fornecedor.endereco || null, cidade: fornecedor.cidade || null, estado: fornecedor.estado || null, active: true,
         }).select('id').single();
         if (!fornError && newFornecedor) { fornecedorId = newFornecedor.id; fetchFornecedores(); }
       }
@@ -693,10 +693,10 @@ const Produtos = () => {
       if (produto.isDuplicate && produto.existingProductId) {
         const novoEstoque = (produto.existingStock ?? 0) + Math.floor(produto.quantidade);
         const updateData: Record<string, unknown> = {
-          codigo_fornecedor: produto.code || null, ean: produto.ean || null, custo: produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', unidade_comercial: produto.unidade || 'UN', estoque: novoEstoque,
+          supplier_code: produto.code || null, ean: produto.ean || null, custo: produto.valorUnitario, ncm: produto.ncm || null, cfop: produto.cfop || '5102', origem: produto.origem || '0', commercial_unit: produto.unidade || 'UN', estoque: novoEstoque,
         };
         if (produto.precoVenda && produto.precoVenda > 0) updateData.preco = produto.precoVenda;
-        if (fornecedorId) updateData.fornecedor_id = fornecedorId;
+        if (fornecedorId) updateData.supplier_id = fornecedorId;
         const { error } = await api.from('product').update(updateData).eq('id', produto.existingProductId);
         if (error) { errorCount++; } else { updateCount++; }
         continue;
@@ -719,13 +719,13 @@ const Produtos = () => {
       if (fiscal) {
         if (fiscal.cnpj === destinatario.cnpj || !fiscal.cnpj) {
           const { error: fiscalError } = await api.from('company_fiscal_profile').update({
-            razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || fiscal.cnpj ? undefined : '', endereco_logradouro: destinatario.logradouro || undefined, endereco_numero: destinatario.numero || undefined, endereco_complemento: destinatario.complemento || undefined, endereco_bairro: destinatario.bairro || undefined, endereco_cidade: destinatario.cidade || undefined, endereco_uf: destinatario.estado || undefined, endereco_cep: destinatario.cep || undefined, endereco_codigo_municipio: destinatario.codigoMunicipio || undefined,
+            legal_name: destinatario.razaoSocial, state_registration: destinatario.inscricaoEstadual || fiscal.cnpj ? undefined : '', address_street: destinatario.logradouro || undefined, address_number: destinatario.numero || undefined, address_complement: destinatario.complemento || undefined, address_district: destinatario.bairro || undefined, address_city: destinatario.cidade || undefined, address_state: destinatario.estado || undefined, address_postal_code: destinatario.cep || undefined, address_municipality_code: destinatario.codigoMunicipio || undefined,
           }).eq('id', fiscal.id);
           if (!fiscalError) fiscalUpdated = true;
         }
       } else {
         const { error: fiscalError } = await api.from('company_fiscal_profile').insert({
-          user_id: user.id, company_id: companyId, cnpj: destinatario.cnpj, razao_social: destinatario.razaoSocial, inscricao_estadual: destinatario.inscricaoEstadual || '', endereco_logradouro: destinatario.logradouro || '', endereco_numero: destinatario.numero || '', endereco_bairro: destinatario.bairro || '', endereco_cidade: destinatario.cidade || '', endereco_uf: destinatario.estado || '', endereco_cep: destinatario.cep || '', endereco_codigo_municipio: destinatario.codigoMunicipio || '',
+          user_id: user.id, company_id: companyId, cnpj: destinatario.cnpj, legal_name: destinatario.razaoSocial, state_registration: destinatario.inscricaoEstadual || '', address_street: destinatario.logradouro || '', address_number: destinatario.numero || '', address_district: destinatario.bairro || '', address_city: destinatario.cidade || '', address_state: destinatario.estado || '', address_postal_code: destinatario.cep || '', address_municipality_code: destinatario.codigoMunicipio || '',
         });
         if (!fiscalError) fiscalUpdated = true;
       }
@@ -751,7 +751,7 @@ const Produtos = () => {
       produto.code?.toLowerCase().includes(searchLower) ||
       produto.categoria?.toLowerCase().includes(searchLower);
     const matchCategoria = filterCategoria === 'todos' || produto.categoria === filterCategoria;
-    const matchFornecedor = filterFornecedor === 'todos' || produto.fornecedor_id === filterFornecedor;
+    const matchFornecedor = filterFornecedor === 'todos' || produto.supplier_id === filterFornecedor;
     const matchAtivo = filterAtivo === 'todos' || filterAtivo === 'active' && produto.active || filterAtivo === 'inativo' && !produto.active;
     const matchEstoque = !filterComEstoque || (produto.estoque || 0) > 0;
     return matchSearch && matchCategoria && matchFornecedor && matchAtivo && matchEstoque;
@@ -777,7 +777,7 @@ const Produtos = () => {
   const produtosAtivos = produtos.filter(p => p.active).length;
   const produtosSemEstoque = produtos.filter(p => p.active && (p.estoque ?? 0) === 0).length;
   const produtosEstoqueBaixo = produtos.filter(p => {
-    const min = p.estoque_minimo ?? 0;
+    const min = p.minimum_stock ?? 0;
     const qty = p.estoque ?? 0;
     return p.active && min > 0 && qty > 0 && qty <= min;
   }).length;
@@ -903,7 +903,7 @@ const Produtos = () => {
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="fornecedor">Fornecedor</Label>
-                        <Select value={novoProduto.fornecedor_id} onValueChange={value => setNovoProduto({ ...novoProduto, fornecedor_id: value })}>
+                        <Select value={novoProduto.supplier_id} onValueChange={value => setNovoProduto({ ...novoProduto, supplier_id: value })}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o fornecedor" />
                           </SelectTrigger>
@@ -947,7 +947,7 @@ const Produtos = () => {
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="minimum_stock">Estoque Mínimo</Label>
-                          <Input id="minimum_stock" type="number" placeholder="0" value={novoProduto.estoque_minimo || ''} onChange={e => setNovoProduto({ ...novoProduto, estoque_minimo: parseInt(e.target.value) || 0 })} />
+                          <Input id="minimum_stock" type="number" placeholder="0" value={novoProduto.minimum_stock || ''} onChange={e => setNovoProduto({ ...novoProduto, minimum_stock: parseInt(e.target.value) || 0 })} />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -1008,7 +1008,7 @@ const Produtos = () => {
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="unidade">Unidade</Label>
-                            <Select value={novoProduto.unidade_comercial} onValueChange={value => setNovoProduto({ ...novoProduto, unidade_comercial: value })}>
+                            <Select value={novoProduto.commercial_unit} onValueChange={value => setNovoProduto({ ...novoProduto, commercial_unit: value })}>
                               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="UN">UN - Unidade</SelectItem>
@@ -1190,7 +1190,7 @@ const Produtos = () => {
             {loading ? <TableSkeleton columns={5} rows={5} /> : <div className="space-y-3">
               {filteredProdutos.map(produto => {
                 const margem = calcMargem(Number(produto.preco), Number(produto.custo));
-                const estoqueStatus = getEstoqueStatus(produto.estoque, produto.estoque_minimo);
+                const estoqueStatus = getEstoqueStatus(produto.estoque, produto.minimum_stock);
                 const ultimaVenda = ultimasVendas[produto.id];
 
                 return (
@@ -1217,7 +1217,7 @@ const Produtos = () => {
                             {estoqueStatus === 'zerado' && '⚠ '}
                             {estoqueStatus === 'baixo' && '⚡ '}
                             Estoque: {produto.estoque || 0}
-                            {(produto.estoque_minimo ?? 0) > 0 && ` (mín: ${produto.estoque_minimo})`}
+                            {(produto.minimum_stock ?? 0) > 0 && ` (mín: ${produto.minimum_stock})`}
                           </span>
                           {produto.custo && <span>Custo: {formatCurrency(Number(produto.custo))}</span>}
                           {ultimaVenda && (
@@ -1236,7 +1236,7 @@ const Produtos = () => {
                           {(margem.percentual * 100).toFixed(0)}%
                         </Badge>
                       )}
-                      {produto.tem_variacoes && (
+                      {produto.has_variants && (
                         <Badge variant="outline" className="bg-violet-500/10 border-violet-500 text-violet-600 gap-1">
                           <Layers className="h-3 w-3" />
                           Variações
@@ -1304,7 +1304,7 @@ const Produtos = () => {
             </TabsList>
 
             <TabsContent value="variacoes" className="mt-0">
-              {editingProduto && !editingProduto.tem_variacoes ? (
+              {editingProduto && !editingProduto.has_variants ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
                   <Layers className="h-12 w-12 text-muted-foreground/40" />
                   <div>
@@ -1340,7 +1340,7 @@ const Produtos = () => {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-fornecedor">Fornecedor</Label>
-              <Select value={editProduto.fornecedor_id} onValueChange={value => setEditProduto({ ...editProduto, fornecedor_id: value })}>
+              <Select value={editProduto.supplier_id} onValueChange={value => setEditProduto({ ...editProduto, supplier_id: value })}>
                 <SelectTrigger><SelectValue placeholder="Selecione o fornecedor" /></SelectTrigger>
                 <SelectContent>
                   {fornecedores.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
@@ -1383,7 +1383,7 @@ const Produtos = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-estoque-minimo">Estoque Mínimo</Label>
-                <Input id="edit-estoque-minimo" type="number" placeholder="0" value={editProduto.estoque_minimo || ''} onChange={e => setEditProduto({ ...editProduto, estoque_minimo: parseInt(e.target.value) || 0 })} />
+                <Input id="edit-estoque-minimo" type="number" placeholder="0" value={editProduto.minimum_stock || ''} onChange={e => setEditProduto({ ...editProduto, minimum_stock: parseInt(e.target.value) || 0 })} />
               </div>
             </div>
             <div className="grid gap-2">
@@ -1436,7 +1436,7 @@ const Produtos = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-unidade">Unidade</Label>
-                  <Select value={editProduto.unidade_comercial} onValueChange={value => setEditProduto({ ...editProduto, unidade_comercial: value })}>
+                  <Select value={editProduto.commercial_unit} onValueChange={value => setEditProduto({ ...editProduto, commercial_unit: value })}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UN">UN - Unidade</SelectItem>
@@ -1553,7 +1553,7 @@ const Produtos = () => {
                       <td className="p-2">{produto.name}</td>
                       <td className="p-2">{formatCurrency(produto.preco)}</td>
                       <td className="p-2">{produto.estoque}</td>
-                      <td className="p-2">{produto.fornecedor_nome || '-'}</td>
+                      <td className="p-2">{produto.supplier_name || '-'}</td>
                     </tr>)}
                   </tbody>
                 </table>
@@ -1576,7 +1576,7 @@ const Produtos = () => {
         onOpenChange={setXmlImportDialogOpen}
         onImport={handleXmlImport}
         existingCodes={produtos.map(p => p.code).filter(Boolean) as string[]}
-        existingProducts={produtos.map(p => ({ id: p.id, code: p.code, name: p.name, ean: (p as any).ean ?? null, codigo_fornecedor: (p as any).codigo_fornecedor ?? null, estoque: p.estoque ?? 0, preco: p.preco ?? 0 }))}
+        existingProducts={produtos.map(p => ({ id: p.id, code: p.code, name: p.name, ean: (p as any).ean ?? null, supplier_code: (p as any).supplier_code ?? null, estoque: p.estoque ?? 0, preco: p.preco ?? 0 }))}
       />
 
       {/* Gerenciar Categorias Dialog */}

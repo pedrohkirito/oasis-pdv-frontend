@@ -32,12 +32,12 @@ const BANDEIRAS_INFO: Record<string, { logo: string; bg: string; color: string; 
 };
 
 interface TaxaRow {
-  metodo_pagamento: string;
+  payment_method: string;
   parcelas: number;
   bandeira: string;
-  taxa_percentual: number;
-  tipo_taxa: 'percentual' | 'fixo';
-  prazo_recebimento: 'mesmo_dia' | 'dia_seguinte' | 'parcelado';
+  fee_percent: number;
+  fee_kind: 'percentual' | 'fixo';
+  receipt_term: 'mesmo_dia' | 'dia_seguinte' | 'parcelado';
 }
 
 const formatCurrency = (valor: number) =>
@@ -128,16 +128,16 @@ export default function ConfigTaxas() {
   const buildInitialTaxas = useCallback((): TaxaRow[] => {
     const rows: TaxaRow[] = [];
     for (const m of ['Dinheiro', 'PIX', 'Boleto']) {
-      rows.push({ metodo_pagamento: m, parcelas: 0, bandeira: '', taxa_percentual: 0, tipo_taxa: 'percentual', prazo_recebimento: 'parcelado' });
+      rows.push({ payment_method: m, parcelas: 0, bandeira: '', fee_percent: 0, fee_kind: 'percentual', receipt_term: 'parcelado' });
     }
     for (const b of BANDEIRAS) {
-      rows.push({ metodo_pagamento: 'Cartão de Crédito', parcelas: 0, bandeira: b, taxa_percentual: 0, tipo_taxa: 'percentual', prazo_recebimento: 'parcelado' });
+      rows.push({ payment_method: 'Cartão de Crédito', parcelas: 0, bandeira: b, fee_percent: 0, fee_kind: 'percentual', receipt_term: 'parcelado' });
       for (let i = 2; i <= 12; i++) {
-        rows.push({ metodo_pagamento: 'Cartão de Crédito', parcelas: i, bandeira: b, taxa_percentual: 0, tipo_taxa: 'percentual', prazo_recebimento: 'parcelado' });
+        rows.push({ payment_method: 'Cartão de Crédito', parcelas: i, bandeira: b, fee_percent: 0, fee_kind: 'percentual', receipt_term: 'parcelado' });
       }
     }
     for (const b of BANDEIRAS) {
-      rows.push({ metodo_pagamento: 'Cartão de Débito', parcelas: 0, bandeira: b, taxa_percentual: 0, tipo_taxa: 'percentual', prazo_recebimento: 'parcelado' });
+      rows.push({ payment_method: 'Cartão de Débito', parcelas: 0, bandeira: b, fee_percent: 0, fee_kind: 'percentual', receipt_term: 'parcelado' });
     }
     return rows;
   }, []);
@@ -148,18 +148,18 @@ export default function ConfigTaxas() {
     const initial = buildInitialTaxas();
     const { data } = await api
       .from('payment_fee')
-      .select('metodo_pagamento, taxa_percentual, parcelas, bandeira, tipo_taxa, prazo_recebimento')
+      .select('payment_method, fee_percent, parcelas, bandeira, fee_kind, receipt_term')
       .eq('company_id', companyId);
 
     if (data) {
       const merged = initial.map(row => {
         const found = (data as any[]).find(
-          d => d.metodo_pagamento === row.metodo_pagamento &&
+          d => d.payment_method === row.payment_method &&
                Number(d.parcelas) === row.parcelas &&
                (d.bandeira || '') === row.bandeira
         );
         return found
-          ? { ...row, taxa_percentual: Number(found.taxa_percentual), tipo_taxa: found.tipo_taxa || 'percentual', prazo_recebimento: found.prazo_recebimento || 'parcelado' }
+          ? { ...row, fee_percent: Number(found.fee_percent), fee_kind: found.fee_kind || 'percentual', receipt_term: found.receipt_term || 'parcelado' }
           : row;
       });
       setTaxas(merged as TaxaRow[]);
@@ -171,10 +171,10 @@ export default function ConfigTaxas() {
 
   useEffect(() => { fetchTaxas(); }, [fetchTaxas]);
 
-  const handleChange = (metodo: string, parcelas: number, bandeira: string, field: 'fee_percent' | 'tipo_taxa' | 'prazo_recebimento', valor: string) => {
+  const handleChange = (metodo: string, parcelas: number, bandeira: string, field: 'fee_percent' | 'fee_kind' | 'receipt_term', valor: string) => {
     setTaxas(prev =>
       prev.map(t =>
-        t.metodo_pagamento === metodo && t.parcelas === parcelas && t.bandeira === bandeira
+        t.payment_method === metodo && t.parcelas === parcelas && t.bandeira === bandeira
           ? { ...t, [field]: field === 'fee_percent' ? (parseFloat(valor.replace(',', '.')) || 0) : valor }
           : t
       )
@@ -193,7 +193,7 @@ export default function ConfigTaxas() {
   };
 
   const getTaxa = (metodo: string, parcelas: number, bandeira: string) =>
-    taxas.find(t => t.metodo_pagamento === metodo && t.parcelas === parcelas && t.bandeira === bandeira);
+    taxas.find(t => t.payment_method === metodo && t.parcelas === parcelas && t.bandeira === bandeira);
 
   const handleSalvar = async () => {
     if (!companyId) return;
@@ -204,15 +204,15 @@ export default function ConfigTaxas() {
         .upsert(
           {
             company_id: companyId,
-            metodo_pagamento: taxa.metodo_pagamento,
+            payment_method: taxa.payment_method,
             parcelas: taxa.parcelas,
             bandeira: taxa.bandeira,
-            taxa_percentual: taxa.taxa_percentual,
-            tipo_taxa: taxa.tipo_taxa,
-            prazo_recebimento: taxa.prazo_recebimento,
+            fee_percent: taxa.fee_percent,
+            fee_kind: taxa.fee_kind,
+            receipt_term: taxa.receipt_term,
             updated_at: new Date().toISOString(),
           } as any,
-          { onConflict: 'empresa_id,metodo_pagamento,parcelas,bandeira' }
+          { onConflict: 'company_id,payment_method,parcelas,bandeira' }
         );
       if (error) {
         toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
@@ -225,10 +225,10 @@ export default function ConfigTaxas() {
   };
 
   const calcLiquido = (valor: number, taxa: TaxaRow | undefined) => {
-    if (!taxa || taxa.taxa_percentual <= 0) return valor;
-    return taxa.tipo_taxa === 'fixo'
-      ? valor - taxa.taxa_percentual
-      : valor - (valor * taxa.taxa_percentual / 100);
+    if (!taxa || taxa.fee_percent <= 0) return valor;
+    return taxa.fee_kind === 'fixo'
+      ? valor - taxa.fee_percent
+      : valor - (valor * taxa.fee_percent / 100);
   };
 
   // ── UI-only states ─────────────────────────────────────────────────────────
@@ -242,10 +242,10 @@ export default function ConfigTaxas() {
   const [simDropdownOpen, setSimDropdownOpen] = useState(false);
 
   // ── KPI computations ───────────────────────────────────────────────────────
-  const avg = (arr: TaxaRow[]) => arr.length === 0 ? 0 : arr.reduce((s, t) => s + t.taxa_percentual, 0) / arr.length;
-  const avgDebito   = avg(taxas.filter(t => t.metodo_pagamento === 'Cartão de Débito'   && t.taxa_percentual > 0));
-  const avgVistaAll = avg(taxas.filter(t => t.metodo_pagamento === 'Cartão de Crédito'  && t.parcelas === 0 && t.taxa_percentual > 0));
-  const avgParc     = avg(taxas.filter(t => t.metodo_pagamento === 'Cartão de Crédito'  && t.parcelas > 0  && t.taxa_percentual > 0));
+  const avg = (arr: TaxaRow[]) => arr.length === 0 ? 0 : arr.reduce((s, t) => s + t.fee_percent, 0) / arr.length;
+  const avgDebito   = avg(taxas.filter(t => t.payment_method === 'Cartão de Débito'   && t.fee_percent > 0));
+  const avgVistaAll = avg(taxas.filter(t => t.payment_method === 'Cartão de Crédito'  && t.parcelas === 0 && t.fee_percent > 0));
+  const avgParc     = avg(taxas.filter(t => t.payment_method === 'Cartão de Crédito'  && t.parcelas > 0  && t.fee_percent > 0));
 
   // ── Custos reais em R$ no mês corrente ────────────────────────────────────
   const [custoDebito, setCustoDebito] = useState(0);
@@ -261,15 +261,15 @@ export default function ConfigTaxas() {
       const fim = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
       const { data } = await api
         .from('sale')
-        .select('valor, valor_final, metodo_pagamento, parcelas, bandeira')
+        .select('valor, final_amount, payment_method, parcelas, bandeira')
         .eq('company_id', companyId)
         .gte('created_at', inicio)
         .lt('created_at', fim);
 
       let cDeb = 0, cCre1 = 0, cParc = 0;
       (data || []).forEach((v: any) => {
-        const valor = Number(v.valor_final ?? v.valor ?? 0);
-        const metodo = (v.metodo_pagamento || '').toLowerCase();
+        const valor = Number(v.final_amount ?? v.valor ?? 0);
+        const metodo = (v.payment_method || '').toLowerCase();
         const parcelas = Number(v.parcelas || 0);
         const bandeira = v.bandeira || '';
         let taxa: TaxaRow | undefined;
@@ -287,9 +287,9 @@ export default function ConfigTaxas() {
           }
         }
         if (!taxa || !bucket) return;
-        const custo = taxa.tipo_taxa === 'fixo'
-          ? taxa.taxa_percentual
-          : valor * (taxa.taxa_percentual / 100);
+        const custo = taxa.fee_kind === 'fixo'
+          ? taxa.fee_percent
+          : valor * (taxa.fee_percent / 100);
         if (bucket === 'deb') cDeb += custo;
         else if (bucket === 'cre1') cCre1 += custo;
         else cParc += custo;
@@ -311,7 +311,7 @@ export default function ConfigTaxas() {
   })();
   const simLiquido = calcLiquido(simValor, simTaxa);
   const simCusto = simValor - simLiquido;
-  const simTaxaPerc = simTaxa?.taxa_percentual || 0;
+  const simTaxaPerc = simTaxa?.fee_percent || 0;
 
   // ── Estilos base ───────────────────────────────────────────────────────────
   const glassCard: React.CSSProperties = {
@@ -341,7 +341,7 @@ export default function ConfigTaxas() {
   // ── renderSimpleRow redesign ───────────────────────────────────────────────
   const renderSimpleRow = (metodo: string, label: string, icon: string) => {
     const taxa = getTaxa(metodo, 0, '');
-    const tipoTaxa = taxa?.tipo_taxa || 'percentual';
+    const tipoTaxa = taxa?.fee_kind || 'percentual';
     const isZeroTax = metodo === 'Dinheiro' || metodo === 'PIX';
     return (
       <div key={metodo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 12, padding: '12px 0', borderBottom: '1px solid rgba(142,95,207,0.06)' }}>
@@ -366,7 +366,7 @@ export default function ConfigTaxas() {
             <ToggleGroup
               type="single"
               value={tipoTaxa}
-              onValueChange={(v) => v && handleChange(metodo, 0, '', 'tipo_taxa', v)}
+              onValueChange={(v) => v && handleChange(metodo, 0, '', 'fee_kind', v)}
               style={{ border: '1px solid rgba(142,95,207,0.2)', borderRadius: 8, flexShrink: 0 }}
             >
               <ToggleGroupItem value="percentual" style={{ height: 30, padding: '0 10px', fontSize: 12, fontFamily: 'Gilroy, sans-serif' }}>%</ToggleGroupItem>
@@ -376,7 +376,7 @@ export default function ConfigTaxas() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <input
               type="text" inputMode="decimal"
-              value={formatTaxaDisplay(taxa?.taxa_percentual)}
+              value={formatTaxaDisplay(taxa?.fee_percent)}
               onChange={e => handleMaskedInput(metodo, 0, '', e.target.value)}
               placeholder="0,00"
               style={{ ...inputStyle, width: 70, minWidth: 60, padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#8E5FCF' }}
@@ -448,7 +448,7 @@ export default function ConfigTaxas() {
           {BANDEIRAS.filter(b => b === activeTab).map(b => {
             const avistaTaxa = getTaxa(metodo, 0, b);
             const parcelasRows = temParcelas
-              ? taxas.filter(t => t.metodo_pagamento === metodo && t.parcelas > 0 && t.bandeira === b).sort((a, c) => a.parcelas - c.parcelas)
+              ? taxas.filter(t => t.payment_method === metodo && t.parcelas > 0 && t.bandeira === b).sort((a, c) => a.parcelas - c.parcelas)
               : [];
             return (
               <div key={b}>
@@ -464,7 +464,7 @@ export default function ConfigTaxas() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input
                         type="text" inputMode="decimal"
-                        value={formatTaxaDisplay(avistaTaxa?.taxa_percentual)}
+                        value={formatTaxaDisplay(avistaTaxa?.fee_percent)}
                         onChange={e => handleMaskedInput(metodo, 0, b, e.target.value)}
                         placeholder="0,00"
                         style={{ ...inputStyle, width: 80, textAlign: 'center', fontWeight: 700, color: '#8E5FCF' }}
@@ -475,8 +475,8 @@ export default function ConfigTaxas() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, paddingTop: 4 }}>
                     <span style={{ ...labelStyle, marginBottom: 0, whiteSpace: 'nowrap' }}>Prazo de recebimento</span>
                     <select
-                      value={avistaTaxa?.prazo_recebimento || 'parcelado'}
-                      onChange={e => handleChange(metodo, 0, b, 'prazo_recebimento', e.target.value)}
+                      value={avistaTaxa?.receipt_term || 'parcelado'}
+                      onChange={e => handleChange(metodo, 0, b, 'receipt_term', e.target.value)}
                       style={{ ...inputStyle, padding: '6px 10px', fontSize: 12 }}
                     >
                       <option value="mesmo_dia">Mesmo dia</option>
@@ -492,7 +492,7 @@ export default function ConfigTaxas() {
                     <span style={{ ...labelStyle, marginBottom: 10 }}>Taxas por parcela</span>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                       {parcelasRows.map(taxa => {
-                        const taxaEfetiva = taxa.taxa_percentual > 0 ? taxa.taxa_percentual : (avistaTaxa?.taxa_percentual || 0);
+                        const taxaEfetiva = taxa.fee_percent > 0 ? taxa.fee_percent : (avistaTaxa?.fee_percent || 0);
                         const modalidadeColor = taxa.parcelas <= 6
                           ? { bg: 'rgba(245,158,11,0.1)', color: '#F59E0B' }
                           : { bg: 'rgba(239,68,68,0.1)', color: '#EF4444' };
@@ -509,7 +509,7 @@ export default function ConfigTaxas() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <input
                                 type="text" inputMode="decimal"
-                                value={formatTaxaDisplay(taxa.taxa_percentual)}
+                                value={formatTaxaDisplay(taxa.fee_percent)}
                                 onChange={e => handleMaskedInput(metodo, taxa.parcelas, b, e.target.value)}
                                 placeholder="0,00"
                                 style={{ ...inputStyle, flex: 1, textAlign: 'center', fontWeight: 700, color: '#8E5FCF', padding: '5px 8px', fontSize: 12 }}
@@ -526,9 +526,9 @@ export default function ConfigTaxas() {
                 {/* Mini summary */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16 }}>
                   {[
-                    { label: temParcelas ? 'Crédito 1x' : 'Débito', value: formatTaxaDisplay(avistaTaxa?.taxa_percentual) || '0,00', suffix: '%' },
+                    { label: temParcelas ? 'Crédito 1x' : 'Débito', value: formatTaxaDisplay(avistaTaxa?.fee_percent) || '0,00', suffix: '%' },
                     { label: 'Líquido R$1.000', value: formatCurrency(calcLiquido(1000, avistaTaxa)), suffix: '' },
-                    { label: 'Taxa máxima', value: temParcelas ? (formatTaxaDisplay(parcelasRows[parcelasRows.length - 1]?.taxa_percentual) || '0,00') : '—', suffix: temParcelas ? '%' : '' },
+                    { label: 'Taxa máxima', value: temParcelas ? (formatTaxaDisplay(parcelasRows[parcelasRows.length - 1]?.fee_percent) || '0,00') : '—', suffix: temParcelas ? '%' : '' },
                   ].map(s => (
                     <div key={s.label} style={{ background: 'rgba(142,95,207,0.04)', borderRadius: 10, padding: '10px 14px' }}>
                       <span style={{ ...labelStyle, fontSize: 9, marginBottom: 2 }}>{s.label}</span>

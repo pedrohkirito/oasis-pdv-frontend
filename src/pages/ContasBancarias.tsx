@@ -133,7 +133,7 @@ function ContaCard({
   sincronizando?: boolean
   miniMovs?: { dia: string; credito: number; debito: number }[]
 }) {
-  const saldoNegativo = conta.saldo_atual < 0
+  const saldoNegativo = conta.current_balance < 0
   const temPluggy = !!conta.pluggy_account_id
   const corConta = conta.cor || '#8E5FCF'
   const [hovered, setHovered] = React.useState(false)
@@ -191,7 +191,7 @@ function ContaCard({
           {TIPO_LABEL[conta.kind]}
           {conta.banco && <> · {conta.banco}</>}
           {conta.agencia && <> · Ag: {conta.agencia}</>}
-          {conta.numero_conta && <> C: {conta.numero_conta}{conta.digito ? `-${conta.digito}` : ''}</>}
+          {conta.account_number && <> C: {conta.account_number}{conta.digito ? `-${conta.digito}` : ''}</>}
         </p>
 
         {/* Saldo */}
@@ -200,7 +200,7 @@ function ContaCard({
             {conta.kind === 'cartao_credito' ? 'Fatura atual' : 'Saldo atual'}
           </p>
           <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.5rem', color: saldoNegativo ? '#EF4444' : '#1F2937', lineHeight: 1.2 }}>
-            {fmtBRL(conta.saldo_atual || 0)}
+            {fmtBRL(conta.current_balance || 0)}
           </p>
           {conta.kind === 'cartao_credito' && conta.limite_credito && (
             <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy', marginTop: '4px' }}>
@@ -342,8 +342,8 @@ function ModalNovaConta({
   const [passo, setPasso] = useState(1)
   const [kind, setTipo] = useState('')
   const [form, setForm] = useState<any>({
-    banco: '', agencia: '', numero_conta: '', digito: '',
-    saldo_inicial: '', saldo_atual: '', data_inicio: format(new Date(), 'yyyy-MM-dd'),
+    banco: '', agencia: '', account_number: '', digito: '',
+    opening_balance: '', current_balance: '', start_on: format(new Date(), 'yyyy-MM-dd'),
     padrao: false, limite_credito: '', dia_fechamento: '', dia_vencimento: '',
     name: '', cor: CORES[0],
   })
@@ -357,14 +357,14 @@ function ModalNovaConta({
     await onCriar({
       kind,
       name: form.name || TIPO_LABEL[kind],
-      banco_nome: banco?.name || form.banco,
-      banco_codigo: form.banco,
+      bank_name: banco?.name || form.banco,
+      bank_code: form.banco,
       agencia: form.agencia,
-      numero_conta: form.numero_conta,
+      account_number: form.account_number,
       digito: form.digito,
-      saldo_inicial: parseFloat(form.saldo_inicial) || 0,
-      saldo_atual: parseFloat(form.saldo_atual || form.saldo_inicial) || 0,
-      data_inicio: form.data_inicio,
+      opening_balance: parseFloat(form.opening_balance) || 0,
+      current_balance: parseFloat(form.current_balance || form.opening_balance) || 0,
+      start_on: form.start_on,
       padrao: form.padrao,
       cor: form.cor,
     })
@@ -372,8 +372,8 @@ function ModalNovaConta({
     onClose()
     setPasso(1)
     setTipo('')
-    setForm({ banco: '', agencia: '', numero_conta: '', digito: '', saldo_inicial: '',
-      saldo_atual: '', data_inicio: format(new Date(), 'yyyy-MM-dd'), padrao: false,
+    setForm({ banco: '', agencia: '', account_number: '', digito: '', opening_balance: '',
+      current_balance: '', start_on: format(new Date(), 'yyyy-MM-dd'), padrao: false,
       limite_credito: '', dia_fechamento: '', dia_vencimento: '', name: '', cor: CORES[0] })
   }
 
@@ -440,18 +440,18 @@ function ModalNovaConta({
                   <div>
                     <Label>Número da Conta</Label>
                     <div style={{ display: 'flex', gap: '4px' }}>
-                      <Input placeholder="12345" value={form.numero_conta} onChange={e => set('numero_conta', e.target.value)} />
+                      <Input placeholder="12345" value={form.account_number} onChange={e => set('account_number', e.target.value)} />
                       <Input placeholder="0" style={{ width: '56px' }} value={form.digito} onChange={e => set('account_digit', e.target.value)} />
                     </div>
                   </div>
                 </div>
                 <div>
                   <Label>Saldo inicial (R$)</Label>
-                  <Input type="number" placeholder="0,00" value={form.saldo_inicial} onChange={e => set('saldo_inicial', e.target.value)} />
+                  <Input type="number" placeholder="0,00" value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} />
                 </div>
                 <div>
                   <Label>Data de início</Label>
-                  <Input type="date" value={form.data_inicio} onChange={e => set('data_inicio', e.target.value)} />
+                  <Input type="date" value={form.start_on} onChange={e => set('start_on', e.target.value)} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <Switch checked={form.padrao} onCheckedChange={v => set('padrao', v)} />
@@ -491,7 +491,7 @@ function ModalNovaConta({
                 </div>
                 <div>
                   <Label>Fatura atual (R$)</Label>
-                  <Input type="number" placeholder="0,00" value={form.saldo_atual} onChange={e => set('saldo_atual', e.target.value)} />
+                  <Input type="number" placeholder="0,00" value={form.current_balance} onChange={e => set('current_balance', e.target.value)} />
                 </div>
               </>
             )}
@@ -511,7 +511,7 @@ function ModalNovaConta({
                 </div>
                 <div>
                   <Label>Saldo inicial (R$)</Label>
-                  <Input type="number" placeholder="0,00" value={form.saldo_inicial} onChange={e => set('saldo_inicial', e.target.value)} />
+                  <Input type="number" placeholder="0,00" value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} />
                 </div>
               </>
             )}
@@ -524,7 +524,7 @@ function ModalNovaConta({
                 </div>
                 <div>
                   <Label>Saldo inicial (R$)</Label>
-                  <Input type="number" placeholder="0,00" value={form.saldo_inicial} onChange={e => set('saldo_inicial', e.target.value)} />
+                  <Input type="number" placeholder="0,00" value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} />
                 </div>
               </>
             )}
@@ -546,7 +546,7 @@ function ModalNovaConta({
                 </div>
                 <div>
                   <Label>Saldo atual (R$)</Label>
-                  <Input type="number" placeholder="0,00" value={form.saldo_inicial} onChange={e => set('saldo_inicial', e.target.value)} />
+                  <Input type="number" placeholder="0,00" value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} />
                 </div>
               </>
             )}
@@ -598,7 +598,7 @@ function ModalNovaConta({
                   </div>
                 </div>
                 <p style={{ fontFamily: 'Gilroy', fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '2px' }}>Saldo atual</p>
-                <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.25rem', color: '#1F2937' }}>{fmtBRL(parseFloat(form.saldo_inicial) || 0)}</p>
+                <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.25rem', color: '#1F2937' }}>{fmtBRL(parseFloat(form.opening_balance) || 0)}</p>
               </div>
             </div>
           </div>
@@ -683,7 +683,7 @@ function ModalImportarOFX({
       return
     }
 
-    const datas = transacoes.map(t => t.data_movimentacao).sort()
+    const datas = transacoes.map(t => t.moved_on).sort()
     const creditos = transacoes.filter(t => t.kind === 'credito').reduce((s, t) => s + t.valor, 0)
     const debitos = transacoes.filter(t => t.kind === 'debito').reduce((s, t) => s + t.valor, 0)
 
@@ -902,7 +902,7 @@ function ModalTransferencia({
             {contaOrigemObj && (
               <div style={{ flex: 1, background: 'rgba(142,95,207,0.06)', border: '1px solid rgba(142,95,207,0.15)', borderRadius: '12px', padding: '10px 12px', textAlign: 'center' }}>
                 <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaOrigemObj.name}</p>
-                <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaOrigemObj.saldo_atual || 0)}</p>
+                <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaOrigemObj.current_balance || 0)}</p>
               </div>
             )}
             {(contaOrigemObj || contaDestinoObj) && (
@@ -911,7 +911,7 @@ function ModalTransferencia({
             {contaDestinoObj && (
               <div style={{ flex: 1, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', padding: '10px 12px', textAlign: 'center' }}>
                 <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.8rem', color: '#1F2937' }}>{contaDestinoObj.name}</p>
-                <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaDestinoObj.saldo_atual || 0)}</p>
+                <p style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{fmtBRL(contaDestinoObj.current_balance || 0)}</p>
               </div>
             )}
           </div>
@@ -1005,9 +1005,9 @@ export default function ContasBancarias() {
 
   const saldoTotal = contas
     .filter(c => c.kind !== 'cartao_credito')
-    .reduce((s, c) => s + (c.saldo_atual || 0), 0)
+    .reduce((s, c) => s + (c.current_balance || 0), 0)
 
-  // Entradas e saídas são calculadas via movimentações — aqui usamos saldo_inicial como fallback
+  // Entradas e saídas são calculadas via movimentações — aqui usamos opening_balance como fallback
   const [entradasMes, setEntradasMes] = React.useState(0)
   const [saidasMes, setSaidasMes] = React.useState(0)
   const [miniMovsPorConta, setMiniMovsPorConta] = React.useState<
@@ -1027,14 +1027,14 @@ export default function ContasBancarias() {
         debitos += movs.filter((m: any) => m.kind === 'debito').reduce((s: number, m: any) => s + m.valor, 0)
 
         // Mini gráfico: últimos 7 dias agrupados por dia
-        const ultimos7 = movs.filter((m: any) => m.data_movimentacao >= sete)
+        const ultimos7 = movs.filter((m: any) => m.moved_on >= sete)
         const porDia: Record<string, { credito: number; debito: number }> = {}
         for (let i = 6; i >= 0; i--) {
           const d = format(subDays(hoje, i), 'yyyy-MM-dd')
           porDia[d] = { credito: 0, debito: 0 }
         }
         for (const m of ultimos7 as any[]) {
-          const d = m.data_movimentacao?.split('T')[0] || m.data_movimentacao
+          const d = m.moved_on?.split('T')[0] || m.moved_on
           if (porDia[d]) {
             if (m.kind === 'credito') porDia[d].credito += m.valor
             else porDia[d].debito += m.valor

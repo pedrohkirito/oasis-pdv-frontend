@@ -191,13 +191,13 @@ export const downloadMultipleICSFile = (events: CalendarEvent[], filename?: stri
 export const createCalendarEventFromConta = (conta: {
   descricao: string;
   valor: number;
-  data_vencimento: string;
-  fornecedor_nome?: string | null;
+  due_on: string;
+  supplier_name?: string | null;
   categoria?: string | null;
   observacoes?: string | null;
 }): CalendarEvent => {
   // Parse date string to Date object
-  const [year, month, day] = conta.data_vencimento.split('-').map(Number);
+  const [year, month, day] = conta.due_on.split('-').map(Number);
   const startDate = new Date(year, month - 1, day);
   
   return {
@@ -205,7 +205,7 @@ export const createCalendarEventFromConta = (conta: {
     description: conta.observacoes || '',
     startDate,
     value: conta.valor,
-    fornecedor: conta.fornecedor_nome || undefined,
+    fornecedor: conta.supplier_name || undefined,
     categoria: conta.categoria || undefined
   };
 };

@@ -16,24 +16,24 @@ import { useToast } from '@/hooks/use-toast';
 import { escapeHtml } from '@/utils/htmlSanitize';
 
 interface FechamentoRow {
-  mes_referencia: string;
+  reference_month: string;
   status: string;
-  total_vendido: number;
-  total_comissao: number;
-  data_fechamento: string | null;
+  total_sold: number;
+  total_commission: number;
+  closed_on: string | null;
   id?: string;
 }
 
 interface ComissaoDetalhe {
-  vendedor_id: string;
+  seller_id: string;
   vendedor_nome: string;
   venda_data: string;
-  cliente_nome: string;
-  valor_bruto: number;
+  customer_name: string;
+  gross_amount: number;
   desconto: number;
-  valor_final: number;
+  final_amount: number;
   percentual: number;
-  valor_comissao: number;
+  commission_amount: number;
 }
 
 const formatCurrency = (v: number) =>
@@ -105,7 +105,7 @@ const FechamentoComissoes = () => {
       .eq('company_id', companyId);
 
     const fechMap: Record<string, any> = {};
-    (fechData || []).forEach((f: any) => { fechMap[f.mes_referencia] = f; });
+    (fechData || []).forEach((f: any) => { fechMap[f.reference_month] = f; });
 
     // Fetch all comissoes with vendas data
     const { data: comissoes } = await api
@@ -113,12 +113,12 @@ const FechamentoComissoes = () => {
       .select('*')
       .eq('company_id', companyId);
 
-    const vendaIds = [...new Set((comissoes || []).map(c => c.venda_id))];
+    const vendaIds = [...new Set((comissoes || []).map(c => c.sale_id))];
     let vendasMap: Record<string, any> = {};
     if (vendaIds.length > 0) {
       const { data: vendas } = await api
         .from('sale')
-        .select('id, data_venda, valor_bruto, desconto, valor_final')
+        .select('id, sold_on, gross_amount, desconto, final_amount')
         .in('id', vendaIds)
         .eq('company_id', companyId);
       (vendas || []).forEach(v => { vendasMap[v.id] = v; });
@@ -127,23 +127,23 @@ const FechamentoComissoes = () => {
     // Aggregate by month
     const monthTotals: Record<string, { vendido: number; comissao: number }> = {};
     (comissoes || []).forEach(c => {
-      const venda = vendasMap[c.venda_id];
-      if (!venda?.data_venda) return;
-      const mes = venda.data_venda.substring(0, 7);
+      const venda = vendasMap[c.sale_id];
+      if (!venda?.sold_on) return;
+      const mes = venda.sold_on.substring(0, 7);
       if (!monthTotals[mes]) monthTotals[mes] = { vendido: 0, comissao: 0 };
-      monthTotals[mes].vendido += Number(c.valor_base);
-      monthTotals[mes].comissao += Number(c.valor_comissao);
+      monthTotals[mes].vendido += Number(c.base_amount);
+      monthTotals[mes].comissao += Number(c.commission_amount);
     });
 
     const rows: FechamentoRow[] = meses.map(mes => {
       const fech = fechMap[mes];
       const totals = monthTotals[mes] || { vendido: 0, comissao: 0 };
       return {
-        mes_referencia: mes,
+        reference_month: mes,
         status: fech?.status || 'aberto',
-        total_vendido: fech?.status === 'fechado' ? Number(fech.total_vendido) : totals.vendido,
-        total_comissao: fech?.status === 'fechado' ? Number(fech.total_comissao) : totals.comissao,
-        data_fechamento: fech?.data_fechamento || null,
+        total_sold: fech?.status === 'fechado' ? Number(fech.total_sold) : totals.vendido,
+        total_commission: fech?.status === 'fechado' ? Number(fech.total_commission) : totals.comissao,
+        closed_on: fech?.closed_on || null,
         id: fech?.id,
       };
     });
@@ -156,7 +156,7 @@ const FechamentoComissoes = () => {
     if (!companyId || !user) return;
     setActionLoading(mes);
 
-    const row = fechamentos.find(f => f.mes_referencia === mes);
+    const row = fechamentos.find(f => f.reference_month === mes);
 
     try {
       if (row?.id) {
@@ -164,22 +164,22 @@ const FechamentoComissoes = () => {
           .from('commission_closing')
           .update({
             status: 'fechado',
-            data_fechamento: new Date().toISOString(),
-            fechado_por: user.id,
-            total_vendido: row.total_vendido,
-            total_comissao: row.total_comissao,
+            closed_on: new Date().toISOString(),
+            closed_by: user.id,
+            total_sold: row.total_sold,
+            total_commission: row.total_commission,
             updated_at: new Date().toISOString(),
           } as any)
           .eq('id', row.id);
       } else {
         await api.from('commission_closing').insert({
           company_id: companyId,
-          mes_referencia: mes,
+          reference_month: mes,
           status: 'fechado',
-          data_fechamento: new Date().toISOString(),
-          fechado_por: user.id,
-          total_vendido: row?.total_vendido || 0,
-          total_comissao: row?.total_comissao || 0,
+          closed_on: new Date().toISOString(),
+          closed_by: user.id,
+          total_sold: row?.total_sold || 0,
+          total_commission: row?.total_commission || 0,
         } as any);
       }
 
@@ -197,11 +197,11 @@ const FechamentoComissoes = () => {
     setActionLoading(mes);
 
     try {
-      const row = fechamentos.find(f => f.mes_referencia === mes);
+      const row = fechamentos.find(f => f.reference_month === mes);
       if (row?.id) {
         await api
           .from('commission_closing')
-          .update({ status: 'aberto', data_fechamento: null, updated_at: new Date().toISOString() } as any)
+          .update({ status: 'aberto', closed_on: null, updated_at: new Date().toISOString() } as any)
           .eq('id', row.id);
       }
       toast({ title: 'Mês reaberto', description: `O período ${formatMesLabel(mes)} foi reaberto para alterações.` });
@@ -234,7 +234,7 @@ const FechamentoComissoes = () => {
 
     const { data: vendas } = await api
       .from('sale')
-      .select('id, data_venda, cliente_nome, valor_bruto, desconto, valor_final, vendedor_id')
+      .select('id, sold_on, customer_name, gross_amount, desconto, final_amount, seller_id')
       .eq('company_id', companyId)
       .gte('sold_on', startDate)
       .lte('sold_on', endDate);
@@ -248,20 +248,20 @@ const FechamentoComissoes = () => {
       .in('sale_id', vendaIds);
 
     const comissaoMap: Record<string, any> = {};
-    (comissoes || []).forEach(c => { comissaoMap[c.venda_id] = c; });
+    (comissoes || []).forEach(c => { comissaoMap[c.sale_id] = c; });
 
     return vendas
       .filter(v => comissaoMap[v.id])
       .map(v => ({
-        vendedor_id: v.vendedor_id || comissaoMap[v.id]?.vendedor_id || '',
-        vendedor_nome: getVendedorNome(v.vendedor_id || comissaoMap[v.id]?.vendedor_id || ''),
-        venda_data: v.data_venda,
-        cliente_nome: v.cliente_nome,
-        valor_bruto: Number(v.valor_bruto || 0),
+        seller_id: v.seller_id || comissaoMap[v.id]?.seller_id || '',
+        vendedor_nome: getVendedorNome(v.seller_id || comissaoMap[v.id]?.seller_id || ''),
+        venda_data: v.sold_on,
+        customer_name: v.customer_name,
+        gross_amount: Number(v.gross_amount || 0),
         desconto: Number(v.desconto || 0),
-        valor_final: Number(v.valor_final || v.valor_bruto || 0),
+        final_amount: Number(v.final_amount || v.gross_amount || 0),
         percentual: Number(comissaoMap[v.id]?.percentual || 0),
-        valor_comissao: Number(comissaoMap[v.id]?.valor_comissao || 0),
+        commission_amount: Number(comissaoMap[v.id]?.commission_amount || 0),
       }));
   };
 
@@ -287,17 +287,17 @@ const FechamentoComissoes = () => {
         lines.push([
           name,
           format(new Date(d.venda_data), 'dd/MM/yyyy'),
-          d.cliente_nome,
-          d.valor_bruto.toFixed(2).replace('.', ','),
+          d.customer_name,
+          d.gross_amount.toFixed(2).replace('.', ','),
           d.desconto.toFixed(2).replace('.', ','),
-          d.valor_final.toFixed(2).replace('.', ','),
+          d.final_amount.toFixed(2).replace('.', ','),
           `${d.percentual}%`,
-          d.valor_comissao.toFixed(2).replace('.', ','),
+          d.commission_amount.toFixed(2).replace('.', ','),
         ].join(';'));
       });
 
-      const totalVendido = items.reduce((s, i) => s + i.valor_final, 0);
-      const totalComissao = items.reduce((s, i) => s + i.valor_comissao, 0);
+      const totalVendido = items.reduce((s, i) => s + i.final_amount, 0);
+      const totalComissao = items.reduce((s, i) => s + i.commission_amount, 0);
       lines.push(`${name} - TOTAL;;;;"";${totalVendido.toFixed(2).replace('.', ',')};;${totalComissao.toFixed(2).replace('.', ',')}`);
       lines.push('');
     });
@@ -326,24 +326,24 @@ const FechamentoComissoes = () => {
       vendedorMap[d.vendedor_nome].push(d);
     });
 
-    const row = fechamentos.find(f => f.mes_referencia === mes);
+    const row = fechamentos.find(f => f.reference_month === mes);
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
     let vendedorSections = '';
     Object.entries(vendedorMap).forEach(([name, items]) => {
-      const totalV = items.reduce((s, i) => s + i.valor_final, 0);
-      const totalC = items.reduce((s, i) => s + i.valor_comissao, 0);
+      const totalV = items.reduce((s, i) => s + i.final_amount, 0);
+      const totalC = items.reduce((s, i) => s + i.commission_amount, 0);
 
       const rows = items.map(d => `
         <tr>
           <td>${format(new Date(d.venda_data), 'dd/MM/yyyy')}</td>
-          <td>${escapeHtml(d.cliente_nome)}</td>
-          <td style="text-align:right">${formatCurrency(d.valor_bruto)}</td>
+          <td>${escapeHtml(d.customer_name)}</td>
+          <td style="text-align:right">${formatCurrency(d.gross_amount)}</td>
           <td style="text-align:right">${formatCurrency(d.desconto)}</td>
-          <td style="text-align:right">${formatCurrency(d.valor_final)}</td>
+          <td style="text-align:right">${formatCurrency(d.final_amount)}</td>
           <td style="text-align:center">${d.percentual}%</td>
-          <td style="text-align:right">${formatCurrency(d.valor_comissao)}</td>
+          <td style="text-align:right">${formatCurrency(d.commission_amount)}</td>
         </tr>
       `).join('');
 
@@ -384,8 +384,8 @@ const FechamentoComissoes = () => {
       <h1>Fechamento de Comissões — ${formatMesLabel(mes)}</h1>
       <p class="subtitle">Status: ${row?.status === 'fechado' ? 'FECHADO' : 'ABERTO'} | Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
       <div class="summary">
-        <div class="summary-item"><div class="label">Total Vendido</div><div class="value">${formatCurrency(row?.total_vendido || 0)}</div></div>
-        <div class="summary-item"><div class="label">Total Comissão</div><div class="value" style="color:#16a34a">${formatCurrency(row?.total_comissao || 0)}</div></div>
+        <div class="summary-item"><div class="label">Total Vendido</div><div class="value">${formatCurrency(row?.total_sold || 0)}</div></div>
+        <div class="summary-item"><div class="label">Total Comissão</div><div class="value" style="color:#16a34a">${formatCurrency(row?.total_commission || 0)}</div></div>
       </div>
       ${vendedorSections}
     </body></html>`);
@@ -405,8 +405,8 @@ const FechamentoComissoes = () => {
   // Derived KPI values (no new state/queries)
   const mesesFechados = fechamentos.filter(f => f.status === 'fechado').length;
   const mesesAbertos = fechamentos.filter(f => f.status === 'aberto').length;
-  const totalVendidoGeral = fechamentos.reduce((s, f) => s + f.total_vendido, 0);
-  const totalComissaoGeral = fechamentos.reduce((s, f) => s + f.total_comissao, 0);
+  const totalVendidoGeral = fechamentos.reduce((s, f) => s + f.total_sold, 0);
+  const totalComissaoGeral = fechamentos.reduce((s, f) => s + f.total_commission, 0);
 
   const kpiCards = [
     {
@@ -602,29 +602,29 @@ const FechamentoComissoes = () => {
               {/* Rows */}
               {fechamentos.map((f, idx) => (
                 <motion.div
-                  key={f.mes_referencia}
+                  key={f.reference_month}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.45 + idx * 0.03, duration: 0.3 }}
-                  onMouseEnter={() => setHoveredRow(f.mes_referencia)}
+                  onMouseEnter={() => setHoveredRow(f.reference_month)}
                   onMouseLeave={() => setHoveredRow(null)}
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 140px 180px 180px 200px',
                     padding: '16px 24px', gap: 12, alignItems: 'center',
                     borderBottom: idx < fechamentos.length - 1 ? '1px solid rgba(142,95,207,0.06)' : 'none',
-                    background: hoveredRow === f.mes_referencia ? 'rgba(142,95,207,0.04)' : 'transparent',
+                    background: hoveredRow === f.reference_month ? 'rgba(142,95,207,0.04)' : 'transparent',
                     transition: 'background 0.15s ease',
                   }}
                 >
                   {/* Month name */}
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', margin: '0 0 2px 0', fontFamily: 'Gilroy, sans-serif', textTransform: 'capitalize' }}>
-                      {formatMesLabel(f.mes_referencia)}
+                      {formatMesLabel(f.reference_month)}
                     </p>
-                    {f.data_fechamento && (
+                    {f.closed_on && (
                       <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                        Fechado em {format(new Date(f.data_fechamento), 'dd/MM/yyyy', { locale: ptBR })}
+                        Fechado em {format(new Date(f.closed_on), 'dd/MM/yyyy', { locale: ptBR })}
                       </p>
                     )}
                   </div>
@@ -659,14 +659,14 @@ const FechamentoComissoes = () => {
                   {/* Total vendido */}
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>
-                      {formatCurrency(f.total_vendido)}
+                      {formatCurrency(f.total_sold)}
                     </span>
                   </div>
 
                   {/* Total comissão */}
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#8E5FCF', fontFamily: 'Gilroy, sans-serif' }}>
-                      {formatCurrency(f.total_comissao)}
+                      {formatCurrency(f.total_commission)}
                     </span>
                   </div>
 
@@ -687,10 +687,10 @@ const FechamentoComissoes = () => {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleExportCSV(f.mes_referencia)}>
+                        <DropdownMenuItem onClick={() => handleExportCSV(f.reference_month)}>
                           <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel (CSV)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExportPDF(f.mes_referencia)}>
+                        <DropdownMenuItem onClick={() => handleExportPDF(f.reference_month)}>
                           <FileText className="h-4 w-4 mr-2" /> PDF
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -700,41 +700,41 @@ const FechamentoComissoes = () => {
                     {isAdmin && (
                       f.status === 'aberto' ? (
                         <button
-                          disabled={actionLoading === f.mes_referencia}
-                          onClick={() => setConfirmDialog({ open: true, mes: f.mes_referencia, action: 'fechar' })}
+                          disabled={actionLoading === f.reference_month}
+                          onClick={() => setConfirmDialog({ open: true, mes: f.reference_month, action: 'fechar' })}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 6,
                             padding: '7px 14px', fontSize: 12, fontWeight: 700,
                             borderRadius: 10, border: 'none',
-                            background: actionLoading === f.mes_referencia
+                            background: actionLoading === f.reference_month
                               ? 'rgba(142,95,207,0.3)'
                               : 'linear-gradient(135deg, #47118F, #8E5FCF)',
-                            color: '#fff', cursor: actionLoading === f.mes_referencia ? 'not-allowed' : 'pointer',
+                            color: '#fff', cursor: actionLoading === f.reference_month ? 'not-allowed' : 'pointer',
                             fontFamily: 'Gilroy, sans-serif',
                             transition: 'all 0.2s',
                           }}
                         >
-                          {actionLoading === f.mes_referencia
+                          {actionLoading === f.reference_month
                             ? <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
                             : <Lock style={{ width: 12, height: 12 }} />}
                           Fechar Mês
                         </button>
                       ) : (
                         <button
-                          disabled={actionLoading === f.mes_referencia}
-                          onClick={() => setConfirmDialog({ open: true, mes: f.mes_referencia, action: 'reabrir' })}
+                          disabled={actionLoading === f.reference_month}
+                          onClick={() => setConfirmDialog({ open: true, mes: f.reference_month, action: 'reabrir' })}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 6,
                             padding: '7px 14px', fontSize: 12, fontWeight: 600,
                             borderRadius: 10,
                             border: '1px solid rgba(142,95,207,0.2)',
                             background: 'rgba(255,255,255,0.6)',
-                            color: '#6B7280', cursor: actionLoading === f.mes_referencia ? 'not-allowed' : 'pointer',
+                            color: '#6B7280', cursor: actionLoading === f.reference_month ? 'not-allowed' : 'pointer',
                             fontFamily: 'Gilroy, sans-serif',
-                            opacity: actionLoading === f.mes_referencia ? 0.5 : 1,
+                            opacity: actionLoading === f.reference_month ? 0.5 : 1,
                           }}
                         >
-                          {actionLoading === f.mes_referencia
+                          {actionLoading === f.reference_month
                             ? <Loader2 style={{ width: 12, height: 12, animation: 'spin 1s linear infinite' }} />
                             : <Unlock style={{ width: 12, height: 12 }} />}
                           Reabrir
@@ -859,7 +859,7 @@ const FechamentoComissoes = () => {
                       Total Vendido
                     </p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#8E5FCF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                      {formatCurrency(fechamentos.find(f => f.mes_referencia === confirmDialog.mes)?.total_vendido || 0)}
+                      {formatCurrency(fechamentos.find(f => f.reference_month === confirmDialog.mes)?.total_sold || 0)}
                     </p>
                   </div>
                   <div>
@@ -867,7 +867,7 @@ const FechamentoComissoes = () => {
                       Comissões
                     </p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#10B981', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                      {formatCurrency(fechamentos.find(f => f.mes_referencia === confirmDialog.mes)?.total_comissao || 0)}
+                      {formatCurrency(fechamentos.find(f => f.reference_month === confirmDialog.mes)?.total_commission || 0)}
                     </p>
                   </div>
                   <div>

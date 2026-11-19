@@ -18,23 +18,23 @@ import { isServico } from '@/lib/servicos';
 interface NotaFiscal {
   id: string;
   user_id: string;
-  venda_id: string | null;
+  sale_id: string | null;
   kind: string;
   numero: number;
   serie: number;
-  chave_acesso: string | null;
-  protocolo_autorizacao: string | null;
+  access_key: string | null;
+  authorization_protocol: string | null;
   status: string;
   ambiente: string;
-  valor_total: number;
-  cliente_nome: string | null;
-  cliente_cpf: string | null;
+  total_amount: number;
+  customer_name: string | null;
+  customer_tax_id: string | null;
   pdf_url: string | null;
   xml_url: string | null;
-  motivo_rejeicao: string | null;
-  motivo_cancelamento: string | null;
-  data_emissao: string;
-  data_cancelamento: string | null;
+  rejection_reason: string | null;
+  cancellation_reason: string | null;
+  issued_at: string;
+  cancelled_at: string | null;
   created_at: string;
 }
 
@@ -139,23 +139,23 @@ function NotaRow({ nota, formatCurrency, onVerDetalhes, onDownload, onCancelar, 
             )}
           </div>
           <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '2px 0 0', fontFamily: 'Gilroy, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {nota.cliente_nome || 'Consumidor não identificado'}
+            {nota.customer_name || 'Consumidor não identificado'}
           </p>
         </div>
 
         {/* Date */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <p style={{ fontSize: '0.875rem', color: '#1F2937', fontWeight: 600, margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>
-            {format(new Date(nota.data_emissao), 'dd/MM/yyyy', { locale: ptBR })}
+            {format(new Date(nota.issued_at), 'dd/MM/yyyy', { locale: ptBR })}
           </p>
           <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-            {format(new Date(nota.data_emissao), 'HH:mm')}
+            {format(new Date(nota.issued_at), 'HH:mm')}
           </p>
         </div>
 
         {/* Value */}
         <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1F2937', fontFamily: 'Gilroy, sans-serif', flexShrink: 0, minWidth: 100, textAlign: 'right' }}>
-          {formatCurrency(Number(nota.valor_total))}
+          {formatCurrency(Number(nota.total_amount))}
         </span>
 
         {/* Actions (appear on hover) */}
@@ -186,7 +186,7 @@ function NotaRow({ nota, formatCurrency, onVerDetalhes, onDownload, onCancelar, 
               </button>
             </>
           )}
-          {nota.status === 'rejeitada' && nota.venda_id && !nota.motivo_rejeicao?.includes('[REEMITIDA]') && (
+          {nota.status === 'rejeitada' && nota.sale_id && !nota.rejection_reason?.includes('[REEMITIDA]') && (
             <button
               onClick={(e) => { e.stopPropagation(); onReemitir(nota); }}
               title="Reemitir NFC-e"
@@ -217,39 +217,39 @@ function NotaRow({ nota, formatCurrency, onVerDetalhes, onDownload, onCancelar, 
             <div>
               <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>Emissão</p>
               <p style={{ fontSize: '0.8rem', color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                {format(new Date(nota.data_emissao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                {format(new Date(nota.issued_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
               </p>
             </div>
-            {nota.cliente_cpf && (
+            {nota.customer_tax_id && (
               <div>
                 <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>CPF</p>
-                <p style={{ fontSize: '0.8rem', color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.cliente_cpf}</p>
+                <p style={{ fontSize: '0.8rem', color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.customer_tax_id}</p>
               </div>
             )}
-            {nota.protocolo_autorizacao && (
+            {nota.authorization_protocol && (
               <div>
                 <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>Protocolo</p>
-                <p style={{ fontSize: '0.75rem', color: '#1F2937', fontFamily: 'monospace', margin: 0 }}>{nota.protocolo_autorizacao}</p>
+                <p style={{ fontSize: '0.75rem', color: '#1F2937', fontFamily: 'monospace', margin: 0 }}>{nota.authorization_protocol}</p>
               </div>
             )}
-            {nota.chave_acesso && (
+            {nota.access_key && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>Chave de Acesso</p>
                 <p style={{ fontSize: '0.7rem', color: '#6B7280', fontFamily: 'monospace', margin: 0, wordBreak: 'break-all', background: 'rgba(255,255,255,0.5)', padding: '6px 10px', borderRadius: 8 }}>
-                  {nota.chave_acesso}
+                  {nota.access_key}
                 </p>
               </div>
             )}
-            {nota.motivo_rejeicao && (
+            {nota.rejection_reason && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <p style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>Motivo da Rejeição</p>
-                <p style={{ fontSize: '0.8rem', color: '#EF4444', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.motivo_rejeicao}</p>
+                <p style={{ fontSize: '0.8rem', color: '#EF4444', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.rejection_reason}</p>
               </div>
             )}
-            {nota.motivo_cancelamento && (
+            {nota.cancellation_reason && (
               <div style={{ gridColumn: '1 / -1' }}>
                 <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>Cancelamento</p>
-                <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.motivo_cancelamento}</p>
+                <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{nota.cancellation_reason}</p>
               </div>
             )}
           </div>
@@ -327,7 +327,7 @@ const NotasFiscais = () => {
       .from('nfce_voiding')
       .select('*')
       .eq('company_id', companyId)
-      .order('data_inutilizacao', { ascending: false });
+      .order('voided_on', { ascending: false });
     setInutilizacoes(data || []);
   };
 
@@ -369,10 +369,10 @@ const NotasFiscais = () => {
     setReemitirDialogOpen(true);
     setLoadingVenda(true);
     try {
-      if (nota.venda_id) {
-        const { data: venda } = await api.from('sale').select('*').eq('id', nota.venda_id).eq('company_id', companyId).single();
+      if (nota.sale_id) {
+        const { data: venda } = await api.from('sale').select('*').eq('id', nota.sale_id).eq('company_id', companyId).single();
         setVendaOriginal(venda);
-        const { data: itens } = await api.from('sale_item').select('*, produtos(*)').eq('sale_id', nota.venda_id);
+        const { data: itens } = await api.from('sale_item').select('*, produtos(*)').eq('sale_id', nota.sale_id);
         setItensVenda(itens || []);
       }
     } catch (error) {
@@ -397,15 +397,15 @@ const NotasFiscais = () => {
       const temServico = itensProduto.length !== itensVenda.length;
       const totalProdutos = Math.round(itensProduto.reduce((acc, i) => acc + Number(i.subtotal), 0) * 100) / 100;
       const itensFormatados = itensProduto.map(item => ({
-        id: item.produto_id,
-        code: item.produtos?.code || item.produto_id,
+        id: item.product_id,
+        code: item.produtos?.code || item.product_id,
         name: item.produtos?.name || 'Produto',
         ncm: item.produtos?.ncm || '00000000',
         cfop: item.produtos?.cfop || '5102',
-        unidade_comercial: item.produtos?.unidade_comercial || 'UN',
+        commercial_unit: item.produtos?.commercial_unit || 'UN',
         origem: item.produtos?.origem || '0',
         quantidade: item.quantidade,
-        preco_unitario: item.preco_unitario,
+        unit_price: item.unit_price,
         subtotal: item.subtotal,
       }));
       const { data, error } = await api.functions.invoke('becoming-nfce', {
@@ -414,17 +414,17 @@ const NotasFiscais = () => {
           data: {
             empresaFiscal,
             venda: temServico
-              ? { ...vendaOriginal, user_id: user?.id, valor: totalProdutos, valor_final: totalProdutos, valor_bruto: totalProdutos, desconto_geral: 0 }
+              ? { ...vendaOriginal, user_id: user?.id, valor: totalProdutos, final_amount: totalProdutos, gross_amount: totalProdutos, general_discount: 0 }
               : { ...vendaOriginal, user_id: user?.id },
             itens: itensFormatados,
-            cliente: notaParaReemitir.cliente_cpf ? { cpf: notaParaReemitir.cliente_cpf, name: notaParaReemitir.cliente_nome } : null,
+            cliente: notaParaReemitir.customer_tax_id ? { cpf: notaParaReemitir.customer_tax_id, name: notaParaReemitir.customer_name } : null,
           }
         }
       });
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
-      await api.from('fiscal_document').update({ motivo_rejeicao: `${notaParaReemitir.motivo_rejeicao} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
-      toast({ title: "NFC-e Reemitida", description: `Nova NFC-e emitida com sucesso! Número: ${data.infNFe?.ide?.nNF || empresaFiscal.numero_nfce}` });
+      await api.from('fiscal_document').update({ rejection_reason: `${notaParaReemitir.rejection_reason} [REEMITIDA]` }).eq('id', notaParaReemitir.id);
+      toast({ title: "NFC-e Reemitida", description: `Nova NFC-e emitida com sucesso! Número: ${data.infNFe?.ide?.nNF || empresaFiscal.nfce_number}` });
       setReemitirDialogOpen(false);
       setNotaParaReemitir(null); setVendaOriginal(null); setItensVenda([]);
       fetchNotas(); fetchEmpresaFiscal();
@@ -532,8 +532,8 @@ const NotasFiscais = () => {
   const filteredNotas = notas.filter(nota => {
     const matchSearch =
       String(nota.numero).includes(searchTerm) ||
-      nota.cliente_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      nota.chave_acesso?.includes(searchTerm);
+      nota.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      nota.access_key?.includes(searchTerm);
     const matchStatus = filterStatus === 'todos' || nota.status === filterStatus;
     const matchAmbiente = filterAmbiente === 'todos' || nota.ambiente === filterAmbiente;
     return matchSearch && matchStatus && matchAmbiente;
@@ -541,7 +541,7 @@ const NotasFiscais = () => {
 
   const totalAutorizadas = notas.filter(n => n.status === 'autorizada').length;
   const totalCanceladas = notas.filter(n => n.status === 'cancelada').length;
-  const valorTotal = notas.filter(n => n.status === 'autorizada').reduce((sum, n) => sum + Number(n.valor_total), 0);
+  const valorTotal = notas.filter(n => n.status === 'autorizada').reduce((sum, n) => sum + Number(n.total_amount), 0);
 
   const kpiCards = [
     { label: 'Total Emitidas', value: String(notas.length), sub: 'notas registradas', color: '#8E5FCF', iconBg: 'rgba(142,95,207,0.12)', icon: <FileText style={{ width: 18, height: 18, color: '#8E5FCF' }} /> },
@@ -786,7 +786,7 @@ const NotasFiscais = () => {
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                   <p style={{ fontSize: 13, fontWeight: 700, color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                                    Série {inut.serie} — Nº {inut.numero_inicial} a {inut.numero_final}
+                                    Série {inut.serie} — Nº {inut.number_start} a {inut.number_end}
                                   </p>
                                   <span style={{ background: iutStyle.bg, color: iutStyle.color, border: `1px solid ${iutStyle.border}`, borderRadius: 20, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 600, fontFamily: 'Gilroy, sans-serif' }}>
                                     {iutStyle.label}
@@ -799,7 +799,7 @@ const NotasFiscais = () => {
                                 </div>
                                 <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '0 0 2px', fontFamily: 'Gilroy, sans-serif' }}>{inut.justificativa}</p>
                                 <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                                  {format(new Date(inut.data_inutilizacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  {format(new Date(inut.voided_on), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                                   {inut.protocolo && <span style={{ marginLeft: 8 }}>• Protocolo: <span style={{ fontFamily: 'monospace' }}>{inut.protocolo}</span></span>}
                                 </p>
                               </div>
@@ -843,9 +843,9 @@ const NotasFiscais = () => {
             <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               {[
                 { label: 'Número/Série', value: `${selectedNota.numero}/${selectedNota.serie}` },
-                { label: 'Data Emissão', value: format(new Date(selectedNota.data_emissao), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
-                { label: 'Valor Total', value: formatCurrency(Number(selectedNota.valor_total)) },
-                { label: 'Cliente', value: selectedNota.cliente_nome || 'Não identificado' },
+                { label: 'Data Emissão', value: format(new Date(selectedNota.issued_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
+                { label: 'Valor Total', value: formatCurrency(Number(selectedNota.total_amount)) },
+                { label: 'Cliente', value: selectedNota.customer_name || 'Não identificado' },
                 { label: 'Ambiente', value: selectedNota.ambiente.charAt(0).toUpperCase() + selectedNota.ambiente.slice(1) },
               ].map(item => (
                 <div key={item.label}>
@@ -859,33 +859,33 @@ const NotasFiscais = () => {
                   {getStatusStyle(selectedNota.status).label}
                 </span>
               </div>
-              {selectedNota.chave_acesso && (
+              {selectedNota.access_key && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <p style={{ ...labelStyle, fontSize: 10 }}>Chave de Acesso</p>
                   <p style={{ fontSize: '0.72rem', color: '#6B7280', fontFamily: 'monospace', margin: 0, wordBreak: 'break-all', background: 'rgba(142,95,207,0.04)', padding: '8px 12px', borderRadius: 8, letterSpacing: '0.05em' }}>
-                    {selectedNota.chave_acesso}
+                    {selectedNota.access_key}
                   </p>
                 </div>
               )}
-              {selectedNota.protocolo_autorizacao && (
+              {selectedNota.authorization_protocol && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <p style={{ ...labelStyle, fontSize: 10 }}>Protocolo de Autorização</p>
-                  <p style={{ fontSize: '0.8rem', color: '#1F2937', fontFamily: 'monospace', margin: 0 }}>{selectedNota.protocolo_autorizacao}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#1F2937', fontFamily: 'monospace', margin: 0 }}>{selectedNota.authorization_protocol}</p>
                 </div>
               )}
-              {selectedNota.motivo_rejeicao && (
+              {selectedNota.rejection_reason && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <p style={{ ...labelStyle, fontSize: 10, color: '#EF4444' }}>Motivo da Rejeição</p>
-                  <p style={{ fontSize: '0.8rem', color: '#EF4444', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{selectedNota.motivo_rejeicao}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#EF4444', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{selectedNota.rejection_reason}</p>
                 </div>
               )}
-              {selectedNota.motivo_cancelamento && (
+              {selectedNota.cancellation_reason && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <p style={{ ...labelStyle, fontSize: 10 }}>Motivo do Cancelamento</p>
-                  <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{selectedNota.motivo_cancelamento}</p>
-                  {selectedNota.data_cancelamento && (
+                  <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{selectedNota.cancellation_reason}</p>
+                  {selectedNota.cancelled_at && (
                     <p style={{ fontSize: '0.72rem', color: '#9CA3AF', margin: '4px 0 0', fontFamily: 'Gilroy, sans-serif' }}>
-                      Cancelada em: {format(new Date(selectedNota.data_cancelamento), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      Cancelada em: {format(new Date(selectedNota.cancelled_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </p>
                   )}
                 </div>
@@ -1023,7 +1023,7 @@ const NotasFiscais = () => {
                 <div style={{ background: 'rgba(142,95,207,0.04)', border: '1px solid rgba(142,95,207,0.1)', borderRadius: 12, padding: '12px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
                     <p style={{ ...labelStyle, fontSize: 10 }}>Série atual</p>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{empresaFiscal.serie_nfce}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{empresaFiscal.nfce_series}</p>
                   </div>
                   <div>
                     <p style={{ ...labelStyle, fontSize: 10 }}>Ambiente</p>
@@ -1099,10 +1099,10 @@ const NotasFiscais = () => {
                       A NFC-e será reemitida com um novo número sequencial.
                     </p>
                   </div>
-                  {notaParaReemitir.motivo_rejeicao && (
+                  {notaParaReemitir.rejection_reason && (
                     <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: '12px 16px' }}>
                       <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#EF4444', margin: '0 0 4px', fontFamily: 'Gilroy, sans-serif' }}>Motivo da Rejeição:</p>
-                      <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{notaParaReemitir.motivo_rejeicao}</p>
+                      <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{notaParaReemitir.rejection_reason}</p>
                     </div>
                   )}
                   {vendaOriginal && (
@@ -1110,7 +1110,7 @@ const NotasFiscais = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                         <div>
                           <p style={{ ...labelStyle, fontSize: 10 }}>Cliente</p>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{vendaOriginal.cliente_nome}</p>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>{vendaOriginal.customer_name}</p>
                         </div>
                         <div>
                           <p style={{ ...labelStyle, fontSize: 10 }}>Valor Total</p>

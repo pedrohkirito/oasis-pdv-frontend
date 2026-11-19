@@ -38,7 +38,7 @@ interface Servico {
   categoria: string | null;
   ativo: boolean | null;
   recorrente: boolean;
-  recorrencia_tipo: string | null;
+  recurrence_kind: string | null;
   created_at: string;
 }
 
@@ -51,7 +51,7 @@ interface FormServico {
   categoria: string;
   ativo: boolean;
   recorrente: boolean;
-  recorrencia_tipo: RecorrenciaTipo | '';
+  recurrence_kind: RecorrenciaTipo | '';
 }
 
 const FORM_VAZIO: FormServico = {
@@ -63,7 +63,7 @@ const FORM_VAZIO: FormServico = {
   categoria: '',
   ativo: true,
   recorrente: false,
-  recorrencia_tipo: '',
+  recurrence_kind: '',
 };
 
 const formatCurrency = (value: number) =>
@@ -125,8 +125,8 @@ const Servicos = () => {
     setLoading(true);
     const { data, error } = await api
       .from('produtos')
-      .select('id, nome, codigo, descricao, preco, custo, categoria, ativo, recorrente, recorrencia_tipo, created_at')
-      .eq('empresa_id', empresaId)
+      .select('id, nome, codigo, descricao, preco, custo, categoria, ativo, recorrente, recurrence_kind, created_at')
+      .eq('company_id', empresaId)
       .eq('tipo', 'servico')
       .order('nome', { ascending: true });
     if (error) {
@@ -142,7 +142,7 @@ const Servicos = () => {
     const { data } = await api
       .from('categorias_produto')
       .select('*')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', empresaId)
       .eq('tipo', 'servico')
       .order('nome');
     setCategoriasDB((data as CategoriaDB[]) || []);
@@ -153,20 +153,20 @@ const Servicos = () => {
     if (!empresaId) return;
     const { data } = await api
       .from('itens_venda')
-      .select('produto_id, vendas!inner(data_venda, empresa_id)')
-      .eq('vendas.empresa_id', empresaId)
+      .select('product_id, vendas!inner(sold_on, company_id)')
+      .eq('vendas.company_id', empresaId)
       .order('created_at', { ascending: false });
     const mapa: Record<string, string> = {};
     for (const item of (data || []) as any[]) {
-      const dataVenda = item.vendas?.data_venda;
-      if (dataVenda && !mapa[item.produto_id]) mapa[item.produto_id] = dataVenda;
+      const dataVenda = item.vendas?.sold_on;
+      if (dataVenda && !mapa[item.product_id]) mapa[item.product_id] = dataVenda;
     }
     setVendidos(mapa);
   };
 
   // Produtos e serviços compartilham a numeração de código.
   const gerarProximoCodigo = async () => {
-    const { data } = await api.from('produtos').select('codigo').eq('empresa_id', empresaId);
+    const { data } = await api.from('produtos').select('codigo').eq('company_id', empresaId);
     let maxNum = 0;
     for (const p of (data || []) as { codigo: string | null }[]) {
       const num = parseInt(p.codigo || '0', 10);
@@ -179,7 +179,7 @@ const Servicos = () => {
     const { data } = await api
       .from('produtos')
       .select('id')
-      .eq('empresa_id', empresaId)
+      .eq('company_id', empresaId)
       .eq('codigo', codigo);
     return ((data || []) as { id: string }[]).some((p) => p.id !== ignorarId);
   };
@@ -201,7 +201,7 @@ const Servicos = () => {
       categoria: s.categoria || '',
       ativo: s.ativo ?? true,
       recorrente: s.recorrente,
-      recorrencia_tipo: (s.recorrencia_tipo as RecorrenciaTipo) || '',
+      recurrence_kind: (s.recurrence_kind as RecorrenciaTipo) || '',
     });
     setFormOpen(true);
   };
@@ -212,7 +212,7 @@ const Servicos = () => {
       toast({ title: 'Erro', description: 'Preencha nome e preço.', variant: 'destructive' });
       return;
     }
-    if (form.recorrente && !form.recorrencia_tipo) {
+    if (form.recorrente && !form.recurrence_kind) {
       toast({ title: 'Erro', description: 'Escolha a periodicidade do serviço recorrente.', variant: 'destructive' });
       return;
     }
@@ -234,7 +234,7 @@ const Servicos = () => {
         categoria: form.categoria || null,
         ativo: form.ativo,
         recorrente: form.recorrente,
-        recorrencia_tipo: form.recorrente ? form.recorrencia_tipo || null : null,
+        recurrence_kind: form.recorrente ? form.recurrence_kind || null : null,
       };
 
       const { error } = editando
@@ -242,11 +242,11 @@ const Servicos = () => {
         : await api.from('produtos').insert({
             ...dados,
             user_id: user.id,
-            empresa_id: empresaId,
+            company_id: empresaId,
             tipo: 'servico',
             estoque: null,
-            estoque_minimo: null,
-            tem_variacoes: false,
+            minimum_stock: null,
+            has_variants: false,
           });
 
       if (error) {
@@ -265,7 +265,7 @@ const Servicos = () => {
     if (!user || !empresaId) return;
     const { error } = await api.from('produtos').insert({
       user_id: user.id,
-      empresa_id: empresaId,
+      company_id: empresaId,
       tipo: 'servico',
       nome: `${s.nome} (cópia)`,
       codigo: await gerarProximoCodigo(),
@@ -275,9 +275,9 @@ const Servicos = () => {
       categoria: s.categoria,
       ativo: true,
       recorrente: s.recorrente,
-      recorrencia_tipo: s.recorrencia_tipo,
+      recurrence_kind: s.recurrence_kind,
       estoque: null,
-      tem_variacoes: false,
+      has_variants: false,
     });
     if (error) toast({ title: 'Erro', description: 'Erro ao duplicar serviço', variant: 'destructive' });
     else fetchServicos();
@@ -323,7 +323,7 @@ const Servicos = () => {
   const receitaRecorrenteMensal = ativos
     .filter((s) => s.recorrente)
     .reduce((soma, s) => {
-      const meses = { mensal: 1, trimestral: 3, semestral: 6, anual: 12 }[s.recorrencia_tipo as RecorrenciaTipo] ?? 0;
+      const meses = { mensal: 1, trimestral: 3, semestral: 6, anual: 12 }[s.recurrence_kind as RecorrenciaTipo] ?? 0;
       return meses ? soma + Number(s.preco) / meses : soma;
     }, 0);
 
@@ -478,7 +478,7 @@ const Servicos = () => {
                           )}
                           <Badge variant="outline" className={s.recorrente ? 'bg-sky-500/10 border-sky-500 text-sky-600 gap-1' : ''}>
                             {s.recorrente && <Repeat className="h-3 w-3" />}
-                            {s.recorrente ? labelRecorrencia(s.recorrencia_tipo) : 'Avulso'}
+                            {s.recorrente ? labelRecorrencia(s.recurrence_kind) : 'Avulso'}
                           </Badge>
                           {s.categoria && <Badge variant="outline">{s.categoria}</Badge>}
                           {!s.ativo && <Badge variant="outline" className="text-muted-foreground">Inativo</Badge>}
@@ -581,13 +581,13 @@ const Servicos = () => {
                 <Switch
                   id="srv-recorrente"
                   checked={form.recorrente}
-                  onCheckedChange={(v) => setForm({ ...form, recorrente: v, recorrencia_tipo: v ? form.recorrencia_tipo || 'mensal' : '' })}
+                  onCheckedChange={(v) => setForm({ ...form, recorrente: v, recurrence_kind: v ? form.recurrence_kind || 'mensal' : '' })}
                 />
               </div>
               {form.recorrente && (
                 <div className="space-y-2">
                   <Label>Periodicidade *</Label>
-                  <Select value={form.recorrencia_tipo} onValueChange={(v) => setForm({ ...form, recorrencia_tipo: v as RecorrenciaTipo })}>
+                  <Select value={form.recurrence_kind} onValueChange={(v) => setForm({ ...form, recurrence_kind: v as RecorrenciaTipo })}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       {RECORRENCIA_OPCOES.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}

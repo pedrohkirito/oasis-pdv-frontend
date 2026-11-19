@@ -27,10 +27,10 @@ interface FornecedorOpt { id: string; name: string; }
 interface ProdutoOpt  { id: string; name: string; code: string | null; custo: number | null; }
 
 type ItemForm = {
-  produto_id: string | null;
-  produto_nome: string;
+  product_id: string | null;
+  product_name: string;
   quantidade: number;
-  valor_unitario: number;
+  unit_amount: number;
 };
 
 const CONDICOES = ['À vista', '30 dias', '30/60 dias', '30/60/90 dias', 'Outro'];
@@ -71,18 +71,18 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
   const [carregando, setCarregando] = useState(false);
 
   const [form, setForm] = useState<NovoPedidoPayload>({
-    fornecedor_id: null,
-    fornecedor_nome: null,
-    numero_pedido: '',
-    numero_nf_fornecedor: '',
-    prazo_entrega: null,
-    condicao_pagamento: null,
+    supplier_id: null,
+    supplier_name: null,
+    order_number: '',
+    supplier_invoice_number: '',
+    delivery_deadline_on: null,
+    payment_terms: null,
     observacoes: '',
   });
   const [prazoDate, setPrazoDate] = useState<Date | undefined>(undefined);
 
   const [itens, setItens] = useState<ItemForm[]>([
-    { produto_id: null, produto_nome: '', quantidade: 1, valor_unitario: 0 },
+    { product_id: null, product_name: '', quantidade: 1, unit_amount: 0 },
   ]);
 
   const [criarComoConfirmado, setCriarComoConfirmado] = useState(false);
@@ -105,9 +105,9 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
 
   const resetar = () => {
     setPasso(1);
-    setForm({ fornecedor_id: null, fornecedor_nome: null, numero_pedido: '', numero_nf_fornecedor: '', prazo_entrega: null, condicao_pagamento: null, observacoes: '' });
+    setForm({ supplier_id: null, supplier_name: null, order_number: '', supplier_invoice_number: '', delivery_deadline_on: null, payment_terms: null, observacoes: '' });
     setPrazoDate(undefined);
-    setItens([{ produto_id: null, produto_nome: '', quantidade: 1, valor_unitario: 0 }]);
+    setItens([{ product_id: null, product_name: '', quantidade: 1, unit_amount: 0 }]);
     setCriarComoConfirmado(false);
   };
 
@@ -117,7 +117,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
   };
 
   const adicionarItem = () =>
-    setItens(prev => [...prev, { produto_id: null, produto_nome: '', quantidade: 1, valor_unitario: 0 }]);
+    setItens(prev => [...prev, { product_id: null, product_name: '', quantidade: 1, unit_amount: 0 }]);
 
   const removerItem = (idx: number) =>
     setItens(prev => prev.filter((_, i) => i !== idx));
@@ -129,26 +129,26 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
       if (campo === 'product_id' && typeof valor === 'string') {
         const prod = produtos.find(p => p.id === valor);
         if (prod) {
-          updated.produto_nome = prod.name;
-          updated.valor_unitario = prod.custo ?? 0;
+          updated.product_name = prod.name;
+          updated.unit_amount = prod.custo ?? 0;
         }
       }
       return updated;
     }));
   };
 
-  const totalPedido = itens.reduce((acc, i) => acc + i.quantidade * i.valor_unitario, 0);
+  const totalPedido = itens.reduce((acc, i) => acc + i.quantidade * i.unit_amount, 0);
 
   const handleCriar = async () => {
     setSalvando(true);
     await onCriado(
       { ...form, status: criarComoConfirmado ? 'confirmado' : 'rascunho' } as NovoPedidoPayload,
       itens.map(i => ({
-        produto_id: i.produto_id,
-        produto_nome: i.produto_nome,
+        product_id: i.product_id,
+        product_name: i.product_name,
         quantidade: i.quantidade,
-        quantidade_recebida: 0,
-        valor_unitario: i.valor_unitario,
+        quantity_received: 0,
+        unit_amount: i.unit_amount,
       })),
     );
     setSalvando(false);
@@ -223,10 +223,10 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
               <div>
                 <label style={labelStyle}>Fornecedor</label>
                 <Select
-                  value={form.fornecedor_id ?? ''}
+                  value={form.supplier_id ?? ''}
                   onValueChange={v => {
                     const forn = fornecedores.find(f => f.id === v);
-                    setForm(prev => ({ ...prev, fornecedor_id: v || null, fornecedor_nome: forn?.name ?? null }));
+                    setForm(prev => ({ ...prev, supplier_id: v || null, supplier_name: forn?.name ?? null }));
                   }}
                   disabled={carregando}
                 >
@@ -246,8 +246,8 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                   <label style={labelStyle}>Nº Pedido / Referência</label>
                   <input
                     placeholder="Ex: PC-2026-001"
-                    value={form.numero_pedido ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, numero_pedido: e.target.value }))}
+                    value={form.order_number ?? ''}
+                    onChange={e => setForm(prev => ({ ...prev, order_number: e.target.value }))}
                     style={inputStyle}
                   />
                 </div>
@@ -255,8 +255,8 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                   <label style={labelStyle}>Nº NF do Fornecedor</label>
                   <input
                     placeholder="Ex: 12345"
-                    value={form.numero_nf_fornecedor ?? ''}
-                    onChange={e => setForm(prev => ({ ...prev, numero_nf_fornecedor: e.target.value }))}
+                    value={form.supplier_invoice_number ?? ''}
+                    onChange={e => setForm(prev => ({ ...prev, supplier_invoice_number: e.target.value }))}
                     style={inputStyle}
                   />
                 </div>
@@ -280,7 +280,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                         selected={prazoDate}
                         onSelect={d => {
                           setPrazoDate(d);
-                          setForm(prev => ({ ...prev, prazo_entrega: d ? format(d, 'yyyy-MM-dd') : null }));
+                          setForm(prev => ({ ...prev, delivery_deadline_on: d ? format(d, 'yyyy-MM-dd') : null }));
                         }}
                         locale={ptBR}
                         initialFocus
@@ -292,8 +292,8 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                 <div>
                   <label style={labelStyle}>Condição de Pagamento</label>
                   <Select
-                    value={form.condicao_pagamento ?? ''}
-                    onValueChange={v => setForm(prev => ({ ...prev, condicao_pagamento: v || null }))}
+                    value={form.payment_terms ?? ''}
+                    onValueChange={v => setForm(prev => ({ ...prev, payment_terms: v || null }))}
                   >
                     <SelectTrigger className="h-10 text-sm" style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(142,95,207,0.2)', borderRadius: 12 }}>
                       <SelectValue placeholder="Selecione" />
@@ -338,7 +338,7 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                       <tr key={idx} style={{ borderBottom: '1px solid rgba(142,95,207,0.06)' }}>
                         <td style={{ padding: '10px 12px' }}>
                           <Select
-                            value={item.produto_id ?? ''}
+                            value={item.product_id ?? ''}
                             onValueChange={v => atualizarItem(idx, 'product_id', v || null)}
                           >
                             <SelectTrigger className="h-8 text-xs" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8 }}>
@@ -352,10 +352,10 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                               ))}
                             </SelectContent>
                           </Select>
-                          {!item.produto_id && (
+                          {!item.product_id && (
                             <input
                               placeholder="ou descreva manualmente"
-                              value={item.produto_nome}
+                              value={item.product_name}
                               onChange={e => atualizarItem(idx, 'product_name', e.target.value)}
                               style={{ marginTop: 4, width: '100%', padding: '4px 8px', fontSize: 12, border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.7)', outline: 'none', fontFamily: 'inherit', color: '#374151', boxSizing: 'border-box' }}
                             />
@@ -375,14 +375,14 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={item.valor_unitario || ''}
-                            onChange={e => atualizarItem(idx, 'valor_unitario', parseFloat(e.target.value) || 0)}
+                            value={item.unit_amount || ''}
+                            onChange={e => atualizarItem(idx, 'unit_amount', parseFloat(e.target.value) || 0)}
                             placeholder="0,00"
                             style={{ width: 96, padding: '5px 8px', fontSize: 12, border: '1px solid rgba(142,95,207,0.15)', borderRadius: 8, background: 'rgba(255,255,255,0.7)', outline: 'none', textAlign: 'right', fontFamily: 'inherit', color: '#374151' }}
                           />
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: '#8E5FCF' }}>
-                          {fmtBRL(item.quantidade * item.valor_unitario)}
+                          {fmtBRL(item.quantidade * item.unit_amount)}
                         </td>
                         <td style={{ padding: '10px 12px' }}>
                           <button
@@ -431,11 +431,11 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12 }}>Resumo do pedido</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
-                    { label: 'Fornecedor',        valor: form.fornecedor_nome ?? '—' },
-                    { label: 'Nº Pedido',          valor: form.numero_pedido || '—' },
-                    { label: 'NF Fornecedor',      valor: form.numero_nf_fornecedor || '—' },
+                    { label: 'Fornecedor',        valor: form.supplier_name ?? '—' },
+                    { label: 'Nº Pedido',          valor: form.order_number || '—' },
+                    { label: 'NF Fornecedor',      valor: form.supplier_invoice_number || '—' },
                     { label: 'Prazo Entrega',      valor: prazoDate ? format(prazoDate, 'dd/MM/yyyy', { locale: ptBR }) : '—' },
-                    { label: 'Cond. Pagamento',    valor: form.condicao_pagamento ?? '—' },
+                    { label: 'Cond. Pagamento',    valor: form.payment_terms ?? '—' },
                     { label: 'Itens',              valor: `${itens.length} ${itens.length === 1 ? 'item' : 'itens'}` },
                   ].map(({ label, valor }) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
@@ -493,8 +493,8 @@ export function ModalNovoPedido({ open, onOpenChange, onCriado }: Props) {
           {passo < 3 ? (
             <button
               onClick={() => setPasso(p => (p + 1) as 1 | 2 | 3)}
-              disabled={passo === 2 && itens.every(i => !i.produto_nome && !i.produto_id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 12, border: 'none', background: (passo === 2 && itens.every(i => !i.produto_nome && !i.produto_id)) ? 'rgba(142,95,207,0.3)' : 'linear-gradient(135deg, #47118F, #8E5FCF)', color: '#fff', cursor: (passo === 2 && itens.every(i => !i.produto_nome && !i.produto_id)) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
+              disabled={passo === 2 && itens.every(i => !i.product_name && !i.product_id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', fontSize: 13, fontWeight: 700, borderRadius: 12, border: 'none', background: (passo === 2 && itens.every(i => !i.product_name && !i.product_id)) ? 'rgba(142,95,207,0.3)' : 'linear-gradient(135deg, #47118F, #8E5FCF)', color: '#fff', cursor: (passo === 2 && itens.every(i => !i.product_name && !i.product_id)) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
             >
               Próximo <ChevronRight style={{ width: 14, height: 14 }} />
             </button>

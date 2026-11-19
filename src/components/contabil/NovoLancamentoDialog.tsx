@@ -20,14 +20,14 @@ import {
 
 interface Linha {
   key: number
-  conta_id: string
+  account_id: string
   kind: 'debito' | 'credito'
   valor: string
 }
 
 let contadorLinhas = 0
 const novaLinha = (kind: 'debito' | 'credito'): Linha => ({
-  key: ++contadorLinhas, conta_id: '', kind, valor: '',
+  key: ++contadorLinhas, account_id: '', kind, valor: '',
 })
 
 export function NovoLancamentoDialog({
@@ -56,7 +56,7 @@ export function NovoLancamentoDialog({
   const totalCredito = linhas.filter(l => l.kind === 'credito').reduce((s, l) => s + paraCentavos(l.valor), 0)
   const diferenca = totalDebito - totalCredito
 
-  const linhasValidas = linhas.filter(l => l.conta_id && paraCentavos(l.valor) > 0)
+  const linhasValidas = linhas.filter(l => l.account_id && paraCentavos(l.valor) > 0)
   const balanceado = diferenca === 0 && totalDebito > 0
   const podeSalvar = balanceado && linhasValidas.length >= 2 && linhasValidas.length === linhas.length && historico.trim() !== '' && !salvando
 
@@ -73,7 +73,7 @@ export function NovoLancamentoDialog({
     const { error } = await onSalvar({
       data,
       historico: historico.trim(),
-      itens: linhas.map(l => ({ conta_id: l.conta_id, kind: l.kind, valor: deCentavos(paraCentavos(l.valor)) })),
+      itens: linhas.map(l => ({ account_id: l.account_id, kind: l.kind, valor: deCentavos(paraCentavos(l.valor)) })),
     })
     setSalvando(false)
     if (error) {
@@ -108,7 +108,7 @@ export function NovoLancamentoDialog({
           </div>
           {linhas.map(l => (
             <div key={l.key} className="grid grid-cols-[1fr_130px_130px_36px] gap-2 items-center">
-              <ContaCombobox contas={contasAnaliticas} value={l.conta_id} onChange={id => atualizar(l.key, { conta_id: id })} />
+              <ContaCombobox contas={contasAnaliticas} value={l.account_id} onChange={id => atualizar(l.key, { account_id: id })} />
               <Select value={l.kind} onValueChange={v => atualizar(l.key, { kind: v as Linha['kind'] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

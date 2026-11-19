@@ -70,7 +70,7 @@ function StatusBadge({ status }: { status: StatusPedido }) {
 // ─── Timeline item ────────────────────────────────────────────────────────────
 
 function TimelineItem({ item, isLast }: { item: HistoricoPedido; isLast: boolean }) {
-  const cfg = item.status_novo ? STATUS_CONFIG[item.status_novo as StatusPedido] : null;
+  const cfg = item.new_status ? STATUS_CONFIG[item.new_status as StatusPedido] : null;
   const Icon = cfg?.icon ?? Clock;
   const dotColor = cfg?.color ?? '#6B7280';
 
@@ -87,14 +87,14 @@ function TimelineItem({ item, isLast }: { item: HistoricoPedido; isLast: boolean
       </div>
       <div style={{ paddingBottom: 16, flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          {item.status_anterior && (
+          {item.previous_status && (
             <>
-              <span style={{ fontSize: 12, color: '#9CA3AF' }}>{STATUS_CONFIG[item.status_anterior as StatusPedido]?.label ?? item.status_anterior}</span>
+              <span style={{ fontSize: 12, color: '#9CA3AF' }}>{STATUS_CONFIG[item.previous_status as StatusPedido]?.label ?? item.previous_status}</span>
               <ChevronRight style={{ width: 12, height: 12, color: '#9CA3AF', flexShrink: 0 }} />
             </>
           )}
           <span style={{ fontSize: 12, fontWeight: 700, color: dotColor }}>
-            {STATUS_CONFIG[item.status_novo as StatusPedido]?.label ?? item.status_novo}
+            {STATUS_CONFIG[item.new_status as StatusPedido]?.label ?? item.new_status}
           </span>
         </div>
         {item.observacao && (
@@ -102,7 +102,7 @@ function TimelineItem({ item, isLast }: { item: HistoricoPedido; isLast: boolean
         )}
         <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
           <User style={{ width: 11, height: 11 }} />
-          {item.usuario_nome ?? 'Sistema'}
+          {item.user_name ?? 'Sistema'}
           <span>·</span>
           {fmtDataHora(item.created_at)}
         </p>
@@ -160,7 +160,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
 
     const qtds: Record<string, number> = {};
     (pedido.pedidos_compra_itens ?? []).forEach(i => {
-      if (i.id) qtds[i.id] = i.quantidade_recebida ?? 0;
+      if (i.id) qtds[i.id] = i.quantity_received ?? 0;
     });
     setQtdsRecebidas(qtds);
 
@@ -172,7 +172,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
   const cfg = STATUS_CONFIG[pedido.status];
   const nextStatus = cfg.next;
   const nextCfg = nextStatus ? STATUS_CONFIG[nextStatus] : null;
-  const atrasado = pedido.prazo_entrega && isPast(parseISO(pedido.prazo_entrega)) && !['recebido', 'cancelado'].includes(pedido.status);
+  const atrasado = pedido.delivery_deadline_on && isPast(parseISO(pedido.delivery_deadline_on)) && !['recebido', 'cancelado'].includes(pedido.status);
   const podeCancelar = !['cancelado', 'recebido'].includes(pedido.status);
 
   const handleAvancar = async () => {
@@ -206,10 +206,10 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
     const itens = pedido.pedidos_compra_itens ?? [];
     const linhasItens = itens.map(i =>
       `<tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #eee">${escapeHtml(i.produto_nome)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #eee">${escapeHtml(i.product_name)}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center">${i.quantidade}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${fmtBRL(i.valor_unitario)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${fmtBRL(Number(i.valor_total ?? i.quantidade * i.valor_unitario))}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${fmtBRL(i.unit_amount)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${fmtBRL(Number(i.total_amount ?? i.quantidade * i.unit_amount))}</td>
       </tr>`
     ).join('');
 
@@ -220,12 +220,12 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
     @media print{button{display:none}}</style></head>
     <body>
       <h1>Pedido de Compra</h1>
-      <p style="color:#666;margin-bottom:16px">${escapeHtml(pedido.numero_pedido ?? `#${pedido.id.slice(0, 8)}`)} — ${escapeHtml(cfg.label)}</p>
+      <p style="color:#666;margin-bottom:16px">${escapeHtml(pedido.order_number ?? `#${pedido.id.slice(0, 8)}`)} — ${escapeHtml(cfg.label)}</p>
       <table style="margin-bottom:16px"><tbody>
-        <tr><td style="color:#666;width:160px">Fornecedor:</td><td><strong>${escapeHtml(pedido.fornecedor_nome ?? '—')}</strong></td></tr>
-        <tr><td style="color:#666">Prazo de Entrega:</td><td>${escapeHtml(fmtData(pedido.prazo_entrega))}</td></tr>
-        <tr><td style="color:#666">Condição Pagamento:</td><td>${escapeHtml(pedido.condicao_pagamento ?? '—')}</td></tr>
-        <tr><td style="color:#666">NF Fornecedor:</td><td>${escapeHtml(pedido.numero_nf_fornecedor ?? '—')}</td></tr>
+        <tr><td style="color:#666;width:160px">Fornecedor:</td><td><strong>${escapeHtml(pedido.supplier_name ?? '—')}</strong></td></tr>
+        <tr><td style="color:#666">Prazo de Entrega:</td><td>${escapeHtml(fmtData(pedido.delivery_deadline_on))}</td></tr>
+        <tr><td style="color:#666">Condição Pagamento:</td><td>${escapeHtml(pedido.payment_terms ?? '—')}</td></tr>
+        <tr><td style="color:#666">NF Fornecedor:</td><td>${escapeHtml(pedido.supplier_invoice_number ?? '—')}</td></tr>
         <tr><td style="color:#666">Criado em:</td><td>${escapeHtml(fmtDataHora(pedido.created_at))}</td></tr>
       </tbody></table>
       <table><thead><tr>
@@ -234,7 +234,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
       </tr></thead><tbody>${linhasItens}</tbody>
       <tfoot><tr>
         <td colspan="3" style="padding:8px;text-align:right;font-weight:bold">Total do Pedido:</td>
-        <td style="padding:8px;text-align:right;font-weight:bold;font-size:15px">${fmtBRL(Number(pedido.valor_total))}</td>
+        <td style="padding:8px;text-align:right;font-weight:bold;font-size:15px">${fmtBRL(Number(pedido.total_amount))}</td>
       </tr></tfoot></table>
       ${pedido.observacoes ? `<p style="margin-top:16px;color:#555">Obs: ${escapeHtml(pedido.observacoes)}</p>` : ''}
     </body></html>`;
@@ -274,10 +274,10 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
                 <p style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>
-                  {pedido.numero_pedido ?? `#${pedido.id.slice(0, 8)}`}
+                  {pedido.order_number ?? `#${pedido.id.slice(0, 8)}`}
                 </p>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1F2937', margin: '0 0 8px', lineHeight: 1.2 }}>
-                  {pedido.fornecedor_nome ?? '—'}
+                  {pedido.supplier_name ?? '—'}
                 </h2>
                 <StatusBadge status={pedido.status} />
               </div>
@@ -318,11 +318,11 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
               <p style={{ ...sectionTitle, marginBottom: 10 }}>Informações do Pedido</p>
               <div style={{ ...miniCard, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { icon: User,        label: 'Fornecedor',         valor: pedido.fornecedor_nome ?? '—'      },
-                  { icon: FileText,    label: 'Cond. Pagamento',    valor: pedido.condicao_pagamento ?? '—'   },
-                  { icon: FileText,    label: 'NF Fornecedor',      valor: pedido.numero_nf_fornecedor ?? '—' },
+                  { icon: User,        label: 'Fornecedor',         valor: pedido.supplier_name ?? '—'      },
+                  { icon: FileText,    label: 'Cond. Pagamento',    valor: pedido.payment_terms ?? '—'   },
+                  { icon: FileText,    label: 'NF Fornecedor',      valor: pedido.supplier_invoice_number ?? '—' },
                   { icon: Clock,       label: 'Criado em',          valor: fmtDataHora(pedido.created_at)     },
-                  ...(pedido.recebido_em ? [{ icon: PackageCheck, label: 'Recebido em', valor: fmtDataHora(pedido.recebido_em) }] : []),
+                  ...(pedido.received_on ? [{ icon: PackageCheck, label: 'Recebido em', valor: fmtDataHora(pedido.received_on) }] : []),
                 ].map(({ icon: Icon, label, valor }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
                     <Icon style={{ width: 14, height: 14, color: '#8E5FCF', flexShrink: 0 }} />
@@ -335,7 +335,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
                   <span style={{ color: '#9CA3AF', width: 128, flexShrink: 0, fontSize: 12 }}>Prazo Entrega:</span>
                   <span style={{ fontWeight: 500, color: atrasado ? '#EF4444' : '#1F2937', display: 'flex', alignItems: 'center', gap: 5 }}>
                     {atrasado && <AlertTriangle style={{ width: 12, height: 12 }} />}
-                    {fmtData(pedido.prazo_entrega)}
+                    {fmtData(pedido.delivery_deadline_on)}
                     {atrasado && <span style={{ fontSize: 11, color: '#EF4444' }}>(atrasado)</span>}
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
                     <tbody>
                       {itens.map((item, idx) => (
                         <tr key={item.id ?? idx} style={{ borderBottom: '1px solid rgba(142,95,207,0.06)' }}>
-                          <td style={{ padding: '10px 12px', color: '#374151', fontSize: 12, fontWeight: 500 }}>{item.produto_nome}</td>
+                          <td style={{ padding: '10px 12px', color: '#374151', fontSize: 12, fontWeight: 500 }}>{item.product_name}</td>
                           <td style={{ padding: '10px 12px', textAlign: 'center' as const, fontSize: 12 }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: '#8E5FCF', background: 'rgba(142,95,207,0.08)', borderRadius: 20, padding: '2px 8px' }}>
                               {item.quantidade}
@@ -396,15 +396,15 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
                               />
                             ) : (
                               <span style={{ fontSize: 12, color: '#6B7280' }}>
-                                {item.quantidade_recebida ?? 0}
+                                {item.quantity_received ?? 0}
                               </span>
                             )}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'right' as const, fontSize: 12, color: '#6B7280' }}>
-                            {fmtBRL(item.valor_unitario)}
+                            {fmtBRL(item.unit_amount)}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: '#8E5FCF' }}>
-                            {fmtBRL(Number(item.valor_total ?? item.quantidade * item.valor_unitario))}
+                            {fmtBRL(Number(item.total_amount ?? item.quantidade * item.unit_amount))}
                           </td>
                         </tr>
                       ))}
@@ -415,7 +415,7 @@ export function DrawerDetalhesPedido({ pedido, open, onClose, onStatusChange }: 
                           Total do Pedido
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right' as const, fontSize: 15, fontWeight: 800, color: '#8E5FCF' }}>
-                          {fmtBRL(Number(pedido.valor_total))}
+                          {fmtBRL(Number(pedido.total_amount))}
                         </td>
                       </tr>
                     </tfoot>

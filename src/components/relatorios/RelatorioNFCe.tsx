@@ -22,11 +22,11 @@ interface NotaFiscal {
   serie: number;
   status: string;
   ambiente: string;
-  valor_total: number;
-  cliente_nome: string | null;
-  cliente_cpf: string | null;
-  data_emissao: string;
-  chave_acesso: string | null;
+  total_amount: number;
+  customer_name: string | null;
+  customer_tax_id: string | null;
+  issued_at: string;
+  access_key: string | null;
 }
 
 interface RelatorioNFCeProps {
@@ -60,7 +60,7 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
     setLoading(true);
     const { data, error } = await api
       .from('fiscal_document')
-      .select('id, numero, serie, status, ambiente, valor_total, cliente_nome, cliente_cpf, data_emissao, chave_acesso')
+      .select('id, numero, serie, status, ambiente, total_amount, customer_name, customer_tax_id, issued_at, access_key')
       .gte('issued_at', format(dataInicio, 'yyyy-MM-dd'))
       .lte('issued_at', format(dataFim, 'yyyy-MM-dd') + 'T23:59:59')
       .order('issued_at', { ascending: false });
@@ -88,8 +88,8 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
     autorizadas: filteredNotas.filter(n => n.status === 'autorizada').length,
     canceladas: filteredNotas.filter(n => n.status === 'cancelada').length,
     rejeitadas: filteredNotas.filter(n => n.status === 'rejeitada').length,
-    valorAutorizadas: filteredNotas.filter(n => n.status === 'autorizada').reduce((sum, n) => sum + Number(n.valor_total), 0),
-    valorTotal: filteredNotas.reduce((sum, n) => sum + Number(n.valor_total), 0),
+    valorAutorizadas: filteredNotas.filter(n => n.status === 'autorizada').reduce((sum, n) => sum + Number(n.total_amount), 0),
+    valorTotal: filteredNotas.reduce((sum, n) => sum + Number(n.total_amount), 0),
   };
 
   const formatCurrency = (value: number) => {
@@ -129,13 +129,13 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
       const rows = filteredNotas.map(nota => [
         nota.numero,
         nota.serie,
-        format(new Date(nota.data_emissao), 'dd/MM/yyyy HH:mm'),
-        nota.cliente_nome || 'Não identificado',
-        nota.cliente_cpf || '',
-        Number(nota.valor_total).toFixed(2).replace('.', ','),
+        format(new Date(nota.issued_at), 'dd/MM/yyyy HH:mm'),
+        nota.customer_name || 'Não identificado',
+        nota.customer_tax_id || '',
+        Number(nota.total_amount).toFixed(2).replace('.', ','),
         nota.status,
         nota.ambiente,
-        nota.chave_acesso || ''
+        nota.access_key || ''
       ]);
 
       // Adicionar totais
@@ -248,10 +248,10 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
               ${filteredNotas.map(nota => `
                 <tr>
                   <td>${nota.numero}/${nota.serie}</td>
-                  <td>${format(new Date(nota.data_emissao), 'dd/MM/yyyy HH:mm')}</td>
-                  <td>${escapeHtml(nota.cliente_nome || 'Não identificado')}</td>
-                  <td>${escapeHtml(nota.cliente_cpf || '-')}</td>
-                  <td class="text-right">${formatCurrency(Number(nota.valor_total))}</td>
+                  <td>${format(new Date(nota.issued_at), 'dd/MM/yyyy HH:mm')}</td>
+                  <td>${escapeHtml(nota.customer_name || 'Não identificado')}</td>
+                  <td>${escapeHtml(nota.customer_tax_id || '-')}</td>
+                  <td class="text-right">${formatCurrency(Number(nota.total_amount))}</td>
                   <td class="status-${nota.status}">${statusLabels[nota.status] || nota.status}</td>
                   <td>${nota.ambiente === 'producao' ? 'Produção' : 'Homologação'}</td>
                 </tr>
@@ -540,10 +540,10 @@ export const RelatorioNFCe: React.FC<RelatorioNFCeProps> = ({ onClose }) => {
                     return (
                       <TableRow key={nota.id}>
                         <TableCell className="font-medium">{nota.numero}/{nota.serie}</TableCell>
-                        <TableCell>{format(new Date(nota.data_emissao), 'dd/MM/yyyy HH:mm')}</TableCell>
-                        <TableCell>{nota.cliente_nome || 'Não identificado'}</TableCell>
-                        <TableCell>{nota.cliente_cpf || '-'}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(Number(nota.valor_total))}</TableCell>
+                        <TableCell>{format(new Date(nota.issued_at), 'dd/MM/yyyy HH:mm')}</TableCell>
+                        <TableCell>{nota.customer_name || 'Não identificado'}</TableCell>
+                        <TableCell>{nota.customer_tax_id || '-'}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(Number(nota.total_amount))}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={status.color}>
                             {status.label}

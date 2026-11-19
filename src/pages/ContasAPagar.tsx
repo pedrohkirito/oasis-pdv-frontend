@@ -103,26 +103,26 @@ const ContasAPagar = () => {
   const [editingConta, setEditingConta] = useState<ContaPagar | null>(null);
   const [novaConta, setNovaConta] = useState({
     descricao: '',
-    fornecedor_nome: '',
+    supplier_name: '',
     valor: 0,
     categoria: '',
-    nota_fiscal: '',
+    invoice_number: '',
     parcela: '',
-    metodo_pagamento: '',
-    codigo_pagamento: ''
+    payment_method: '',
+    payment_code: ''
   });
   const [numParcelasNovaConta, setNumParcelasNovaConta] = useState<number>(1);
   const [datasVencimentoParcelas, setDatasVencimentoParcelas] = useState<(Date | undefined)[]>([undefined]);
   const [valoresParcelas, setValoresParcelas] = useState<number[]>([0]);
   const [editConta, setEditConta] = useState({
     descricao: '',
-    fornecedor_nome: '',
+    supplier_name: '',
     valor: 0,
     categoria: '',
-    nota_fiscal: '',
+    invoice_number: '',
     parcela: '',
-    metodo_pagamento: '',
-    codigo_pagamento: ''
+    payment_method: '',
+    payment_code: ''
   });
   const [editDataVencimento, setEditDataVencimento] = useState<Date>();
   const [duplicarDialogOpen, setDuplicarDialogOpen] = useState(false);
@@ -228,7 +228,7 @@ const ContasAPagar = () => {
 
     // Validar se todos os valores das parcelas foram preenchidos
     const todosValoresPreenchidos = valoresParcelas.slice(0, numParcelasNovaConta).every(valor => valor > 0);
-    if (!novaConta.descricao || !categoriaFinal || !todasDatasPreenchidas || !todosValoresPreenchidos || !user || isFornecedorRequired && !novaConta.fornecedor_nome) {
+    if (!novaConta.descricao || !categoriaFinal || !todasDatasPreenchidas || !todosValoresPreenchidos || !user || isFornecedorRequired && !novaConta.supplier_name) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios, incluindo valor e data de cada parcela",
@@ -250,13 +250,13 @@ const ContasAPagar = () => {
         user_id: user.id,
         company_id: companyId,
         descricao: novaConta.descricao,
-        fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
+        supplier_name: isFornecedorRequired ? novaConta.supplier_name : categoriaFinal,
         valor: valorBase,
-        data_vencimento: format(dataVencimentoBase, 'yyyy-MM-dd'),
+        due_on: format(dataVencimentoBase, 'yyyy-MM-dd'),
         categoria: categoriaFinal,
-        nota_fiscal: novaConta.nota_fiscal || null,
-        metodo_pagamento: novaConta.metodo_pagamento || null,
-        codigo_pagamento: novaConta.codigo_pagamento || null,
+        invoice_number: novaConta.invoice_number || null,
+        payment_method: novaConta.payment_method || null,
+        payment_code: novaConta.payment_code || null,
         parcela: null,
         status: 'pendente',
         recorrente: true,
@@ -275,15 +275,15 @@ const ContasAPagar = () => {
           user_id: user.id,
           company_id: companyId,
           descricao: novaConta.descricao,
-          fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
+          supplier_name: isFornecedorRequired ? novaConta.supplier_name : categoriaFinal,
           valor: valorBase,
-          data_vencimento: format(novaDataVencimento, 'yyyy-MM-dd'),
+          due_on: format(novaDataVencimento, 'yyyy-MM-dd'),
           categoria: categoriaFinal,
-          nota_fiscal: null,
+          invoice_number: null,
           parcela: null,
           status: 'pendente',
           recorrente: false,
-          conta_recorrente_id: contaMae.id,
+          recurring_payable_id: contaMae.id,
           provisionada: true
         });
       }
@@ -303,13 +303,13 @@ const ContasAPagar = () => {
       // Reset form
       setNovaConta({
         descricao: '',
-        fornecedor_nome: '',
+        supplier_name: '',
         valor: 0,
         categoria: '',
-        nota_fiscal: '',
+        invoice_number: '',
         parcela: '',
-        metodo_pagamento: '',
-        codigo_pagamento: ''
+        payment_method: '',
+        payment_code: ''
       });
       setNumParcelasNovaConta(1);
       setDatasVencimentoParcelas([undefined]);
@@ -332,13 +332,13 @@ const ContasAPagar = () => {
       user_id: user.id,
       company_id: companyId,
       descricao: novaConta.descricao,
-      fornecedor_nome: isFornecedorRequired ? novaConta.fornecedor_nome : categoriaFinal,
+      supplier_name: isFornecedorRequired ? novaConta.supplier_name : categoriaFinal,
       valor: valoresParcelas[index],
-      data_vencimento: format(data!, 'yyyy-MM-dd'),
+      due_on: format(data!, 'yyyy-MM-dd'),
       categoria: categoriaFinal,
-      nota_fiscal: novaConta.nota_fiscal || null,
-      metodo_pagamento: novaConta.metodo_pagamento || null,
-      codigo_pagamento: novaConta.codigo_pagamento || null,
+      invoice_number: novaConta.invoice_number || null,
+      payment_method: novaConta.payment_method || null,
+      payment_code: novaConta.payment_code || null,
       parcela: `${index + 1}/${numParcelasNovaConta}`,
       status: 'pendente'
     }));
@@ -350,13 +350,13 @@ const ContasAPagar = () => {
     } else {
       setNovaConta({
         descricao: '',
-        fornecedor_nome: '',
+        supplier_name: '',
         valor: 0,
         categoria: '',
-        nota_fiscal: '',
+        invoice_number: '',
         parcela: '',
-        metodo_pagamento: '',
-        codigo_pagamento: ''
+        payment_method: '',
+        payment_code: ''
       });
       setNumParcelasNovaConta(1);
       setDatasVencimentoParcelas([undefined]);
@@ -374,12 +374,12 @@ const ContasAPagar = () => {
   const handleDesmarcarRecorrente = (conta: ContaPagar) => {
     setContaParaDesmarcar(conta);
     // Buscar todas as contas pendentes vinculadas (filhas + mãe se pendente), ordenadas da mais recente para a mais antiga
-    const filhasPendentes = contas.filter(c => c.conta_recorrente_id === conta.id && c.status === 'pendente');
+    const filhasPendentes = contas.filter(c => c.recurring_payable_id === conta.id && c.status === 'pendente');
     const todasPendentes = conta.status === 'pendente' 
       ? [conta, ...filhasPendentes] 
       : filhasPendentes;
     // Ordenar da data mais futura para a mais antiga (excluir primeiro as últimas)
-    const ordenadas = todasPendentes.sort((a, b) => new Date(b.data_vencimento).getTime() - new Date(a.data_vencimento).getTime());
+    const ordenadas = todasPendentes.sort((a, b) => new Date(b.due_on).getTime() - new Date(a.due_on).getTime());
     setContasPendentesParaExcluir(ordenadas);
     setQuantidadeExcluir(todasPendentes.length);
     setConfirmDesmarcarOpen(true);
@@ -453,7 +453,7 @@ const ContasAPagar = () => {
       error: errorProvisionadas
     } = await api.from('payable').update({
       valor: novoValorRecorrente
-    }).eq('conta_recorrente_id', contaParaEditarValor.id).eq('status', 'pendente');
+    }).eq('recurring_payable_id', contaParaEditarValor.id).eq('status', 'pendente');
     if (errorProvisionadas) {
       toast({
         title: "Aviso",
@@ -487,8 +487,8 @@ const ContasAPagar = () => {
     }
 
     // Buscar a última data de vencimento das contas vinculadas (incluindo a conta mãe)
-    const contasVinculadas = contas.filter(c => c.conta_recorrente_id === contaParaEstender.id || c.id === contaParaEstender.id);
-    const datasVencimento = contasVinculadas.map(c => new Date(c.data_vencimento + 'T00:00:00'));
+    const contasVinculadas = contas.filter(c => c.recurring_payable_id === contaParaEstender.id || c.id === contaParaEstender.id);
+    const datasVencimento = contasVinculadas.map(c => new Date(c.due_on + 'T00:00:00'));
     const ultimaData = new Date(Math.max(...datasVencimento.map(d => d.getTime())));
 
     // Criar novas contas provisionadas a partir da última data
@@ -499,15 +499,15 @@ const ContasAPagar = () => {
         user_id: user.id,
         company_id: companyId,
         descricao: contaParaEstender.descricao,
-        fornecedor_nome: contaParaEstender.fornecedor_nome,
+        supplier_name: contaParaEstender.supplier_name,
         valor: Number(contaParaEstender.valor),
-        data_vencimento: format(novaDataVencimento, 'yyyy-MM-dd'),
+        due_on: format(novaDataVencimento, 'yyyy-MM-dd'),
         categoria: contaParaEstender.categoria,
-        nota_fiscal: null,
+        invoice_number: null,
         parcela: null,
         status: 'pendente',
         recorrente: false,
-        conta_recorrente_id: contaParaEstender.id,
+        recurring_payable_id: contaParaEstender.id,
         provisionada: true
       });
     }
@@ -531,14 +531,14 @@ const ContasAPagar = () => {
   // Calcular alertas de recorrências acabando
   const recorrenciasComAlerta = React.useMemo(() => {
     return contasRecorrentes.filter(conta => {
-      const pendentes = contas.filter(c => (c.conta_recorrente_id === conta.id || c.id === conta.id) && c.status === 'pendente').length;
+      const pendentes = contas.filter(c => (c.recurring_payable_id === conta.id || c.id === conta.id) && c.status === 'pendente').length;
       return pendentes <= 3 && pendentes > 0;
     });
   }, [contasRecorrentes, contas]);
   const handleMoverConta = async (contaId: string, novaData: string) => {
     const { error } = await api
       .from('payable')
-      .update({ data_vencimento: novaData })
+      .update({ due_on: novaData })
       .eq('id', contaId);
     if (error) {
       toast({ title: 'Erro ao mover conta', variant: 'destructive' });
@@ -570,7 +570,7 @@ const ContasAPagar = () => {
     }
 
     // Parse da data base preservando o dia correto
-    const [year, month, day] = contaParaDuplicar.data_vencimento.split('-').map(Number);
+    const [year, month, day] = contaParaDuplicar.due_on.split('-').map(Number);
     const diaOriginal = day;
     const contasParaInserir = [];
     for (let i = 0; i < numParcelas; i++) {
@@ -587,11 +587,11 @@ const ContasAPagar = () => {
         user_id: user.id,
         company_id: companyId,
         descricao: contaParaDuplicar.descricao,
-        fornecedor_nome: contaParaDuplicar.fornecedor_nome,
+        supplier_name: contaParaDuplicar.supplier_name,
         valor: contaParaDuplicar.valor,
-        data_vencimento: format(novaData, 'yyyy-MM-dd'),
+        due_on: format(novaData, 'yyyy-MM-dd'),
         categoria: contaParaDuplicar.categoria,
-        nota_fiscal: (contaParaDuplicar as any).nota_fiscal || null,
+        invoice_number: (contaParaDuplicar as any).invoice_number || null,
         parcela: `${i + 1}/${numParcelas}`,
         status: 'pendente'
       });
@@ -615,21 +615,21 @@ const ContasAPagar = () => {
     setEditingConta(conta);
     setEditConta({
       descricao: conta.descricao,
-      fornecedor_nome: conta.fornecedor_nome,
+      supplier_name: conta.supplier_name,
       valor: Number(conta.valor),
       categoria: conta.categoria || '',
-      nota_fiscal: (conta as any).nota_fiscal || '',
+      invoice_number: (conta as any).invoice_number || '',
       parcela: (conta as any).parcela || '',
-      metodo_pagamento: (conta as any).metodo_pagamento || '',
-      codigo_pagamento: (conta as any).codigo_pagamento || ''
+      payment_method: (conta as any).payment_method || '',
+      payment_code: (conta as any).payment_code || ''
     });
-    setEditDataVencimento(parseDataString(conta.data_vencimento));
+    setEditDataVencimento(parseDataString(conta.due_on));
     setEditDialogOpen(true);
   };
   const handleSalvarEdicao = async () => {
     const categoriaFinal = editConta.categoria === '__nova__' ? editNovaCategoria : editConta.categoria;
     const isFornecedorRequired = categoriaFinal === 'Fornecedores';
-    if (!editingConta || !editConta.descricao || !categoriaFinal || !editConta.valor || !editDataVencimento || isFornecedorRequired && !editConta.fornecedor_nome) {
+    if (!editingConta || !editConta.descricao || !categoriaFinal || !editConta.valor || !editDataVencimento || isFornecedorRequired && !editConta.supplier_name) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -641,14 +641,14 @@ const ContasAPagar = () => {
       error
     } = await api.from('payable').update({
       descricao: editConta.descricao,
-      fornecedor_nome: isFornecedorRequired ? editConta.fornecedor_nome : categoriaFinal,
+      supplier_name: isFornecedorRequired ? editConta.supplier_name : categoriaFinal,
       valor: editConta.valor,
-      data_vencimento: format(editDataVencimento, 'yyyy-MM-dd'),
+      due_on: format(editDataVencimento, 'yyyy-MM-dd'),
       categoria: categoriaFinal,
-      nota_fiscal: editConta.nota_fiscal || null,
+      invoice_number: editConta.invoice_number || null,
       parcela: editConta.parcela || null,
-      metodo_pagamento: editConta.metodo_pagamento || null,
-      codigo_pagamento: editConta.codigo_pagamento || null
+      payment_method: editConta.payment_method || null,
+      payment_code: editConta.payment_code || null
     }).eq('id', editingConta.id);
     if (error) {
       handleApiError(error, "Erro ao atualizar conta");
@@ -668,7 +668,7 @@ const ContasAPagar = () => {
       error
     } = await api.from('payable').update({
       status: 'pago',
-      data_pagamento: format(new Date(), 'yyyy-MM-dd')
+      paid_on: format(new Date(), 'yyyy-MM-dd')
     }).eq('id', conta.id);
     if (error) {
       toast({
@@ -689,10 +689,10 @@ const ContasAPagar = () => {
     setContaSelecionada(conta);
     const hoje = format(new Date(), 'yyyy-MM-dd');
     setPagData(hoje);
-    const venc = new Date(conta.data_vencimento + 'T00:00:00');
+    const venc = new Date(conta.due_on + 'T00:00:00');
     const pag  = new Date(hoje + 'T00:00:00');
     const dias = Math.max(0, differenceInDays(pag, venc));
-    const base = Number((conta as any).valor_original ?? conta.valor);
+    const base = Number((conta as any).original_amount ?? conta.valor);
     if (dias > 0) {
       setPagMulta(parseFloat((base * 0.02).toFixed(2)));
       setPagJuros(parseFloat((base * 0.01 * (dias / 30)).toFixed(2)));
@@ -707,18 +707,18 @@ const ContasAPagar = () => {
 
   const confirmarPagamento = async () => {
     if (!contaSelecionada) return;
-    const base = Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor);
+    const base = Number((contaSelecionada as any).original_amount ?? contaSelecionada.valor);
     const valorPago = base + pagJuros + pagMulta - pagDesconto;
     const { error } = await api.from('payable').update({
       status: 'pago',
-      valor_original: base,
-      valor_juros: pagJuros,
-      valor_multa: pagMulta,
-      valor_desconto: pagDesconto,
-      valor_pago: valorPago,
-      data_pagamento: pagData,
-      data_pagamento_efetivo: pagData,
-      forma_pagamento: pagForma || null,
+      original_amount: base,
+      interest_amount: pagJuros,
+      penalty_amount: pagMulta,
+      discount_amount: pagDesconto,
+      paid_amount: valorPago,
+      paid_on: pagData,
+      settled_on: pagData,
+      payment_form: pagForma || null,
       updated_at: new Date().toISOString(),
     } as any).eq('id', contaSelecionada.id);
     if (error) {
@@ -795,19 +795,19 @@ const ContasAPagar = () => {
     }).format(value);
   };
   const filteredContas = contas.filter(conta => {
-    const matchSearch = conta.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || conta.fornecedor_nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = conta.descricao.toLowerCase().includes(searchTerm.toLowerCase()) || conta.supplier_name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === 'todos' || conta.status === filterStatus;
 
     // Filtro por intervalo de datas
     let matchDateRange = true;
     if (dateRange.from && dateRange.to) {
-      const dataVencimento = new Date(conta.data_vencimento + 'T00:00:00');
+      const dataVencimento = new Date(conta.due_on + 'T00:00:00');
       matchDateRange = isWithinInterval(dataVencimento, {
         start: startOfDay(dateRange.from),
         end: endOfDay(dateRange.to)
       });
     } else if (dateRange.from) {
-      const dataVencimento = new Date(conta.data_vencimento + 'T00:00:00');
+      const dataVencimento = new Date(conta.due_on + 'T00:00:00');
       matchDateRange = dataVencimento >= startOfDay(dateRange.from);
     }
 
@@ -820,15 +820,15 @@ const ContasAPagar = () => {
   const sortedContas = [...filteredContas].sort((a, b) => {
     switch (ordenacao) {
       case 'vencimento_asc':
-        return new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime();
+        return new Date(a.due_on).getTime() - new Date(b.due_on).getTime();
       case 'vencimento_desc':
-        return new Date(b.data_vencimento).getTime() - new Date(a.data_vencimento).getTime();
+        return new Date(b.due_on).getTime() - new Date(a.due_on).getTime();
       case 'valor_asc':
         return Number(a.valor) - Number(b.valor);
       case 'valor_desc':
         return Number(b.valor) - Number(a.valor);
       default:
-        return new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime();
+        return new Date(a.due_on).getTime() - new Date(b.due_on).getTime();
     }
   });
 
@@ -878,7 +878,7 @@ const ContasAPagar = () => {
 
     const getChave = (c: ContaPagar) => {
       if (c.status === 'cancelado') return 'CANCELADAS';
-      const venc = startOfDay(new Date(c.data_vencimento + 'T00:00:00'));
+      const venc = startOfDay(new Date(c.due_on + 'T00:00:00'));
       const diff = differenceInDays(venc, base);
       if (diff < 0)   return 'VENCIDAS / PAGAS';
       if (diff === 0) return 'VENCE HOJE';
@@ -985,8 +985,8 @@ const ContasAPagar = () => {
                   <div className="grid gap-2">
                     <Label htmlFor="category">Categoria *</Label>
                     <Select value={novaConta.categoria === '__nova__' ? '__nova__' : novaConta.categoria} onValueChange={value => {
-                      if (value === '__nova__') { setNovaConta({ ...novaConta, categoria: '__nova__', fornecedor_nome: '' }); setNovaCategoria(''); }
-                      else { setNovaConta({ ...novaConta, categoria: value, fornecedor_nome: value !== 'Fornecedores' ? '' : novaConta.fornecedor_nome }); }
+                      if (value === '__nova__') { setNovaConta({ ...novaConta, categoria: '__nova__', supplier_name: '' }); setNovaCategoria(''); }
+                      else { setNovaConta({ ...novaConta, categoria: value, supplier_name: value !== 'Fornecedores' ? '' : novaConta.supplier_name }); }
                     }}>
                       <SelectTrigger><SelectValue placeholder="Selecione uma categoria" /></SelectTrigger>
                       <SelectContent>
@@ -1008,7 +1008,7 @@ const ContasAPagar = () => {
                     </Select>
                   </div>
                   {novaConta.categoria === '__nova__' && <div className="grid gap-2"><Label htmlFor="nova-categoria">Nome da nova categoria *</Label><Input id="nova-categoria" placeholder="Digite o name da categoria" value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} /></div>}
-                  {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2"><Label htmlFor="fornecedor">Fornecedor *</Label><Select value={novaConta.fornecedor_nome} onValueChange={value => setNovaConta({ ...novaConta, fornecedor_nome: value })}><SelectTrigger><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger><SelectContent>{fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">Nenhum fornecedor cadastrado</div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.name}>{fornecedor.name}</SelectItem>)}<div className="border-t mt-1 pt-1"><button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}><Plus className="h-4 w-4" />Cadastrar novo fornecedor</button></div></SelectContent></Select></div>}
+                  {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2"><Label htmlFor="fornecedor">Fornecedor *</Label><Select value={novaConta.supplier_name} onValueChange={value => setNovaConta({ ...novaConta, supplier_name: value })}><SelectTrigger><SelectValue placeholder="Selecione um fornecedor" /></SelectTrigger><SelectContent>{fornecedores.length === 0 ? <div className="py-2 px-2 text-sm text-muted-foreground text-center">Nenhum fornecedor cadastrado</div> : fornecedores.map(fornecedor => <SelectItem key={fornecedor.id} value={fornecedor.name}>{fornecedor.name}</SelectItem>)}<div className="border-t mt-1 pt-1"><button type="button" className="w-full text-left px-2 py-1.5 text-sm text-primary hover:bg-accent rounded-sm flex items-center gap-2" onClick={() => navigate('/fornecedores')}><Plus className="h-4 w-4" />Cadastrar novo fornecedor</button></div></SelectContent></Select></div>}
                   <div className="grid gap-2">
                     <Label htmlFor="num_parcelas">Número de Parcelas *</Label>
                     <Input id="num_parcelas" type="number" min="1" max="48" placeholder="Ex: 1" value={numParcelasNovaConta} onChange={e => {
@@ -1030,9 +1030,9 @@ const ContasAPagar = () => {
                   {numParcelasNovaConta === 1 && <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30"><div className="space-y-0.5"><Label htmlFor="recorrente" className="font-medium flex items-center gap-2"><Repeat className="h-4 w-4 text-primary" />Conta Recorrente</Label><p className="text-xs text-muted-foreground">Provisionar automaticamente para os próximos meses</p></div><Switch id="recorrente" checked={isRecorrente} onCheckedChange={setIsRecorrente} /></div>}
                   {isRecorrente && numParcelasNovaConta === 1 && <div className="grid gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5"><Label htmlFor="meses_recorrencia">Provisionar para quantos meses?</Label><Input id="meses_recorrencia" type="number" min="2" max="60" placeholder="12" value={mesesRecorrencia} onChange={e => setMesesRecorrencia(Math.max(2, Math.min(60, parseInt(e.target.value) || 12)))} /><p className="text-xs text-muted-foreground">Serão criadas {mesesRecorrencia} contas com vencimento no mesmo dia de cada mês</p></div>}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2"><Label htmlFor="nota_fiscal">Nota Fiscal</Label><Input id="nota_fiscal" placeholder="Nº da nota fiscal" value={novaConta.nota_fiscal} onChange={e => setNovaConta({ ...novaConta, nota_fiscal: e.target.value })} /></div>
-                    <div className="grid gap-2"><Label htmlFor="payment_method">Método de Pagamento</Label><Select value={novaConta.metodo_pagamento} onValueChange={value => setNovaConta({ ...novaConta, metodo_pagamento: value })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{metodosPagamento.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select></div>
-                    {['boleto', 'pix'].includes(novaConta.metodo_pagamento.toLowerCase()) && <div className="grid gap-2 col-span-2"><Label htmlFor="codigo_pagamento">{novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}</Label><Textarea id="codigo_pagamento" placeholder={novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'} value={novaConta.codigo_pagamento} onChange={e => setNovaConta({ ...novaConta, codigo_pagamento: e.target.value })} rows={2} /></div>}
+                    <div className="grid gap-2"><Label htmlFor="invoice_number">Nota Fiscal</Label><Input id="invoice_number" placeholder="Nº da nota fiscal" value={novaConta.invoice_number} onChange={e => setNovaConta({ ...novaConta, invoice_number: e.target.value })} /></div>
+                    <div className="grid gap-2"><Label htmlFor="payment_method">Método de Pagamento</Label><Select value={novaConta.payment_method} onValueChange={value => setNovaConta({ ...novaConta, payment_method: value })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{metodosPagamento.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select></div>
+                    {['boleto', 'pix'].includes(novaConta.payment_method.toLowerCase()) && <div className="grid gap-2 col-span-2"><Label htmlFor="payment_code">{novaConta.payment_method.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}</Label><Textarea id="payment_code" placeholder={novaConta.payment_method.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'} value={novaConta.payment_code} onChange={e => setNovaConta({ ...novaConta, payment_code: e.target.value })} rows={2} /></div>}
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -1120,7 +1120,7 @@ const ContasAPagar = () => {
                       <p>Nenhuma conta recorrente cadastrada</p>
                       <p className="text-sm mt-2">Marque "Conta Recorrente" ao criar uma nova conta</p>
                     </div> : contasRecorrentes.map(conta => {
-                    const contasVinculadas = contas.filter(c => c.conta_recorrente_id === conta.id);
+                    const contasVinculadas = contas.filter(c => c.recurring_payable_id === conta.id);
                     const pendentes = contasVinculadas.filter(c => c.status === 'pendente').length;
                     const pagas = contasVinculadas.filter(c => c.status === 'pago').length;
                     const totalPendentesComMae = pendentes + (conta.status === 'pendente' ? 1 : 0);
@@ -1135,11 +1135,11 @@ const ContasAPagar = () => {
                                     ⚠ Acabando
                                   </Badge>}
                               </div>
-                              <p className="text-sm text-muted-foreground mt-1">{conta.fornecedor_nome}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{conta.supplier_name}</p>
                               <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(Number(conta.valor))}/mês</p>
                               <div className="flex gap-2 mt-2 flex-wrap">
                                 <Badge variant="outline" className="text-xs">
-                                  Dia {new Date(conta.data_vencimento + 'T00:00:00').getDate()}
+                                  Dia {new Date(conta.due_on + 'T00:00:00').getDate()}
                                 </Badge>
                                 <Badge variant="outline" style={{
                               backgroundColor: `${getCategoriaColor(conta.categoria)}20`,
@@ -1211,14 +1211,14 @@ const ContasAPagar = () => {
                         setNovaConta({
                           ...novaConta,
                           categoria: '__nova__',
-                          fornecedor_nome: ''
+                          supplier_name: ''
                         });
                         setNovaCategoria('');
                       } else {
                         setNovaConta({
                           ...novaConta,
                           categoria: value,
-                          fornecedor_nome: value !== 'Fornecedores' ? '' : novaConta.fornecedor_nome
+                          supplier_name: value !== 'Fornecedores' ? '' : novaConta.supplier_name
                         });
                       }
                     }}>
@@ -1247,9 +1247,9 @@ const ContasAPagar = () => {
                     </div>}
                   {novaConta.categoria === 'Fornecedores' && <div className="grid gap-2">
                       <Label htmlFor="fornecedor">Fornecedor *</Label>
-                      <Select value={novaConta.fornecedor_nome} onValueChange={value => setNovaConta({
+                      <Select value={novaConta.supplier_name} onValueChange={value => setNovaConta({
                       ...novaConta,
-                      fornecedor_nome: value
+                      supplier_name: value
                     })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um fornecedor" />
@@ -1377,15 +1377,15 @@ const ContasAPagar = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="nota_fiscal">Nota Fiscal</Label>
-                      <Input id="nota_fiscal" placeholder="Nº da nota fiscal" value={novaConta.nota_fiscal} onChange={e => setNovaConta({
+                      <Label htmlFor="invoice_number">Nota Fiscal</Label>
+                      <Input id="invoice_number" placeholder="Nº da nota fiscal" value={novaConta.invoice_number} onChange={e => setNovaConta({
                         ...novaConta,
-                        nota_fiscal: e.target.value
+                        invoice_number: e.target.value
                       })} />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="payment_method">Método de Pagamento</Label>
-                      <Select value={novaConta.metodo_pagamento} onValueChange={value => setNovaConta({ ...novaConta, metodo_pagamento: value })}>
+                      <Select value={novaConta.payment_method} onValueChange={value => setNovaConta({ ...novaConta, payment_method: value })}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
                           {metodosPagamento.map(m => (
@@ -1394,16 +1394,16 @@ const ContasAPagar = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    {['boleto', 'pix'].includes(novaConta.metodo_pagamento.toLowerCase()) && (
+                    {['boleto', 'pix'].includes(novaConta.payment_method.toLowerCase()) && (
                       <div className="grid gap-2 col-span-2">
-                        <Label htmlFor="codigo_pagamento">
-                          {novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}
+                        <Label htmlFor="payment_code">
+                          {novaConta.payment_method.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}
                         </Label>
                         <Textarea
-                          id="codigo_pagamento"
-                          placeholder={novaConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'}
-                          value={novaConta.codigo_pagamento}
-                          onChange={e => setNovaConta({ ...novaConta, codigo_pagamento: e.target.value })}
+                          id="payment_code"
+                          placeholder={novaConta.payment_method.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'}
+                          value={novaConta.payment_code}
+                          onChange={e => setNovaConta({ ...novaConta, payment_code: e.target.value })}
                           rows={2}
                         />
                       </div>
@@ -1543,7 +1543,7 @@ const ContasAPagar = () => {
                           const sColor = conta.status === 'vencido' ? '#EF4444' : conta.status === 'pago' ? '#10B981' : conta.status === 'cancelado' ? '#9CA3AF' : '#F59E0B';
                           const sBg    = conta.status === 'vencido' ? 'rgba(239,68,68,0.08)' : conta.status === 'pago' ? 'rgba(16,185,129,0.06)' : conta.status === 'cancelado' ? 'rgba(156,163,175,0.06)' : 'rgba(245,158,11,0.06)';
                           const hoje2  = startOfDay(new Date());
-                          const vencDt = startOfDay(new Date(conta.data_vencimento + 'T00:00:00'));
+                          const vencDt = startOfDay(new Date(conta.due_on + 'T00:00:00'));
                           const diasAtraso = conta.status !== 'pago' ? Math.max(0, differenceInDays(hoje2, vencDt)) : 0;
                           const diasVencer = conta.status === 'pendente' ? Math.max(0, differenceInDays(vencDt, hoje2)) : 0;
                           const cs = catBadgeStyle(conta.categoria);
@@ -1556,9 +1556,9 @@ const ContasAPagar = () => {
 
                               {/* 1. Date block */}
                               <div style={{ width: '72px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 8px', background: sBg, gap: '1px' }}>
-                                <span style={{ fontSize: '2rem', fontWeight: 800, fontFamily: 'Gilroy', lineHeight: 1, color: sColor }}>{format(parseDataString(conta.data_vencimento), 'dd')}</span>
-                                <span style={{ fontSize: '0.65rem', fontWeight: 700, fontFamily: 'Gilroy', textTransform: 'uppercase', letterSpacing: '0.1em', color: sColor }}>{format(parseDataString(conta.data_vencimento), 'MMM', { locale: ptBR })}</span>
-                                <span style={{ fontSize: '0.6rem', color: '#9CA3AF', fontFamily: 'Gilroy', marginTop: '2px' }}>{format(parseDataString(conta.data_vencimento), 'yyyy')}</span>
+                                <span style={{ fontSize: '2rem', fontWeight: 800, fontFamily: 'Gilroy', lineHeight: 1, color: sColor }}>{format(parseDataString(conta.due_on), 'dd')}</span>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, fontFamily: 'Gilroy', textTransform: 'uppercase', letterSpacing: '0.1em', color: sColor }}>{format(parseDataString(conta.due_on), 'MMM', { locale: ptBR })}</span>
+                                <span style={{ fontSize: '0.6rem', color: '#9CA3AF', fontFamily: 'Gilroy', marginTop: '2px' }}>{format(parseDataString(conta.due_on), 'yyyy')}</span>
                               </div>
 
                               {/* Divider */}
@@ -1580,16 +1580,16 @@ const ContasAPagar = () => {
                                     <span style={{ background: 'rgba(107,114,128,0.08)', color: '#6B7280', borderRadius: '20px', padding: '2px 8px', fontSize: '0.72rem', fontFamily: 'Gilroy', fontWeight: 600 }}>Provisionada</span>
                                   )}
                                 </div>
-                                {conta.fornecedor_nome !== conta.categoria && (
-                                  <span style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy' }}>{conta.fornecedor_nome}</span>
+                                {conta.supplier_name !== conta.categoria && (
+                                  <span style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy' }}>{conta.supplier_name}</span>
                                 )}
                                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  {conta.nota_fiscal && (
-                                    <span style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy' }}>NF: {conta.nota_fiscal}</span>
+                                  {conta.invoice_number && (
+                                    <span style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy' }}>NF: {conta.invoice_number}</span>
                                   )}
-                                  {conta.status === 'pago' && conta.data_pagamento && (
+                                  {conta.status === 'pago' && conta.paid_on && (
                                     <span style={{ fontSize: '0.75rem', color: '#10B981', fontFamily: 'Gilroy', fontWeight: 600 }}>
-                                      Pago em: {format(parseDataString(conta.data_pagamento), 'dd/MM/yyyy', { locale: ptBR })}
+                                      Pago em: {format(parseDataString(conta.paid_on), 'dd/MM/yyyy', { locale: ptBR })}
                                     </span>
                                   )}
                                   {conta.status === 'vencido' && diasAtraso > 0 && (
@@ -1715,14 +1715,14 @@ const ContasAPagar = () => {
                   setEditConta({
                     ...editConta,
                     categoria: '__nova__',
-                    fornecedor_nome: ''
+                    supplier_name: ''
                   });
                   setEditNovaCategoria('');
                 } else {
                   setEditConta({
                     ...editConta,
                     categoria: value,
-                    fornecedor_nome: value !== 'Fornecedores' ? '' : editConta.fornecedor_nome
+                    supplier_name: value !== 'Fornecedores' ? '' : editConta.supplier_name
                   });
                 }
               }}>
@@ -1751,9 +1751,9 @@ const ContasAPagar = () => {
               </div>}
             {editConta.categoria === 'Fornecedores' && <div className="grid gap-2">
                 <Label htmlFor="edit-fornecedor">Fornecedor *</Label>
-                <Select value={editConta.fornecedor_nome} onValueChange={value => setEditConta({
+                <Select value={editConta.supplier_name} onValueChange={value => setEditConta({
                 ...editConta,
-                fornecedor_nome: value
+                supplier_name: value
               })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um fornecedor" />
@@ -1807,10 +1807,10 @@ const ContasAPagar = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-nota_fiscal">Nota Fiscal</Label>
-                <Input id="edit-nota_fiscal" placeholder="Nº da nota fiscal" value={editConta.nota_fiscal} onChange={e => setEditConta({
+                <Label htmlFor="edit-invoice_number">Nota Fiscal</Label>
+                <Input id="edit-invoice_number" placeholder="Nº da nota fiscal" value={editConta.invoice_number} onChange={e => setEditConta({
                   ...editConta,
-                  nota_fiscal: e.target.value
+                  invoice_number: e.target.value
                 })} />
               </div>
               <div className="grid gap-2">
@@ -1822,8 +1822,8 @@ const ContasAPagar = () => {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-metodo_pagamento">Método de Pagamento</Label>
-              <Select value={editConta.metodo_pagamento} onValueChange={value => setEditConta({ ...editConta, metodo_pagamento: value })}>
+              <Label htmlFor="edit-payment_method">Método de Pagamento</Label>
+              <Select value={editConta.payment_method} onValueChange={value => setEditConta({ ...editConta, payment_method: value })}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {metodosPagamento.map(m => (
@@ -1832,16 +1832,16 @@ const ContasAPagar = () => {
                 </SelectContent>
               </Select>
             </div>
-            {['boleto', 'pix'].includes(editConta.metodo_pagamento.toLowerCase()) && (
+            {['boleto', 'pix'].includes(editConta.payment_method.toLowerCase()) && (
               <div className="grid gap-2 col-span-2">
-                <Label htmlFor="edit-codigo_pagamento">
-                  {editConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}
+                <Label htmlFor="edit-payment_code">
+                  {editConta.payment_method.toLowerCase() === 'boleto' ? 'Código de Barras' : 'Chave / Código PIX'}
                 </Label>
                 <Textarea
-                  id="edit-codigo_pagamento"
-                  placeholder={editConta.metodo_pagamento.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'}
-                  value={editConta.codigo_pagamento}
-                  onChange={e => setEditConta({ ...editConta, codigo_pagamento: e.target.value })}
+                  id="edit-payment_code"
+                  placeholder={editConta.payment_method.toLowerCase() === 'boleto' ? 'Cole o código de barras do boleto' : 'Cole a chave PIX ou código copia e cola'}
+                  value={editConta.payment_code}
+                  onChange={e => setEditConta({ ...editConta, payment_code: e.target.value })}
                   rows={2}
                 />
               </div>
@@ -1863,14 +1863,14 @@ const ContasAPagar = () => {
           <div className="grid gap-4 py-4">
             {contaParaDuplicar && <div className="p-3 rounded-lg bg-muted/50 border">
                 <p className="font-medium">{contaParaDuplicar.descricao}</p>
-                <p className="text-sm text-muted-foreground">{contaParaDuplicar.fornecedor_nome}</p>
+                <p className="text-sm text-muted-foreground">{contaParaDuplicar.supplier_name}</p>
                 <p className="text-sm font-semibold">{formatCurrency(Number(contaParaDuplicar.valor))}</p>
               </div>}
             <div className="grid gap-2">
               <Label htmlFor="num-parcelas">Número de Parcelas</Label>
               <Input id="num-parcelas" type="number" min={2} max={48} value={numParcelas} onChange={e => setNumParcelas(Math.max(2, parseInt(e.target.value) || 2))} />
               <p className="text-xs text-muted-foreground">
-                Serão criadas {numParcelas} contas com vencimento mensal a partir de {contaParaDuplicar ? format(new Date(contaParaDuplicar.data_vencimento + 'T00:00:00'), "dd/MM/yyyy", {
+                Serão criadas {numParcelas} contas com vencimento mensal a partir de {contaParaDuplicar ? format(new Date(contaParaDuplicar.due_on + 'T00:00:00'), "dd/MM/yyyy", {
                   locale: ptBR
                 }) : ''}
               </p>
@@ -1930,7 +1930,7 @@ const ContasAPagar = () => {
                             <div key={conta.id} className="flex items-center justify-between px-3 py-2 text-sm bg-destructive/10">
                               <div className="flex items-center gap-2">
                                 <Trash2 className="h-3 w-3 text-destructive" />
-                                <span>{format(new Date(conta.data_vencimento + 'T00:00:00'), "dd/MM/yyyy")}</span>
+                                <span>{format(new Date(conta.due_on + 'T00:00:00'), "dd/MM/yyyy")}</span>
                               </div>
                               <span className="font-medium">{formatCurrency(Number(conta.valor))}</span>
                             </div>
@@ -1939,7 +1939,7 @@ const ContasAPagar = () => {
                             <div key={conta.id} className="flex items-center justify-between px-3 py-2 text-sm text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                                <span>{format(new Date(conta.data_vencimento + 'T00:00:00'), "dd/MM/yyyy")}</span>
+                                <span>{format(new Date(conta.due_on + 'T00:00:00'), "dd/MM/yyyy")}</span>
                               </div>
                               <span>{formatCurrency(Number(conta.valor))}</span>
                             </div>
@@ -1980,7 +1980,7 @@ const ContasAPagar = () => {
                   <RefreshCw className="h-4 w-4 text-primary" />
                   <p className="font-medium">{contaParaEditarValor.descricao}</p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{contaParaEditarValor.fornecedor_nome}</p>
+                <p className="text-sm text-muted-foreground mt-1">{contaParaEditarValor.supplier_name}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Valor atual: <span className="font-semibold text-foreground">{formatCurrency(Number(contaParaEditarValor.valor))}</span>
                 </p>
@@ -2022,10 +2022,10 @@ const ContasAPagar = () => {
                   <RefreshCw className="h-4 w-4 text-primary" />
                   <p className="font-medium">{contaParaEstender.descricao}</p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{contaParaEstender.fornecedor_nome}</p>
+                <p className="text-sm text-muted-foreground mt-1">{contaParaEstender.supplier_name}</p>
                 <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(Number(contaParaEstender.valor))}/mês</p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Parcelas pendentes atuais: {contas.filter(c => (c.conta_recorrente_id === contaParaEstender.id || c.id === contaParaEstender.id) && c.status === 'pendente').length}
+                  Parcelas pendentes atuais: {contas.filter(c => (c.recurring_payable_id === contaParaEstender.id || c.id === contaParaEstender.id) && c.status === 'pendente').length}
                 </p>
               </div>}
             <div className="grid gap-2">
@@ -2061,8 +2061,8 @@ const ContasAPagar = () => {
               <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#8E5FCF', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Registrar Pagamento</p>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F2937', margin: 0 }}>{contaSelecionada.descricao}</h2>
               <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '4px' }}>
-                Vencimento: {format(new Date(contaSelecionada.data_vencimento + 'T00:00:00'), 'dd/MM/yyyy')}
-                {' · '}Valor original: <strong>{formatCurrency(Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor))}</strong>
+                Vencimento: {format(new Date(contaSelecionada.due_on + 'T00:00:00'), 'dd/MM/yyyy')}
+                {' · '}Valor original: <strong>{formatCurrency(Number((contaSelecionada as any).original_amount ?? contaSelecionada.valor))}</strong>
               </p>
             </div>
 
@@ -2075,8 +2075,8 @@ const ContasAPagar = () => {
                   value={pagData}
                   onChange={e => {
                     setPagData(e.target.value);
-                    const base = Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor);
-                    const venc = new Date(contaSelecionada.data_vencimento + 'T00:00:00');
+                    const base = Number((contaSelecionada as any).original_amount ?? contaSelecionada.valor);
+                    const venc = new Date(contaSelecionada.due_on + 'T00:00:00');
                     const pag  = new Date(e.target.value + 'T00:00:00');
                     const dias = Math.max(0, differenceInDays(pag, venc));
                     if (dias > 0) {
@@ -2134,7 +2134,7 @@ const ContasAPagar = () => {
               <div style={{ background: 'linear-gradient(135deg, rgba(142,95,207,0.08), rgba(71,17,143,0.06))', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: '#6B7280', fontWeight: 600 }}>Total a pagar</span>
                 <span style={{ fontSize: '1.4rem', fontWeight: 800, background: 'linear-gradient(135deg, #47118F, #8E5FCF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  {formatCurrency(Number((contaSelecionada as any).valor_original ?? contaSelecionada.valor) + pagJuros + pagMulta - pagDesconto)}
+                  {formatCurrency(Number((contaSelecionada as any).original_amount ?? contaSelecionada.valor) + pagJuros + pagMulta - pagDesconto)}
                 </span>
               </div>
             </div>

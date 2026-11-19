@@ -11,28 +11,28 @@ import { ptBR } from 'date-fns/locale';
 
 interface PedidoEntrega {
   id: string;
-  numero_pedido: number;
-  venda_id: string;
-  cliente_nome: string;
-  cliente_telefone: string | null;
-  cliente_email: string | null;
-  cliente_cpf: string | null;
-  endereco_entrega: string | null;
-  data_emissao: string;
-  previsao_entrega: string | null;
+  order_number: number;
+  sale_id: string;
+  customer_name: string;
+  customer_phone: string | null;
+  customer_email: string | null;
+  customer_tax_id: string | null;
+  delivery_address: string | null;
+  issued_at: string;
+  delivery_eta_on: string | null;
   status: string;
-  forma_pagamento: string | null;
+  payment_form: string | null;
   observacoes: string | null;
   vendedor: string | null;
 }
 
 interface ItemVenda {
-  produto_id: string;
+  product_id: string;
   quantidade: number;
-  preco_unitario: number;
+  unit_price: number;
   subtotal: number;
   desconto?: number;
-  desconto_tipo?: 'percentual' | 'amount';
+  discount_kind?: 'percentual' | 'amount';
   observacao?: string;
   produto?: {
     name: string;
@@ -42,27 +42,27 @@ interface ItemVenda {
 }
 
 interface EmpresaFiscal {
-  razao_social: string;
-  nome_fantasia: string | null;
+  legal_name: string;
+  trade_name: string | null;
   cnpj: string;
-  endereco_logradouro: string;
-  endereco_numero: string;
-  endereco_bairro: string;
-  endereco_cidade: string;
-  endereco_uf: string;
-  endereco_cep: string;
+  address_street: string;
+  address_number: string;
+  address_district: string;
+  address_city: string;
+  address_state: string;
+  address_postal_code: string;
 }
 
 interface VendaInfo {
   valor: number;
-  valor_bruto: number | null;
+  gross_amount: number | null;
   desconto: number | null;
-  valor_final: number | null;
-  metodo_pagamento: string;
+  final_amount: number | null;
+  payment_method: string;
   parcelas: number | null;
   vendedor: string | null;
   observacoes: string | null;
-  data_venda: string | null;
+  sold_on: string | null;
 }
 
 interface ClienteInfo {
@@ -76,7 +76,7 @@ interface ClienteInfo {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
-  data_nascimento: string | null;
+  birth_date: string | null;
   observacoes: string | null;
 }
 
@@ -158,13 +158,13 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
       setValorServicos(
         itensData
           .filter((item: any) => item.produtos?.tipo === 'servico')
-          .reduce((acc: number, item: any) => acc + Number(item.quantidade) * Number(item.preco_unitario), 0),
+          .reduce((acc: number, item: any) => acc + Number(item.quantidade) * Number(item.unit_price), 0),
       );
       itensData = itensData.filter((item: any) => item.produtos?.tipo !== 'servico');
       setItens(itensData.map((item: any) => ({
         ...item,
         desconto: item.desconto != null ? Number(item.desconto) : 0,
-        desconto_tipo: item.desconto_tipo || 'percentual',
+        discount_kind: item.discount_kind || 'percentual',
         observacao: item.observacao || '',
         produto: item.produtos,
       })));
@@ -172,10 +172,10 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
     if (fiscalRes.data) setEmpresaFiscal(fiscalRes.data as any);
     if (vendaRes.data) setVendaInfo(vendaRes.data as any);
 
-    // Fetch full client record: prefer cliente_id (from pedido or venda), fallback to name match
-    const customerId = (pedidoRes.data as any)?.cliente_id || (vendaRes.data as any)?.cliente_id;
-    const clienteNome = (pedidoRes.data as any)?.cliente_nome || (vendaRes.data as any)?.cliente_nome;
-    const clienteFields = 'cpf, telefone, telefone_adicional, email, endereco, complemento, bairro, cidade, estado, cep, data_nascimento, observacoes';
+    // Fetch full client record: prefer customer_id (from pedido or venda), fallback to name match
+    const customerId = (pedidoRes.data as any)?.customer_id || (vendaRes.data as any)?.customer_id;
+    const clienteNome = (pedidoRes.data as any)?.customer_name || (vendaRes.data as any)?.customer_name;
+    const clienteFields = 'cpf, telefone, telefone_adicional, email, endereco, complemento, bairro, cidade, estado, cep, birth_date, observacoes';
 
     let cli: any = null;
     if (customerId) {
@@ -212,7 +212,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
     printWindow.document.write(`
       <html>
         <head>
-          <title>Pedido de Entrega #${pedido?.numero_pedido}</title>
+          <title>Pedido de Entrega #${pedido?.order_number}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; color: #1a1a1a; background: white; }
@@ -245,9 +245,9 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
     );
   }
 
-  const valorBruto = vendaInfo?.valor_bruto ?? vendaInfo?.valor ?? 0;
+  const valorBruto = vendaInfo?.gross_amount ?? vendaInfo?.valor ?? 0;
   const desconto = vendaInfo?.desconto ?? 0;
-  const finalAmount = vendaInfo?.valor_final ?? vendaInfo?.valor ?? 0;
+  const finalAmount = vendaInfo?.final_amount ?? vendaInfo?.valor ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -255,7 +255,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
-              Pedido de Entrega {pedido && `#${pedido.numero_pedido}`}
+              Pedido de Entrega {pedido && `#${pedido.order_number}`}
             </DialogTitle>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={handlePrint} disabled={loading}>
@@ -286,14 +286,14 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 32, borderBottom: '3px solid #8E5FCF', marginBottom: 32 }}>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '-0.5px', marginBottom: 8 }}>
-                    {empresaFiscal?.nome_fantasia || empresaFiscal?.razao_social || empresaAtiva?.name || 'Empresa'}
+                    {empresaFiscal?.trade_name || empresaFiscal?.legal_name || empresaAtiva?.name || 'Empresa'}
                   </div>
                   <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.8, margin: 0 }}>
                     {empresaFiscal && (
                       <>
                         <div>CNPJ: {formatCNPJ(empresaFiscal.cnpj)}</div>
-                        <div>{empresaFiscal.endereco_logradouro}, {empresaFiscal.endereco_numero} — {empresaFiscal.endereco_bairro}</div>
-                        <div>{empresaFiscal.endereco_cidade}/{empresaFiscal.endereco_uf} · CEP {empresaFiscal.endereco_cep}</div>
+                        <div>{empresaFiscal.address_street}, {empresaFiscal.address_number} — {empresaFiscal.address_district}</div>
+                        <div>{empresaFiscal.address_city}/{empresaFiscal.address_state} · CEP {empresaFiscal.address_postal_code}</div>
                       </>
                     )}
                   </div>
@@ -303,10 +303,10 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
                     Pedido de Entrega
                   </span>
                   <span style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a', display: 'block', letterSpacing: '-1px' }}>
-                    #{String(pedido.numero_pedido).padStart(5, '0')}
+                    #{String(pedido.order_number).padStart(5, '0')}
                   </span>
                   <span style={{ fontSize: 12, color: '#6B7280', display: 'block', marginTop: 6 }}>
-                    Emissão: {format(new Date(pedido.data_emissao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    Emissão: {format(new Date(pedido.issued_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </span>
                 </div>
               </div>
@@ -331,20 +331,20 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
 
               {/* ── DADOS DO CLIENTE ────────────────────────── */}
               {(() => {
-                const cpf = clienteInfo?.cpf || pedido.cliente_cpf || null;
-                const telefone = clienteInfo?.telefone || pedido.cliente_telefone || null;
+                const cpf = clienteInfo?.cpf || pedido.customer_tax_id || null;
+                const telefone = clienteInfo?.telefone || pedido.customer_phone || null;
                 const telefoneAdic = clienteInfo?.telefone_adicional || null;
-                const email = clienteInfo?.email || pedido.cliente_email || null;
-                const dataNasc = clienteInfo?.data_nascimento || null;
+                const email = clienteInfo?.email || pedido.customer_email || null;
+                const dataNasc = clienteInfo?.birth_date || null;
                 const enderecoLinha = clienteInfo
                   ? [clienteInfo.endereco, clienteInfo.complemento ? `(${clienteInfo.complemento})` : null, clienteInfo.bairro].filter(Boolean).join(', ')
                   : '';
                 const cidadeLinha = clienteInfo
                   ? [[clienteInfo.cidade, clienteInfo.estado].filter(Boolean).join('/'), clienteInfo.cep ? `CEP: ${clienteInfo.cep}` : null].filter(Boolean).join(' — ')
                   : '';
-                const enderecoFinal = enderecoLinha || pedido.endereco_entrega || '';
+                const enderecoFinal = enderecoLinha || pedido.delivery_address || '';
                 const campos = [
-                  { label: 'Nome', value: pedido.cliente_nome },
+                  { label: 'Nome', value: pedido.customer_name },
                   cpf ? { label: 'CPF / CNPJ', value: cpf } : null,
                   telefone ? { label: 'Telefone', value: telefone } : null,
                   telefoneAdic ? { label: 'Tel. adicional', value: telefoneAdic } : null,
@@ -394,7 +394,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
                     <tbody>
                       {itens.map((item, idx) => {
                         const subtotalBruto = Number(item.subtotal);
-                        const descValor = item.desconto_tipo === 'percentual'
+                        const descValor = item.discount_kind === 'percentual'
                           ? subtotalBruto * ((item.desconto || 0) / 100)
                           : Math.min(item.desconto || 0, subtotalBruto);
                         const temDesconto = descValor > 0;
@@ -408,12 +408,12 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
                               <td style={{ padding: '14px 16px', fontSize: 11, color: '#9CA3AF', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.code || '—'}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500, verticalAlign: 'top' }}>{item.produto?.name || 'Produto'}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', textAlign: 'center', verticalAlign: 'top' }}>{item.quantidade}</td>
-                              <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', textAlign: 'center', verticalAlign: 'top' }}>{formatCurrency(Number(item.preco_unitario))}</td>
+                              <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', textAlign: 'center', verticalAlign: 'top' }}>{formatCurrency(Number(item.unit_price))}</td>
                               <td style={{ padding: '14px 16px', fontSize: 13, textAlign: 'right', fontWeight: 600, color: temDesconto ? '#EF4444' : '#D1D5DB', verticalAlign: 'top' }}>
                                 {temDesconto ? (
                                   <>
-                                    <div>{item.desconto_tipo === 'percentual' ? `-${item.desconto}%` : `-${formatCurrency(item.desconto || 0)}`}</div>
-                                    {item.desconto_tipo === 'amount' && (
+                                    <div>{item.discount_kind === 'percentual' ? `-${item.desconto}%` : `-${formatCurrency(item.desconto || 0)}`}</div>
+                                    {item.discount_kind === 'amount' && (
                                       <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 400 }}>
                                         ({pctContexto % 1 === 0 ? pctContexto.toFixed(0) : pctContexto.toFixed(1)}%)
                                       </div>
@@ -447,7 +447,7 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
                 const descontoItens = itensComDescontoDetalhado
                   ? itens.reduce((sum, item) => {
                       const sub = Number(item.subtotal);
-                      const d = item.desconto_tipo === 'percentual'
+                      const d = item.discount_kind === 'percentual'
                         ? sub * ((item.desconto || 0) / 100)
                         : Math.min(item.desconto || 0, sub);
                       return sum + d;
@@ -483,8 +483,8 @@ export const PedidoEntregaDialog: React.FC<Props> = ({ open, onOpenChange, saleI
               {/* ── INFORMAÇÕES ADICIONAIS ──────────────────── */}
               {(() => {
                 const infos = [
-                  { label: 'Forma de Pagamento', value: `${pedido.forma_pagamento || vendaInfo?.metodo_pagamento || '—'}${vendaInfo?.parcelas && vendaInfo.parcelas > 1 ? ` (${vendaInfo.parcelas}x)` : ''}` },
-                  { label: 'Previsão de Entrega', value: pedido.previsao_entrega ? format(new Date(pedido.previsao_entrega + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR }) : 'A combinar' },
+                  { label: 'Forma de Pagamento', value: `${pedido.payment_form || vendaInfo?.payment_method || '—'}${vendaInfo?.parcelas && vendaInfo.parcelas > 1 ? ` (${vendaInfo.parcelas}x)` : ''}` },
+                  { label: 'Previsão de Entrega', value: pedido.delivery_eta_on ? format(new Date(pedido.delivery_eta_on + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR }) : 'A combinar' },
                   ...(pedido.vendedor || vendaInfo?.vendedor ? [{ label: 'Vendedor(a)', value: pedido.vendedor || vendaInfo?.vendedor || '' }] : []),
                 ];
                 return (

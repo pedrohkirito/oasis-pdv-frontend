@@ -33,7 +33,7 @@ type ContaPagar = Tables<'contas_pagar'>
 
 function getStatusInfo(conta: ContaPagar): { cor: string; label: string } {
   const hoje = startOfDay(new Date())
-  const dataVenc = startOfDay(new Date(conta.data_vencimento + 'T00:00:00'))
+  const dataVenc = startOfDay(new Date(conta.due_on + 'T00:00:00'))
   if (conta.status === 'pago') return { cor: '#10B981', label: 'Pago' }
   if (conta.status === 'cancelado') return { cor: '#9CA3AF', label: 'Cancelado' }
   if (isBefore(dataVenc, hoje)) return { cor: '#EF4444', label: 'Vencida' }
@@ -105,17 +105,17 @@ function DraggableContaCard({
         </TooltipTrigger>
         <TooltipContent side="right" className="text-xs max-w-[200px] space-y-0.5">
           <p className="font-semibold">{conta.descricao}</p>
-          {conta.fornecedor_nome && conta.fornecedor_nome !== conta.descricao &&
-            conta.fornecedor_nome !== conta.categoria && (
-            <p className="text-muted-foreground">{conta.fornecedor_nome}</p>
+          {conta.supplier_name && conta.supplier_name !== conta.descricao &&
+            conta.supplier_name !== conta.categoria && (
+            <p className="text-muted-foreground">{conta.supplier_name}</p>
           )}
           {conta.categoria && <p className="text-muted-foreground">{conta.categoria}</p>}
           <p className="font-bold mt-1">
             {Number(conta.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
-          <p>Vencimento: {format(new Date(conta.data_vencimento + 'T00:00:00'), 'dd/MM/yyyy')}</p>
-          {(conta as any).metodo_pagamento && (
-            <p>Pagamento: {(conta as any).metodo_pagamento}</p>
+          <p>Vencimento: {format(new Date(conta.due_on + 'T00:00:00'), 'dd/MM/yyyy')}</p>
+          {(conta as any).payment_method && (
+            <p>Pagamento: {(conta as any).payment_method}</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -246,9 +246,9 @@ function DroppableDayCell({
                 <div key={c.id} className="p-3 flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{c.descricao}</p>
-                    {c.fornecedor_nome && c.fornecedor_nome !== c.descricao &&
-                      c.fornecedor_nome !== c.categoria && (
-                      <p className="text-xs text-muted-foreground truncate">{c.fornecedor_nome}</p>
+                    {c.supplier_name && c.supplier_name !== c.descricao &&
+                      c.supplier_name !== c.categoria && (
+                      <p className="text-xs text-muted-foreground truncate">{c.supplier_name}</p>
                     )}
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {c.categoria && (
@@ -366,10 +366,10 @@ function SidebarCalendario({
   const proximos7 = contasDoMes
     .filter(c => c.status !== 'pago' && c.status !== 'cancelado')
     .filter(c => {
-      const d = startOfDay(new Date(c.data_vencimento + 'T00:00:00'))
+      const d = startOfDay(new Date(c.due_on + 'T00:00:00'))
       return d >= hoje && d <= em7Dias
     })
-    .sort((a, b) => new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime())
+    .sort((a, b) => new Date(a.due_on).getTime() - new Date(b.due_on).getTime())
     .slice(0, 5)
 
   const vencidas = contasDoMes.filter(c => c.status === 'vencido')
@@ -380,7 +380,7 @@ function SidebarCalendario({
   }).map(d => format(d, 'yyyy-MM-dd'))
 
   const contasPorDiaMap = contasDoMes.reduce((acc, c) => {
-    const d = c.data_vencimento
+    const d = c.due_on
     if (!acc[d]) acc[d] = []
     acc[d].push(c)
     return acc
@@ -439,7 +439,7 @@ function SidebarCalendario({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{c.descricao}</p>
                   <p className="text-muted-foreground">
-                    {format(new Date(c.data_vencimento + 'T00:00:00'), 'dd/MM')}
+                    {format(new Date(c.due_on + 'T00:00:00'), 'dd/MM')}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -554,7 +554,7 @@ export function CalendarioContas({
   // Filter contas to this month
   const contasDoMes = useMemo(
     () =>
-      contas.filter(c => isSameMonth(new Date(c.data_vencimento + 'T00:00:00'), mesAtual)),
+      contas.filter(c => isSameMonth(new Date(c.due_on + 'T00:00:00'), mesAtual)),
     [contas, mesAtual]
   )
 
@@ -567,7 +567,7 @@ export function CalendarioContas({
       if (filtroStatus === 'pago') return c.status === 'pago'
       if (filtroStatus === 'vencido') return c.status === 'vencido'
       if (filtroStatus === 'hoje') {
-        const d = startOfDay(new Date(c.data_vencimento + 'T00:00:00'))
+        const d = startOfDay(new Date(c.due_on + 'T00:00:00'))
         return d.getTime() === hoje.getTime()
       }
       if (filtroStatus === 'pendente') return c.status === 'pendente'
@@ -579,7 +579,7 @@ export function CalendarioContas({
   const contasPorDia = useMemo(
     () =>
       contasFiltradas.reduce((acc, c) => {
-        const d = c.data_vencimento
+        const d = c.due_on
         if (!acc[d]) acc[d] = []
         acc[d].push(c)
         return acc
@@ -593,7 +593,7 @@ export function CalendarioContas({
     const contaId = active.id as string
     const novaData = over.id as string
     const conta = contas.find(c => c.id === contaId)
-    if (!conta || conta.data_vencimento === novaData) return
+    if (!conta || conta.due_on === novaData) return
     // Only allow drops on valid date strings
     if (!/^\d{4}-\d{2}-\d{2}$/.test(novaData)) return
     setPendingMove({

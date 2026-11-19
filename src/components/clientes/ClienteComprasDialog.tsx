@@ -10,16 +10,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Venda {
   id: string;
-  data_venda: string;
+  sold_on: string;
   valor: number;
-  valor_final: number | null;
+  final_amount: number | null;
   desconto: number | null;
-  metodo_pagamento: string | null;
+  payment_method: string | null;
   produtos: string | null;
   itens_venda: {
     id: string;
     quantidade: number;
-    preco_unitario: number;
+    unit_price: number;
     subtotal: number;
     produtos: { name: string } | null;
   }[];
@@ -48,10 +48,10 @@ export function ClienteComprasDialog({ open, onOpenChange, customerId, clienteNo
     const { data, error } = await (api as any)
       .from('sale')
       .select(`
-        id, data_venda, valor, valor_final, desconto, metodo_pagamento, produtos,
+        id, sold_on, valor, final_amount, desconto, payment_method, produtos,
         itens_venda (
-          id, quantidade, preco_unitario, subtotal,
-          produtos:produto_id ( name )
+          id, quantidade, unit_price, subtotal,
+          produtos:product_id ( name )
         )
       `)
       .eq('company_id', companyId!)
@@ -67,7 +67,7 @@ export function ClienteComprasDialog({ open, onOpenChange, customerId, clienteNo
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  const totalGasto = vendas.reduce((acc, v) => acc + (v.valor_final ?? v.valor), 0);
+  const totalGasto = vendas.reduce((acc, v) => acc + (v.final_amount ?? v.valor), 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,18 +100,18 @@ export function ClienteComprasDialog({ open, onOpenChange, customerId, clienteNo
                 <div key={venda.id} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">
-                      {format(new Date(venda.data_venda), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(new Date(venda.sold_on), "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-primary">
-                        {formatCurrency(venda.valor_final ?? venda.valor)}
+                        {formatCurrency(venda.final_amount ?? venda.valor)}
                       </span>
                     </div>
                   </div>
 
-                  {venda.metodo_pagamento && (
+                  {venda.payment_method && (
                     <p className="text-xs text-muted-foreground">
-                      Pagamento: {venda.metodo_pagamento}
+                      Pagamento: {venda.payment_method}
                     </p>
                   )}
 

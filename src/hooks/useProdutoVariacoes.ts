@@ -13,14 +13,14 @@ export interface ProdutoAtributo {
 
 export interface ProdutoVariacao {
   id: string;
-  produto_id: string;
+  product_id: string;
   company_id: string;
   sku: string | null;
   atributos: Record<string, string>;
   preco: number | null;
-  preco_custo: number | null;
+  cost_price: number | null;
   estoque: number;
-  estoque_minimo: number;
+  minimum_stock: number;
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -57,7 +57,7 @@ export function useProdutoVariacoes(productId?: string) {
   const criarVariacao = async (variacao: Partial<ProdutoVariacao>) => {
     const { data, error } = await api
       .from('product_variant')
-      .insert({ ...variacao, produto_id: productId, company_id: companyId })
+      .insert({ ...variacao, product_id: productId, company_id: companyId })
       .select()
       .single();
     if (!error) buscarVariacoes();
@@ -109,11 +109,11 @@ export function useProdutoVariacoes(productId?: string) {
     );
 
     const novasVariacoes = combinacoes.map(attrs => ({
-      produto_id: productId,
+      product_id: productId,
       company_id: companyId,
       atributos: attrs,
       preco: precoBase,
-      preco_custo: precoCustoBase,
+      cost_price: precoCustoBase,
       estoque: 0,
       active: true,
       sku: Object.values(attrs).join('-').toUpperCase(),

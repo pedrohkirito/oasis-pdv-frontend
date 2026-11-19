@@ -49,6 +49,7 @@ export const getFeriadosNacionais = (ano: number): Date[] => {
 
 // Verifica se uma data é feriado nacional
 export const isFeriadoNacional = (data: Date): boolean => {
+  if (Number.isNaN(data.getTime())) return false;
   const ano = getYear(data);
   const feriados = getFeriadosNacionais(ano);
   const dataStr = format(data, 'yyyy-MM-dd');
@@ -58,6 +59,7 @@ export const isFeriadoNacional = (data: Date): boolean => {
 
 // Verifica se uma data é dia útil (não é fim de semana nem feriado)
 export const isDiaUtil = (data: Date): boolean => {
+  if (Number.isNaN(data.getTime())) return true;
   const diaSemana = getDay(data);
   const isFimDeSemana = diaSemana === 0 || diaSemana === 6;
   
@@ -66,6 +68,7 @@ export const isDiaUtil = (data: Date): boolean => {
 
 // Ajusta a data de vencimento para o próximo dia útil
 export const ajustarParaProximoDiaUtil = (data: Date): Date => {
+  if (Number.isNaN(data.getTime())) return new Date(data);
   let dataAjustada = new Date(data);
   
   // Continua avançando enquanto não for dia útil

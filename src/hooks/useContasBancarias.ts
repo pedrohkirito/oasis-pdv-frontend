@@ -48,10 +48,10 @@ export function useContasBancarias() {
       .from('movimentacoes_bancarias' as any)
       .select('*') as any)
       .eq('account_id', contaId)
-      .order('data_movimentacao', { ascending: false })
+      .order('moved_on', { ascending: false })
 
-    if (dataInicio) query = query.gte('data_movimentacao', dataInicio)
-    if (dataFim) query = query.lte('data_movimentacao', dataFim)
+    if (dataInicio) query = query.gte('moved_on', dataInicio)
+    if (dataFim) query = query.lte('moved_on', dataFim)
 
     const { data } = await query
     setMovimentacoes(data || [])
@@ -84,7 +84,7 @@ export function useContasBancarias() {
   const atualizarSaldo = async (contaId: string, saldo: number) => {
     await (api.from('contas_bancarias' as any)
       .update({
-        saldo_atual: saldo,
+        current_balance: saldo,
         updated_at: new Date().toISOString(),
       } as any) as any)
       .eq('id', contaId)
@@ -101,16 +101,16 @@ export function useContasBancarias() {
 
     const { data: existentes } = await (api
       .from('movimentacoes_bancarias' as any)
-      .select('identificador_externo') as any)
+      .select('external_id') as any)
       .eq('account_id', contaId)
 
     const idsExistentes = new Set(
-      existentes?.map((e: any) => e.identificador_externo) || []
+      existentes?.map((e: any) => e.external_id) || []
     )
 
     const novas = transacoes.filter(
-      t => !t.identificador_externo ||
-           !idsExistentes.has(t.identificador_externo)
+      t => !t.external_id ||
+           !idsExistentes.has(t.external_id)
     )
 
     if (novas.length === 0) {
@@ -125,7 +125,7 @@ export function useContasBancarias() {
       .from('movimentacoes_bancarias' as any)
       .insert(novas.map(t => ({
         ...t,
-        conta_id: contaId,
+        account_id: contaId,
         company_id: companyId,
       })) as any) as any)
 
@@ -142,11 +142,11 @@ export function useContasBancarias() {
     kind: 'conta_pagar' | 'conta_receber' | 'venda' | 'ignorar',
     referenciaId?: string
   ) => {
-    const updates: any = { status_conciliacao: 'conciliado' }
-    if (kind === 'ignorar') updates.status_conciliacao = 'ignorado'
-    if (kind === 'conta_pagar') updates.conta_pagar_id = referenciaId
-    if (kind === 'conta_receber') updates.conta_receber_id = referenciaId
-    if (kind === 'venda') updates.venda_id = referenciaId
+    const updates: any = { reconciliation_status: 'conciliado' }
+    if (kind === 'ignorar') updates.reconciliation_status = 'ignorado'
+    if (kind === 'conta_pagar') updates.payable_id = referenciaId
+    if (kind === 'conta_receber') updates.receivable_id = referenciaId
+    if (kind === 'venda') updates.sale_id = referenciaId
 
     await (api.from('movimentacoes_bancarias' as any)
       .update(updates) as any).eq('id', movimentacaoId)
@@ -165,34 +165,34 @@ export function useContasBancarias() {
       .from('transferencias_bancarias' as any)
       .insert({
         company_id: companyId,
-        conta_origem_id: contaOrigemId,
-        conta_destino_id: contaDestinoId,
+        source_account_id: contaOrigemId,
+        destination_account_id: contaDestinoId,
         valor,
         descricao,
-        data_transferencia: data,
+        transferred_on: data,
       } as any) as any)
 
     if (!error) {
       await (api.from('movimentacoes_bancarias' as any).insert([
         {
           company_id: companyId,
-          conta_id: contaOrigemId,
+          account_id: contaOrigemId,
           kind: 'debito',
           valor,
           descricao: `Transferência para: ${descricao}`,
-          data_movimentacao: data,
+          moved_on: data,
           origem: 'manual',
-          status_conciliacao: 'conciliado',
+          reconciliation_status: 'conciliado',
         },
         {
           company_id: companyId,
-          conta_id: contaDestinoId,
+          account_id: contaDestinoId,
           kind: 'credito',
           valor,
           descricao: `Transferência de: ${descricao}`,
-          data_movimentacao: data,
+          moved_on: data,
           origem: 'manual',
-          status_conciliacao: 'conciliado',
+          reconciliation_status: 'conciliado',
         },
       ] as any) as any)
       buscarContas()

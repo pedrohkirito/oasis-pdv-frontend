@@ -10,7 +10,7 @@ import { BarChart3, Download } from 'lucide-react'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Produto {
-  produto_id: string
+  product_id: string
   name: string
   categoria: string
   tipo: 'produto' | 'servico'
@@ -449,7 +449,7 @@ export default function CurvaABCComponent({ dataInicio, dataFim }: { dataInicio:
                 <tbody>
                   {produtosFiltrados.map(p => (
                     <tr
-                      key={p.produto_id}
+                      key={p.product_id}
                       style={{ borderBottom: '1px solid rgba(142,95,207,0.06)', transition: 'background 0.15s ease' }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(142,95,207,0.04)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}

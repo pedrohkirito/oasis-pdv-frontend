@@ -26,13 +26,13 @@ import { escapeHtml } from '@/utils/htmlSanitize';
 // --- Types ---
 interface ComissaoComVenda {
   id: string;
-  venda_id: string;
-  vendedor_id: string;
+  sale_id: string;
+  seller_id: string;
   company_id: string | null;
-  valor_base: number;
+  base_amount: number;
   percentual: number;
-  valor_comissao: number;
-  data_calculo: string;
+  commission_amount: number;
+  calculated_on: string;
   created_at: string;
   venda_cliente_nome?: string;
   venda_produtos?: string;
@@ -56,12 +56,12 @@ const exportToCSV = (data: ComissaoComVenda[], getVendedorNome: (id: string) => 
   const headers = ['Data', ...(isAdmin ? ['Vendedor'] : []), 'Cliente', 'Produtos', 'Valor Venda', '% Vigente', 'Comissão'];
   const rows = data.map(c => [
     c.venda_data ? format(new Date(c.venda_data), 'dd/MM/yyyy') : '-',
-    ...(isAdmin ? [getVendedorNome(c.vendedor_id)] : []),
+    ...(isAdmin ? [getVendedorNome(c.seller_id)] : []),
     c.venda_cliente_nome || '-',
     `"${(c.venda_produtos || '-').replace(/"/g, '""')}"`,
-    Number(c.valor_base).toFixed(2).replace('.', ','),
+    Number(c.base_amount).toFixed(2).replace('.', ','),
     `${c.percentual}%`,
-    Number(c.valor_comissao).toFixed(2).replace('.', ','),
+    Number(c.commission_amount).toFixed(2).replace('.', ','),
   ]);
   const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -86,12 +86,12 @@ const exportToPDF = (
   const rows = data.map(c => `
     <tr>
       <td>${c.venda_data ? format(new Date(c.venda_data), 'dd/MM/yyyy') : '-'}</td>
-      ${isAdmin ? `<td>${escapeHtml(getVendedorNome(c.vendedor_id))}</td>` : ''}
+      ${isAdmin ? `<td>${escapeHtml(getVendedorNome(c.seller_id))}</td>` : ''}
       <td>${escapeHtml(c.venda_cliente_nome || '-')}</td>
       <td>${escapeHtml(c.venda_produtos || '-')}</td>
-      <td style="text-align:right">${formatCurrency(Number(c.valor_base))}</td>
+      <td style="text-align:right">${formatCurrency(Number(c.base_amount))}</td>
       <td style="text-align:center">${c.percentual}%</td>
-      <td style="text-align:right">${formatCurrency(Number(c.valor_comissao))}</td>
+      <td style="text-align:right">${formatCurrency(Number(c.commission_amount))}</td>
     </tr>
   `).join('');
 
@@ -135,8 +135,8 @@ const buildChartData = (comissoes: ComissaoComVenda[]) => {
     if (!c.venda_data) return;
     const key = c.venda_data.substring(0, 7);
     if (!map[key]) map[key] = { vendido: 0, comissao: 0 };
-    map[key].vendido += Number(c.valor_base);
-    map[key].comissao += Number(c.valor_comissao);
+    map[key].vendido += Number(c.base_amount);
+    map[key].comissao += Number(c.commission_amount);
   });
   return Object.entries(map)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -275,7 +275,7 @@ const Comissoes = () => {
       const chunk = vendaIds.slice(i, i + 100);
       let query = api
         .from('commission')
-        .select('valor_base, valor_comissao')
+        .select('base_amount, commission_amount')
         .eq('company_id', companyId)
         .in('sale_id', chunk);
 
@@ -283,8 +283,8 @@ const Comissoes = () => {
       if (data) allComissoes = allComissoes.concat(data);
     }
 
-    const tv = allComissoes.reduce((s, c) => s + Number(c.valor_base), 0);
-    const tc = allComissoes.reduce((s, c) => s + Number(c.valor_comissao), 0);
+    const tv = allComissoes.reduce((s, c) => s + Number(c.base_amount), 0);
+    const tc = allComissoes.reduce((s, c) => s + Number(c.commission_amount), 0);
     setTotalVendido(tv);
     setTotalComissao(tc);
     setTotalRecords(allComissoes.length);
@@ -328,12 +328,12 @@ const Comissoes = () => {
     if (count !== null) setTotalCount(count);
 
     // Enrich with venda data
-    const pageVendaIds = [...new Set((data || []).map(c => c.venda_id))];
+    const pageVendaIds = [...new Set((data || []).map(c => c.sale_id))];
     let vendasMap: Record<string, any> = {};
     if (pageVendaIds.length > 0) {
       const { data: vendas } = await api
         .from('sale')
-        .select('id, cliente_nome, produtos, data_venda, vendedor')
+        .select('id, customer_name, produtos, sold_on, vendedor')
         .in('id', pageVendaIds)
         .eq('company_id', companyId);
       if (vendas) {
@@ -343,10 +343,10 @@ const Comissoes = () => {
 
     const enriched: ComissaoComVenda[] = (data || []).map(c => ({
       ...c,
-      venda_cliente_nome: vendasMap[c.venda_id]?.cliente_nome,
-      venda_produtos: vendasMap[c.venda_id]?.produtos,
-      venda_data: vendasMap[c.venda_id]?.data_venda,
-      vendedor_nome: vendasMap[c.venda_id]?.vendedor,
+      venda_cliente_nome: vendasMap[c.sale_id]?.customer_name,
+      venda_produtos: vendasMap[c.sale_id]?.produtos,
+      venda_data: vendasMap[c.sale_id]?.sold_on,
+      vendedor_nome: vendasMap[c.sale_id]?.vendedor,
     }));
 
     setPaginatedComissoes(enriched);
@@ -368,20 +368,20 @@ const Comissoes = () => {
       const chunk = vendaIds.slice(i, i + 100);
       const { data } = await api
         .from('commission')
-        .select('id, venda_id, vendedor_id, valor_base, percentual, valor_comissao, data_calculo, empresa_id, created_at')
+        .select('id, sale_id, seller_id, base_amount, percentual, commission_amount, calculated_on, company_id, created_at')
         .eq('company_id', companyId)
         .in('sale_id', chunk);
       if (data) allComissoes = allComissoes.concat(data);
     }
 
     // Enrich with venda dates for chart
-    const allVendaIds = [...new Set(allComissoes.map(c => c.venda_id))];
+    const allVendaIds = [...new Set(allComissoes.map(c => c.sale_id))];
     let vendasMap: Record<string, any> = {};
     for (let i = 0; i < allVendaIds.length; i += 100) {
       const chunk = allVendaIds.slice(i, i + 100);
       const { data: vendas } = await api
         .from('sale')
-        .select('id, data_venda')
+        .select('id, sold_on')
         .in('id', chunk)
         .eq('company_id', companyId);
       if (vendas) vendas.forEach(v => { vendasMap[v.id] = v; });
@@ -389,7 +389,7 @@ const Comissoes = () => {
 
     const enriched: ComissaoComVenda[] = allComissoes.map(c => ({
       ...c,
-      venda_data: vendasMap[c.venda_id]?.data_venda,
+      venda_data: vendasMap[c.sale_id]?.sold_on,
     }));
 
     setComissoes(enriched);
@@ -400,12 +400,12 @@ const Comissoes = () => {
     const mesAtual = format(new Date(), 'yyyy-MM');
     const { data } = await api
       .from('seller_goal')
-      .select('vendedor_id, valor_meta')
+      .select('seller_id, goal_amount')
       .eq('company_id', companyId)
       .eq('reference_month', mesAtual);
 
     const map: Record<string, number> = {};
-    (data || []).forEach((m: any) => { map[m.vendedor_id] = Number(m.valor_meta); });
+    (data || []).forEach((m: any) => { map[m.seller_id] = Number(m.goal_amount); });
     setMetas(map);
   };
 
@@ -431,7 +431,7 @@ const Comissoes = () => {
   const getVendedorNome = (vendedorId: string) => {
     const v = vendedores.find(v => v.id === vendedorId);
     if (v) return v.name;
-    const c = comissoes.find(c => c.vendedor_id === vendedorId && c.vendedor_nome);
+    const c = comissoes.find(c => c.seller_id === vendedorId && c.vendedor_nome);
     if (c?.vendedor_nome) return c.vendedor_nome;
     return vendedorId.substring(0, 8) + '...';
   };
@@ -440,16 +440,16 @@ const Comissoes = () => {
 
   const ranking = useMemo(() => {
     if (!isAdmin) return [];
-    const map: Record<string, { vendedor_id: string; total_vendido: number; total_comissao: number; qtd: number }> = {};
+    const map: Record<string, { seller_id: string; total_sold: number; total_commission: number; qtd: number }> = {};
     comissoes.forEach(c => {
-      if (!map[c.vendedor_id]) {
-        map[c.vendedor_id] = { vendedor_id: c.vendedor_id, total_vendido: 0, total_comissao: 0, qtd: 0 };
+      if (!map[c.seller_id]) {
+        map[c.seller_id] = { seller_id: c.seller_id, total_sold: 0, total_commission: 0, qtd: 0 };
       }
-      map[c.vendedor_id].total_vendido += Number(c.valor_base);
-      map[c.vendedor_id].total_comissao += Number(c.valor_comissao);
-      map[c.vendedor_id].qtd += 1;
+      map[c.seller_id].total_sold += Number(c.base_amount);
+      map[c.seller_id].total_commission += Number(c.commission_amount);
+      map[c.seller_id].qtd += 1;
     });
-    return Object.values(map).sort((a, b) => b.total_vendido - a.total_vendido);
+    return Object.values(map).sort((a, b) => b.total_sold - a.total_sold);
   }, [comissoes, isAdmin]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -472,9 +472,9 @@ const Comissoes = () => {
   }, [selectedVendedor, dateRange]);
 
   // Derived KPI values
-  const melhorVendedora = ranking[0] ? getVendedorNome(ranking[0].vendedor_id) : '—';
+  const melhorVendedora = ranking[0] ? getVendedorNome(ranking[0].seller_id) : '—';
   const ticketMedio = totalRecords > 0 ? totalComissao / totalRecords : 0;
-  const maxRankComissao = ranking[0]?.total_comissao || 1;
+  const maxRankComissao = ranking[0]?.total_commission || 1;
 
   const getMedalStyle = (idx: number): React.CSSProperties => {
     if (idx === 0) return { background: 'linear-gradient(135deg, #F59E0B, #D97706)' };
@@ -724,8 +724,8 @@ const Comissoes = () => {
               {isAdmin ? (
                 Object.entries(metas).map(([vendedorId, meta]) => {
                   const vendido = comissoes
-                    .filter(c => c.vendedor_id === vendedorId)
-                    .reduce((s, c) => s + Number(c.valor_base), 0);
+                    .filter(c => c.seller_id === vendedorId)
+                    .reduce((s, c) => s + Number(c.base_amount), 0);
                   return (
                     <MetaVendedorCard
                       key={vendedorId}
@@ -830,17 +830,17 @@ const Comissoes = () => {
             <div>
               {ranking.map((r, idx) => (
                 <motion.div
-                  key={r.vendedor_id}
+                  key={r.seller_id}
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05, duration: 0.35 }}
-                  onMouseEnter={() => setHoveredRankRow(r.vendedor_id)}
+                  onMouseEnter={() => setHoveredRankRow(r.seller_id)}
                   onMouseLeave={() => setHoveredRankRow(null)}
                   style={{
                     padding: '16px 24px',
                     borderBottom: idx < ranking.length - 1 ? '1px solid rgba(142,95,207,0.06)' : 'none',
                     display: 'flex', alignItems: 'center', gap: 16,
-                    background: hoveredRankRow === r.vendedor_id ? 'rgba(142,95,207,0.04)' : 'transparent',
+                    background: hoveredRankRow === r.seller_id ? 'rgba(142,95,207,0.04)' : 'transparent',
                     transition: 'background 0.15s ease',
                     cursor: 'default',
                   }}
@@ -864,13 +864,13 @@ const Comissoes = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'Gilroy, sans-serif',
                   }}>
-                    {getInitials(getVendedorNome(r.vendedor_id))}
+                    {getInitials(getVendedorNome(r.seller_id))}
                   </div>
 
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#1F2937', margin: '0 0 4px 0', fontFamily: 'Gilroy, sans-serif' }}>
-                      {getVendedorNome(r.vendedor_id)}
+                      {getVendedorNome(r.seller_id)}
                     </p>
                     <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '0 0 6px 0', fontFamily: 'Gilroy, sans-serif' }}>
                       {r.qtd} venda{r.qtd !== 1 ? 's' : ''} no período
@@ -879,7 +879,7 @@ const Comissoes = () => {
                     <div style={{ height: 6, borderRadius: 99, background: 'rgba(142,95,207,0.1)', overflow: 'hidden' }}>
                       <div style={{
                         height: '100%',
-                        width: `${Math.round((r.total_comissao / maxRankComissao) * 100)}%`,
+                        width: `${Math.round((r.total_commission / maxRankComissao) * 100)}%`,
                         background: getBarColor(idx),
                         borderRadius: 99,
                         transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
@@ -890,12 +890,12 @@ const Comissoes = () => {
                   {/* Values */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ fontSize: '1rem', fontWeight: 800, color: '#8E5FCF', margin: '0 0 2px 0', fontFamily: 'Gilroy, sans-serif' }}>
-                      {formatCurrency(r.total_comissao)}
+                      {formatCurrency(r.total_commission)}
                     </p>
                     <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: 0, fontFamily: 'Gilroy, sans-serif' }}>
-                      {r.total_vendido > 0
-                        ? `${((r.total_comissao / r.total_vendido) * 100).toFixed(1)}% de ${formatCurrency(r.total_vendido)}`
-                        : formatCurrency(r.total_vendido)}
+                      {r.total_sold > 0
+                        ? `${((r.total_commission / r.total_sold) * 100).toFixed(1)}% de ${formatCurrency(r.total_sold)}`
+                        : formatCurrency(r.total_sold)}
                     </p>
                   </div>
                 </motion.div>
@@ -1017,10 +1017,10 @@ const Comissoes = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 11, fontWeight: 700, color: '#8E5FCF', fontFamily: 'Gilroy, sans-serif',
                       }}>
-                        {getInitials(getVendedorNome(c.vendedor_id))}
+                        {getInitials(getVendedorNome(c.seller_id))}
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {getVendedorNome(c.vendedor_id)}
+                        {getVendedorNome(c.seller_id)}
                       </span>
                     </div>
                   )}
@@ -1039,7 +1039,7 @@ const Comissoes = () => {
                   </span>
 
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#1F2937', fontFamily: 'Gilroy, sans-serif', textAlign: 'right' }}>
-                    {formatCurrency(Number(c.valor_base))}
+                    {formatCurrency(Number(c.base_amount))}
                   </span>
 
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1053,7 +1053,7 @@ const Comissoes = () => {
                   </div>
 
                   <span style={{ fontSize: '1rem', fontWeight: 700, color: '#8E5FCF', fontFamily: 'Gilroy, sans-serif', textAlign: 'right' }}>
-                    {formatCurrency(Number(c.valor_comissao))}
+                    {formatCurrency(Number(c.commission_amount))}
                   </span>
                 </div>
               ))}

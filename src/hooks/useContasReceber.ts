@@ -5,19 +5,19 @@ import { useEmpresa } from './useEmpresa';
 export interface ContaReceber {
   id: string;
   company_id: string;
-  cliente_id: string | null;
-  cliente_nome: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
   descricao: string;
   valor: number;
-  valor_recebido: number;
+  received_amount: number;
   status: 'pendente' | 'recebido_parcial' | 'recebido' | 'vencido' | 'cancelado';
   categoria: string | null;
-  venda_id: string | null;
-  numero_parcela: number | null;
-  total_parcelas: number | null;
-  forma_recebimento: 'dinheiro' | 'pix' | 'debito' | 'credito' | 'boleto' | 'transferencia' | null;
-  data_vencimento: string;
-  data_recebimento: string | null;
+  sale_id: string | null;
+  installment_number: number | null;
+  installment_count: number | null;
+  receipt_form: 'dinheiro' | 'pix' | 'debito' | 'credito' | 'boleto' | 'transferencia' | null;
+  due_on: string;
+  received_on: string | null;
   observacoes: string | null;
   created_at: string;
   updated_at: string;
@@ -74,23 +74,23 @@ export function useContasReceber() {
   const receberConta = async (
     id: string,
     valorRecebido: number,
-    formaRecebimento: ContaReceber['forma_recebimento'],
+    formaRecebimento: ContaReceber['receipt_form'],
     dataRecebimento: string
   ) => {
     const conta = contas.find(c => c.id === id);
     if (!conta) return { error: new Error('Conta não encontrada') };
 
-    const novoRecebido = Number(conta.valor_recebido || 0) + valorRecebido;
+    const novoRecebido = Number(conta.received_amount || 0) + valorRecebido;
     const status: ContaReceber['status'] =
       novoRecebido >= Number(conta.valor) ? 'recebido' : 'recebido_parcial';
 
     const { error } = await (api as any)
       .from('receivable')
       .update({
-        valor_recebido: novoRecebido,
+        received_amount: novoRecebido,
         status,
-        forma_recebimento: formaRecebimento,
-        data_recebimento: status === 'recebido' ? dataRecebimento : null,
+        receipt_form: formaRecebimento,
+        received_on: status === 'recebido' ? dataRecebimento : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);

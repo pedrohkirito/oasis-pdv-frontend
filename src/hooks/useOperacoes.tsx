@@ -18,21 +18,21 @@ export type KanbanStatus = typeof KANBAN_COLUMNS[number]['id'];
 export interface Operacao {
   id: string;
   company_id: string;
-  venda_id: string | null;
+  sale_id: string | null;
   user_id: string;
-  cliente_nome: string;
-  cliente_telefone: string | null;
-  cliente_email: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  customer_email: string | null;
   produtos: string;
   kind: string;
   status: KanbanStatus;
-  status_pagamento: string;
-  data_prevista: string | null;
-  data_entrega: string | null;
-  data_montagem: string | null;
+  payment_status: string;
+  expected_on: string | null;
+  delivered_on: string | null;
+  assembly_on: string | null;
   urgencia: string;
-  fornecedor_id: string | null;
-  fornecedor_nome: string | null;
+  supplier_id: string | null;
+  supplier_name: string | null;
   observacoes: string | null;
   vendedor?: string | null;
   created_at: string;
@@ -41,20 +41,20 @@ export interface Operacao {
 
 export interface OperacaoTarefa {
   id: string;
-  operacao_id: string;
+  operation_id: string;
   titulo: string;
   concluida: boolean;
-  concluida_em: string | null;
+  completed_at: string | null;
   ordem: number;
 }
 
 export interface OperacaoHistorico {
   id: string;
-  operacao_id: string;
+  operation_id: string;
   kind: string;
   descricao: string;
-  status_anterior: string | null;
-  status_novo: string | null;
+  previous_status: string | null;
+  new_status: string | null;
   user_id: string;
   created_at: string;
 }
@@ -84,7 +84,7 @@ export function useOperacoes() {
     setLoading(true);
     const { data, error } = await api
       .from('operation')
-      .select('*, vendas:venda_id(vendedor)')
+      .select('*, vendas:sale_id(vendedor)')
       .eq('company_id', companyId)
       .order('created_at', { ascending: false });
 
@@ -126,7 +126,7 @@ export function useOperacoes() {
 
     // Create default checklist
     const tarefas = DEFAULT_CHECKLIST.map((titulo, i) => ({
-      operacao_id: created.id,
+      operation_id: created.id,
       titulo,
       ordem: i,
     }));
@@ -134,10 +134,10 @@ export function useOperacoes() {
 
     // Add history entry
     await api.from('operation_event').insert({
-      operacao_id: created.id,
+      operation_id: created.id,
       kind: 'status_change',
       descricao: 'Operação criada',
-      status_novo: 'venda_confirmada',
+      new_status: 'venda_confirmada',
       user_id: user.id,
     } as any);
 
@@ -159,11 +159,11 @@ export function useOperacoes() {
     }
 
     await api.from('operation_event').insert({
-      operacao_id: operacaoId,
+      operation_id: operacaoId,
       kind: 'status_change',
       descricao: `Status alterado de "${getStatusLabel(oldStatus)}" para "${getStatusLabel(newStatus)}"`,
-      status_anterior: oldStatus,
-      status_novo: newStatus,
+      previous_status: oldStatus,
+      new_status: newStatus,
       user_id: user.id,
     } as any);
 

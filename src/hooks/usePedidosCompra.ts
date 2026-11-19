@@ -17,56 +17,56 @@ export type StatusPedido =
 
 export interface ItemPedido {
   id?: string;
-  pedido_id?: string;
-  empresa_id?: string;
-  produto_id: string | null;
-  produto_nome: string;
+  purchase_order_id?: string;
+  company_id?: string;
+  product_id: string | null;
+  product_name: string;
   quantidade: number;
-  quantidade_recebida: number;
-  valor_unitario: number;
-  valor_total?: number;
+  quantity_received: number;
+  unit_amount: number;
+  total_amount?: number;
   created_at?: string;
 }
 
 export interface HistoricoPedido {
   id: string;
-  pedido_id: string;
+  purchase_order_id: string;
   company_id: string | null;
-  status_anterior: string | null;
-  status_novo: string | null;
+  previous_status: string | null;
+  new_status: string | null;
   observacao: string | null;
-  usuario_id: string | null;
-  usuario_nome: string | null;
+  user_id: string | null;
+  user_name: string | null;
   created_at: string;
 }
 
 export interface PedidoCompra {
   id: string;
   company_id: string;
-  numero_pedido: string | null;
-  fornecedor_id: string | null;
-  fornecedor_nome: string | null;
+  order_number: string | null;
+  supplier_id: string | null;
+  supplier_name: string | null;
   status: StatusPedido;
-  valor_total: number;
-  prazo_entrega: string | null;
-  condicao_pagamento: string | null;
-  numero_nf_fornecedor: string | null;
+  total_amount: number;
+  delivery_deadline_on: string | null;
+  payment_terms: string | null;
+  supplier_invoice_number: string | null;
   observacoes: string | null;
-  recebido_em: string | null;
+  received_on: string | null;
   created_at: string;
   updated_at: string;
   pedidos_compra_itens: ItemPedido[];
 }
 
 export interface NovoPedidoPayload {
-  fornecedor_id?: string | null;
-  fornecedor_nome?: string | null;
-  numero_pedido?: string | null;
-  prazo_entrega?: string | null;
-  condicao_pagamento?: string | null;
-  numero_nf_fornecedor?: string | null;
+  supplier_id?: string | null;
+  supplier_name?: string | null;
+  order_number?: string | null;
+  delivery_deadline_on?: string | null;
+  payment_terms?: string | null;
+  supplier_invoice_number?: string | null;
   observacoes?: string | null;
-  valor_total?: number;
+  total_amount?: number;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -104,13 +104,13 @@ export function usePedidosCompra() {
     observacao: string = '',
   ) => {
     await (api as any).from('purchase_order_event').insert({
-      pedido_id: pedidoId,
+      purchase_order_id: pedidoId,
       company_id: companyId,
-      status_anterior: statusAnterior,
-      status_novo: statusNovo,
+      previous_status: statusAnterior,
+      new_status: statusNovo,
       observacao: observacao || null,
-      usuario_id: user?.id ?? null,
-      usuario_nome: user?.user_metadata?.name ?? user?.email ?? null,
+      user_id: user?.id ?? null,
+      user_name: user?.user_metadata?.name ?? user?.email ?? null,
     });
   };
 
@@ -123,13 +123,13 @@ export function usePedidosCompra() {
     if (!companyId) return { data: null, error: new Error('Sem empresa') };
 
     const valorTotal = itens.reduce(
-      (acc, i) => acc + i.quantidade * i.valor_unitario,
+      (acc, i) => acc + i.quantidade * i.unit_amount,
       0,
     );
 
     const { data, error } = await (api as any)
       .from('purchase_order')
-      .insert({ ...pedido, company_id: companyId, valor_total: valorTotal })
+      .insert({ ...pedido, company_id: companyId, total_amount: valorTotal })
       .select()
       .single();
 
@@ -139,7 +139,7 @@ export function usePedidosCompra() {
       await (api as any).from('purchase_order_item').insert(
         itens.map(i => ({
           ...i,
-          pedido_id: data.id,
+          purchase_order_id: data.id,
           company_id: companyId,
         })),
       );
@@ -164,7 +164,7 @@ export function usePedidosCompra() {
       .update({
         status: statusNovo,
         updated_at: new Date().toISOString(),
-        ...(statusNovo === 'recebido' ? { recebido_em: new Date().toISOString() } : {}),
+        ...(statusNovo === 'recebido' ? { received_on: new Date().toISOString() } : {}),
       })
       .eq('id', pedidoId);
 

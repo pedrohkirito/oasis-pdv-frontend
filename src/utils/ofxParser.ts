@@ -3,10 +3,10 @@ export function parseOFX(conteudo: string) {
     kind: 'debito' | 'credito'
     valor: number
     descricao: string
-    data_movimentacao: string
-    identificador_externo: string
+    moved_on: string
+    external_id: string
     origem: 'ofx'
-    status_conciliacao: 'pendente'
+    reconciliation_status: 'pendente'
   }[] = []
 
   // Remove headers e pega só o XML
@@ -40,10 +40,10 @@ export function parseOFX(conteudo: string) {
       kind: valor < 0 || kind === 'DEBIT' ? 'debito' : 'credito',
       valor: Math.abs(valor),
       descricao: getValue('MEMO') || getValue('NAME'),
-      data_movimentacao: data.toISOString().split('T')[0],
-      identificador_externo: getValue('FITID'),
+      moved_on: data.toISOString().split('T')[0],
+      external_id: getValue('FITID'),
       origem: 'ofx' as const,
-      status_conciliacao: 'pendente' as const,
+      reconciliation_status: 'pendente' as const,
     })
   }
 
@@ -72,12 +72,12 @@ export function parseOFX(conteudo: string) {
             kind: val < 0 ? 'debito' : 'credito',
             valor: Math.abs(val),
             descricao: trnAtual.memo || '',
-            data_movimentacao: ds
+            moved_on: ds
               ? `${ds.slice(0, 4)}-${ds.slice(4, 6)}-${ds.slice(6, 8)}`
               : new Date().toISOString().split('T')[0],
-            identificador_externo: trnAtual.fitid,
+            external_id: trnAtual.fitid,
             origem: 'ofx' as const,
-            status_conciliacao: 'pendente' as const,
+            reconciliation_status: 'pendente' as const,
           })
         }
         trnAtual = {}

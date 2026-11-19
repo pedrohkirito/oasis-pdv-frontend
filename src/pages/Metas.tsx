@@ -201,10 +201,10 @@ function ModalNovaMeta({ open, onOpenChange, onSalvo }: {
       periodo,
       valor: parseMaskedValue(valor),
       quantidade: quantidade ? parseInt(quantidade) : null,
-      data_inicio: datas.inicio,
-      data_fim: datas.fim,
+      start_on: datas.inicio,
+      end_on: datas.fim,
     }
-    if (kind === 'vendedora') { meta.usuario_id = userId; meta.usuario_nome = usuarioNome }
+    if (kind === 'vendedora') { meta.user_id = userId; meta.user_name = usuarioNome }
     if (kind === 'category') { meta.categoria = categoria }
 
     const { error } = await criarMeta(meta)
@@ -477,7 +477,7 @@ const Metas = () => {
 
   // Histórico
   const historico = useMemo(() => progressos.map(p => ({
-    periodo: `${p.meta.data_inicio} → ${p.meta.data_fim}`,
+    periodo: `${p.meta.start_on} → ${p.meta.end_on}`,
     kind: LABEL_TIPO[p.meta.kind],
     meta: p.meta.valor,
     realizado: p.realizado,
@@ -620,7 +620,7 @@ const Metas = () => {
                           let titulo = 'Sem meta configurada'
                           if (p) {
                             if (p.meta.kind === 'loja') titulo = tituloLojaPeriodo[p.meta.periodo] ?? 'Meta da Loja'
-                            else if (p.meta.kind === 'vendedora') titulo = `${p.meta.usuario_nome ?? 'Vendedora'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
+                            else if (p.meta.kind === 'vendedora') titulo = `${p.meta.user_name ?? 'Vendedora'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
                             else if (p.meta.kind === 'category') titulo = `${p.meta.categoria ?? 'Categoria'} · ${LABEL_PERIODO[p.meta.periodo as keyof typeof LABEL_PERIODO] ?? p.meta.periodo}`
                           }
                           return (
@@ -733,11 +733,11 @@ const Metas = () => {
                         <div key={p.meta.id} style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(142,95,207,0.12)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #8E5FCF, #47118F)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <span style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '1rem', color: 'white' }}>
-                              {(p.meta.usuario_nome || 'V')[0].toUpperCase()}
+                              {(p.meta.user_name || 'V')[0].toUpperCase()}
                             </span>
                           </div>
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.9rem', color: '#1F2937', marginBottom: '2px' }}>{p.meta.usuario_nome || 'Vendedora'}</p>
+                            <p style={{ fontFamily: 'Gilroy', fontWeight: 700, fontSize: '0.9rem', color: '#1F2937', marginBottom: '2px' }}>{p.meta.user_name || 'Vendedora'}</p>
                             <p style={{ fontFamily: 'Gilroy', fontSize: '0.8rem', color: '#9CA3AF' }}>{LABEL_PERIODO[p.meta.periodo]} · {fmtBRL(p.meta.valor)}</p>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -150,7 +150,7 @@ export function NiveisAcessoSection() {
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-primary" />
                         {nivel.name}
-                        {nivel.is_sistema && (
+                        {nivel.is_system && (
                           <Badge variant="secondary" className="text-xs">Sistema</Badge>
                         )}
                       </div>
@@ -171,8 +171,8 @@ export function NiveisAcessoSection() {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => handleEdit(nivel)}
-                          disabled={nivel.is_sistema}
-                          title={nivel.is_sistema ? 'Níveis do sistema não podem ser editados' : 'Editar'}
+                          disabled={nivel.is_system}
+                          title={nivel.is_system ? 'Níveis do sistema não podem ser editados' : 'Editar'}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -181,8 +181,8 @@ export function NiveisAcessoSection() {
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => confirmDelete(nivel)}
-                          disabled={nivel.is_sistema}
-                          title={nivel.is_sistema ? 'Níveis do sistema não podem ser excluídos' : 'Excluir'}
+                          disabled={nivel.is_system}
+                          title={nivel.is_system ? 'Níveis do sistema não podem ser excluídos' : 'Excluir'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

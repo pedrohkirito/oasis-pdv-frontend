@@ -7,11 +7,11 @@ import { ptBR } from 'date-fns/locale'
 
 interface OrcamentoItem {
   id: string
-  produto_nome: string
+  product_name: string
   variacao?: string
   quantidade: number
-  preco_unitario: number
-  desconto_item?: number
+  unit_price: number
+  item_discount?: number
   total: number
 }
 
@@ -19,15 +19,15 @@ interface Orcamento {
   id: string
   numero: string
   status: string
-  cliente_nome?: string
-  cliente_email?: string
-  cliente_telefone?: string
+  customer_name?: string
+  customer_email?: string
+  customer_phone?: string
   validade?: string
   subtotal: number
   desconto?: number
   total: number
   observacoes?: string
-  condicao_pagamento?: string
+  payment_terms?: string
   created_at: string
   orcamento_itens?: OrcamentoItem[]
 }
@@ -322,16 +322,16 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
         <div style={s.grid2}>
           <div style={s.card}>
             <div style={s.cardTitulo}>Cliente</div>
-            {orcamento.cliente_nome && (
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>{orcamento.cliente_nome}</div>
+            {orcamento.customer_name && (
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{orcamento.customer_name}</div>
             )}
-            {orcamento.cliente_telefone && (
-              <div style={{ fontSize: 12, color: '#6B7280' }}>📞 {orcamento.cliente_telefone}</div>
+            {orcamento.customer_phone && (
+              <div style={{ fontSize: 12, color: '#6B7280' }}>📞 {orcamento.customer_phone}</div>
             )}
-            {orcamento.cliente_email && (
-              <div style={{ fontSize: 12, color: '#6B7280' }}>✉ {orcamento.cliente_email}</div>
+            {orcamento.customer_email && (
+              <div style={{ fontSize: 12, color: '#6B7280' }}>✉ {orcamento.customer_email}</div>
             )}
-            {!orcamento.cliente_nome && !orcamento.cliente_email && !orcamento.cliente_telefone && (
+            {!orcamento.customer_name && !orcamento.customer_email && !orcamento.customer_phone && (
               <div style={{ fontSize: 12, color: '#9CA3AF' }}>Não informado</div>
             )}
           </div>
@@ -349,10 +349,10 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
                   <strong>{fmtData(orcamento.validade)}</strong>
                 </div>
               )}
-              {orcamento.condicao_pagamento && (
+              {orcamento.payment_terms && (
                 <div>
                   <span style={{ color: '#9CA3AF' }}>Pagamento: </span>
-                  <strong>{orcamento.condicao_pagamento}</strong>
+                  <strong>{orcamento.payment_terms}</strong>
                 </div>
               )}
             </div>
@@ -370,7 +370,7 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
               <th style={s.th}>Descrição</th>
               <th style={{ ...s.thRight, width: 60 }}>Qtd</th>
               <th style={{ ...s.thRight, width: 100 }}>Unit.</th>
-              {itens.some(i => (i.desconto_item ?? 0) > 0) && (
+              {itens.some(i => (i.item_discount ?? 0) > 0) && (
                 <th style={{ ...s.thRight, width: 90 }}>Desconto</th>
               )}
               <th style={{ ...s.thRight, width: 110 }}>Total</th>
@@ -381,16 +381,16 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
               <tr key={item.id} style={{ background: idx % 2 === 0 ? '#fff' : '#FAFAFA' }}>
                 <td style={{ ...s.td, color: '#9CA3AF' }}>{idx + 1}</td>
                 <td style={s.td}>
-                  <div style={{ fontWeight: 500 }}>{item.produto_nome}</div>
+                  <div style={{ fontWeight: 500 }}>{item.product_name}</div>
                   {item.variacao && (
                     <div style={{ fontSize: 11, color: '#6B7280' }}>{item.variacao}</div>
                   )}
                 </td>
                 <td style={s.tdRight}>{item.quantidade}</td>
-                <td style={s.tdRight}>{fmtBRL(item.preco_unitario)}</td>
-                {itens.some(i => (i.desconto_item ?? 0) > 0) && (
+                <td style={s.tdRight}>{fmtBRL(item.unit_price)}</td>
+                {itens.some(i => (i.item_discount ?? 0) > 0) && (
                   <td style={{ ...s.tdRight, color: '#EF4444' }}>
-                    {(item.desconto_item ?? 0) > 0 ? `- ${fmtBRL(item.desconto_item!)}` : '—'}
+                    {(item.item_discount ?? 0) > 0 ? `- ${fmtBRL(item.item_discount!)}` : '—'}
                   </td>
                 )}
                 <td style={{ ...s.tdRight, fontWeight: 600 }}>{fmtBRL(item.total)}</td>
@@ -420,10 +420,10 @@ export function PDFOrcamento({ orcamento, onClose }: PDFOrcamentoProps) {
         {/* ── Rodapé ──────────────────────────────────────────────────── */}
         <div style={s.footer}>
           <div>
-            {orcamento.condicao_pagamento && (
+            {orcamento.payment_terms && (
               <div style={s.section}>
                 <div style={s.cardTitulo}>Condição de pagamento</div>
-                <div style={{ fontSize: 12 }}>{orcamento.condicao_pagamento}</div>
+                <div style={{ fontSize: 12 }}>{orcamento.payment_terms}</div>
               </div>
             )}
             {orcamento.observacoes && (

@@ -40,10 +40,10 @@ interface ClienteContatos {
 interface ItemVendaDetalhado {
   id: string;
   quantidade: number;
-  preco_unitario: number;
+  unit_price: number;
   subtotal: number;
-  produto_nome: string;
-  fornecedor_nome: string | null;
+  product_name: string;
+  supplier_name: string | null;
 }
 
 const TAILWIND_TO_HEX: Record<string, string> = {
@@ -87,22 +87,22 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   const [clienteContatos, setClienteContatos] = useState<ClienteContatos | null>(null);
   const [itensVenda, setItensVenda] = useState<ItemVendaDetalhado[]>([]);
   const [editForm, setEditForm] = useState({
-    cliente_nome: '',
-    cliente_telefone: '',
-    cliente_email: '',
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
     produtos: '',
-    data_prevista: '',
+    expected_on: '',
     observacoes: '',
   });
 
   useEffect(() => {
     if (operacao) {
       setEditForm({
-        cliente_nome: operacao.cliente_nome || '',
-        cliente_telefone: operacao.cliente_telefone || '',
-        cliente_email: operacao.cliente_email || '',
+        customer_name: operacao.customer_name || '',
+        customer_phone: operacao.customer_phone || '',
+        customer_email: operacao.customer_email || '',
         produtos: operacao.produtos || '',
-        data_prevista: operacao.data_prevista || '',
+        expected_on: operacao.expected_on || '',
         observacoes: operacao.observacoes || '',
       });
       setEditing(false);
@@ -126,27 +126,27 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
   }, [operacao?.id, open]);
 
   const fetchItensVenda = async () => {
-    if (!operacao?.venda_id) {
+    if (!operacao?.sale_id) {
       setItensVenda([]);
       return;
     }
     const { data } = await api
       .from('sale_item')
-      .select('id, quantidade, preco_unitario, subtotal, produto_id')
-      .eq('sale_id', operacao.venda_id);
+      .select('id, quantidade, unit_price, subtotal, product_id')
+      .eq('sale_id', operacao.sale_id);
 
     if (!data || data.length === 0) {
       setItensVenda([]);
       return;
     }
 
-    const produtoIds = data.map(i => i.produto_id);
+    const produtoIds = data.map(i => i.product_id);
     const { data: produtos } = await api
       .from('product')
-      .select('id, name, fornecedor_id')
+      .select('id, name, supplier_id')
       .in('id', produtoIds);
 
-    const fornecedorIds = (produtos || []).filter(p => p.fornecedor_id).map(p => p.fornecedor_id!);
+    const fornecedorIds = (produtos || []).filter(p => p.supplier_id).map(p => p.supplier_id!);
     let fornecedoresMap: Record<string, string> = {};
     if (fornecedorIds.length > 0) {
       const { data: fornecedores } = await api
@@ -158,26 +158,26 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
     const produtosMap = (produtos || []).reduce((acc, p) => ({
       ...acc,
-      [p.id]: { name: p.name, fornecedor_nome: p.fornecedor_id ? (fornecedoresMap[p.fornecedor_id] || null) : null }
-    }), {} as Record<string, { name: string; fornecedor_nome: string | null }>);
+      [p.id]: { name: p.name, supplier_name: p.supplier_id ? (fornecedoresMap[p.supplier_id] || null) : null }
+    }), {} as Record<string, { name: string; supplier_name: string | null }>);
 
     setItensVenda(data.map(item => ({
       id: item.id,
       quantidade: item.quantidade,
-      preco_unitario: item.preco_unitario,
+      unit_price: item.unit_price,
       subtotal: item.subtotal,
-      produto_nome: produtosMap[item.produto_id]?.name || 'Produto',
-      fornecedor_nome: produtosMap[item.produto_id]?.fornecedor_nome || null,
+      product_name: produtosMap[item.product_id]?.name || 'Produto',
+      supplier_name: produtosMap[item.product_id]?.supplier_name || null,
     })));
   };
 
   const fetchClienteContatos = async () => {
-    if (!operacao?.empresa_id || !operacao?.cliente_nome) return;
+    if (!operacao?.company_id || !operacao?.customer_name) return;
     const { data } = await api
       .from('customer')
       .select('telefone, telefone_adicional, email')
-      .eq('company_id', operacao.empresa_id)
-      .eq('name', operacao.cliente_nome)
+      .eq('company_id', operacao.company_id)
+      .eq('name', operacao.customer_name)
       .limit(1)
       .maybeSingle();
     setClienteContatos(data as ClienteContatos | null);
@@ -219,11 +219,11 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     const concluida = !tarefa.concluida;
     await api
       .from('operation_task')
-      .update({ concluida, concluida_em: concluida ? new Date().toISOString() : null, concluida_por: concluida ? user.id : null } as any)
+      .update({ concluida, completed_at: concluida ? new Date().toISOString() : null, completed_by: concluida ? user.id : null } as any)
       .eq('id', tarefa.id);
 
     await api.from('operation_event').insert({
-      operacao_id: operacao.id,
+      operation_id: operacao.id,
       kind: 'checklist',
       descricao: `${concluida ? '✅' : '⬜'} ${tarefa.titulo}`,
       user_id: user.id,
@@ -280,7 +280,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
 
     try {
       const { error: histErr } = await api.from('operation_event').insert({
-        operacao_id: operacaoIdAtual,
+        operation_id: operacaoIdAtual,
         kind: 'note',
         descricao: textoObs,
         user_id: user.id,
@@ -320,11 +320,11 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
     const { error } = await api
       .from('operation')
       .update({
-        cliente_nome: editForm.cliente_nome,
-        cliente_telefone: editForm.cliente_telefone || null,
-        cliente_email: editForm.cliente_email || null,
+        customer_name: editForm.customer_name,
+        customer_phone: editForm.customer_phone || null,
+        customer_email: editForm.customer_email || null,
         produtos: editForm.produtos,
-        data_prevista: editForm.data_prevista || null,
+        expected_on: editForm.expected_on || null,
         observacoes: editForm.observacoes || null,
       } as any)
       .eq('id', operacao.id);
@@ -379,8 +379,8 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                 <>
                   <input
                     style={{ fontSize: 18, fontWeight: 700, background: 'transparent', borderBottom: '2px solid #8E5FCF', outline: 'none', width: '100%', color: '#1F2937', fontFamily: 'inherit', paddingBottom: 2 }}
-                    value={editForm.cliente_nome}
-                    onChange={e => setEditForm(f => ({ ...f, cliente_nome: e.target.value }))}
+                    value={editForm.customer_name}
+                    onChange={e => setEditForm(f => ({ ...f, customer_name: e.target.value }))}
                   />
                   <input
                     style={{ fontSize: 12, background: 'transparent', borderBottom: '1px solid rgba(142,95,207,0.3)', outline: 'none', width: '100%', color: '#6B7280', fontFamily: 'inherit', marginTop: 4, paddingBottom: 2 }}
@@ -392,7 +392,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
               ) : (
                 <>
                   <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1F2937', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {operacao.cliente_nome}
+                    {operacao.customer_name}
                   </h2>
                   <p style={{ fontSize: 12, color: '#6B7280', margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {operacao.produtos}
@@ -423,8 +423,8 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
             <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', background: 'rgba(142,95,207,0.1)', border: '1px solid rgba(142,95,207,0.2)', color: '#8E5FCF', display: 'flex', alignItems: 'center', gap: 4 }}>
               {operacao.kind === 'entrega_montagem' ? <><Wrench style={{ width: 10, height: 10 }} /> Entrega + Montagem</> : <><Truck style={{ width: 10, height: 10 }} /> Entrega</>}
             </span>
-            <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', background: operacao.status_pagamento === 'pago' ? 'rgba(16,185,129,0.1)' : 'transparent', border: operacao.status_pagamento === 'pago' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(107,114,128,0.3)', color: operacao.status_pagamento === 'pago' ? '#059669' : '#6B7280' }}>
-              {operacao.status_pagamento === 'pago' ? 'Pago' : 'Pagamento Pendente'}
+            <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 20, padding: '3px 10px', background: operacao.payment_status === 'pago' ? 'rgba(16,185,129,0.1)' : 'transparent', border: operacao.payment_status === 'pago' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(107,114,128,0.3)', color: operacao.payment_status === 'pago' ? '#059669' : '#6B7280' }}>
+              {operacao.payment_status === 'pago' ? 'Pago' : 'Pagamento Pendente'}
             </span>
           </div>
 
@@ -460,11 +460,11 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                   {itensVenda.map(item => (
                     <div key={item.id} style={miniCard}>
                       <p style={{ fontSize: 13, color: '#1F2937', margin: 0 }}>
-                        {item.quantidade}x {item.produto_nome}
+                        {item.quantidade}x {item.product_name}
                       </p>
-                      {item.fornecedor_nome && (
+                      {item.supplier_name && (
                         <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
-                          Fornecedor: {item.fornecedor_nome}
+                          Fornecedor: {item.supplier_name}
                         </p>
                       )}
                     </div>
@@ -482,28 +482,28 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                   <div style={miniCard}>
                     <input
                       style={{ fontSize: 13, background: 'transparent', borderBottom: '1px solid rgba(142,95,207,0.2)', outline: 'none', width: '100%', color: '#1F2937', fontFamily: 'inherit', paddingBottom: 2, marginBottom: 8 }}
-                      value={editForm.cliente_telefone}
-                      onChange={e => setEditForm(f => ({ ...f, cliente_telefone: e.target.value }))}
+                      value={editForm.customer_phone}
+                      onChange={e => setEditForm(f => ({ ...f, customer_phone: e.target.value }))}
                       placeholder="Telefone do cliente"
                     />
                     <input
                       style={{ fontSize: 13, background: 'transparent', borderBottom: '1px solid rgba(142,95,207,0.2)', outline: 'none', width: '100%', color: '#1F2937', fontFamily: 'inherit', paddingBottom: 2 }}
-                      value={editForm.cliente_email}
-                      onChange={e => setEditForm(f => ({ ...f, cliente_email: e.target.value }))}
+                      value={editForm.customer_email}
+                      onChange={e => setEditForm(f => ({ ...f, customer_email: e.target.value }))}
                       placeholder="Email do cliente"
                     />
                   </div>
                 ) : (
                   <>
-                    {(operacao.cliente_telefone || clienteContatos?.telefone) && (
+                    {(operacao.customer_phone || clienteContatos?.telefone) && (
                       <div style={{ ...miniCard, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Phone style={{ width: 13, height: 13, color: '#8E5FCF', flexShrink: 0 }} />
                         <span style={{ fontSize: 13, color: '#374151', flex: 1 }}>
-                          Cliente: {operacao.cliente_telefone || clienteContatos?.telefone}
+                          Cliente: {operacao.customer_phone || clienteContatos?.telefone}
                         </span>
                         <button
                           style={{ width: 26, height: 26, borderRadius: 7, border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', flexShrink: 0 }}
-                          onClick={() => openWhatsApp((operacao.cliente_telefone || clienteContatos?.telefone)!)}
+                          onClick={() => openWhatsApp((operacao.customer_phone || clienteContatos?.telefone)!)}
                         >
                           <MessageSquare style={{ width: 12, height: 12 }} />
                         </button>
@@ -523,16 +523,16 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                         </button>
                       </div>
                     )}
-                    {(operacao.cliente_email || clienteContatos?.email) && (
+                    {(operacao.customer_email || clienteContatos?.email) && (
                       <div style={{ ...miniCard, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Mail style={{ width: 13, height: 13, color: '#8E5FCF', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: '#374151' }}>{operacao.cliente_email || clienteContatos?.email}</span>
+                        <span style={{ fontSize: 13, color: '#374151' }}>{operacao.customer_email || clienteContatos?.email}</span>
                       </div>
                     )}
-                    {operacao.fornecedor_nome && (
+                    {operacao.supplier_name && (
                       <div style={{ ...miniCard, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Truck style={{ width: 13, height: 13, color: '#8E5FCF', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: '#374151' }}>Fornecedor: {operacao.fornecedor_nome}</span>
+                        <span style={{ fontSize: 13, color: '#374151' }}>Fornecedor: {operacao.supplier_name}</span>
                       </div>
                     )}
                   </>
@@ -551,28 +551,28 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                   <input
                     type="date"
                     style={{ fontSize: 13, background: 'transparent', border: '1px solid rgba(142,95,207,0.2)', borderRadius: 8, padding: '5px 8px', width: '100%', color: '#1F2937', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                    value={editForm.data_prevista}
-                    onChange={e => setEditForm(f => ({ ...f, data_prevista: e.target.value }))}
+                    value={editForm.expected_on}
+                    onChange={e => setEditForm(f => ({ ...f, expected_on: e.target.value }))}
                   />
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  {operacao.data_prevista && (
+                  {operacao.expected_on && (
                     <div style={miniCard}>
                       <p style={{ fontSize: 11, color: '#9CA3AF', margin: '0 0 3px' }}>Prevista</p>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.data_prevista), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.expected_on), 'dd/MM/yyyy', { locale: ptBR })}</p>
                     </div>
                   )}
-                  {operacao.data_entrega && (
+                  {operacao.delivered_on && (
                     <div style={miniCard}>
                       <p style={{ fontSize: 11, color: '#9CA3AF', margin: '0 0 3px' }}>Entrega</p>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.data_entrega), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.delivered_on), 'dd/MM/yyyy', { locale: ptBR })}</p>
                     </div>
                   )}
-                  {operacao.data_montagem && (
+                  {operacao.assembly_on && (
                     <div style={miniCard}>
                       <p style={{ fontSize: 11, color: '#9CA3AF', margin: '0 0 3px' }}>Montagem</p>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.data_montagem), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', margin: 0 }}>{format(new Date(operacao.assembly_on), 'dd/MM/yyyy', { locale: ptBR })}</p>
                     </div>
                   )}
                 </div>
@@ -612,21 +612,21 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
                         <PopoverTrigger asChild>
                           <button style={{ height: 30, padding: '0 10px', borderRadius: 8, border: '1px solid rgba(142,95,207,0.2)', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#8E5FCF', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit', flexShrink: 0 }}>
                             <CalendarIcon style={{ width: 11, height: 11 }} />
-                            {operacao.data_prevista
-                              ? format(new Date(operacao.data_prevista), 'dd/MM/yy', { locale: ptBR })
+                            {operacao.expected_on
+                              ? format(new Date(operacao.expected_on), 'dd/MM/yy', { locale: ptBR })
                               : 'Data'}
                           </button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="end">
                           <Calendar
                             mode="single"
-                            selected={operacao.data_prevista ? new Date(operacao.data_prevista) : undefined}
+                            selected={operacao.expected_on ? new Date(operacao.expected_on) : undefined}
                             onSelect={async (date) => {
                               if (!date || !operacao) return;
                               const dateStr = format(date, 'yyyy-MM-dd');
                               await api
                                 .from('operation')
-                                .update({ data_prevista: dateStr } as any)
+                                .update({ expected_on: dateStr } as any)
                                 .eq('id', operacao.id);
                               onUpdate?.();
                               toast({ title: `Data de entrega: ${format(date, 'dd/MM/yyyy', { locale: ptBR })}` });
@@ -648,7 +648,7 @@ export function OperacaoDetailPanel({ operacao, open, onOpenChange, onStatusChan
             <div>
               <p style={{ ...sectionTitle, marginBottom: 10 }}>Observações</p>
               <Textarea
-                placeholder={`Adicionar observação para ${operacao.cliente_nome}...`}
+                placeholder={`Adicionar observação para ${operacao.customer_name}...`}
                 value={novaObs}
                 onChange={e => setNovaObs(e.target.value.slice(0, MAX_OBS_LEN))}
                 disabled={savingObs}

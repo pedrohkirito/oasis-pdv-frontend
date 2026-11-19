@@ -65,12 +65,12 @@ interface ProdutoBD {
   id: string;
   name: string;
   preco: number;
-  preco_custo?: number | null;
+  cost_price?: number | null;
   estoque_atual?: number | null;
   code?: string | null;
   ean?: string | null;
   categoria?: string | null;
-  unidade_comercial?: string | null;
+  commercial_unit?: string | null;
   active?: boolean | null;
 }
 
@@ -177,11 +177,11 @@ const PRODUTO_DEMO: ProdutoParaEtiqueta = {
   id: 'demo',
   name: 'Camiseta Básica Algodão',
   preco: 79.90,
-  preco_custo: 32.00,
+  cost_price: 32.00,
   code: '000123',
   ean: '7891234567890',
   categoria: 'Roupas',
-  unidade_comercial: 'UN',
+  commercial_unit: 'UN',
   tamanho: 'M',
   cor: 'Azul',
   preco_original: 109.90,
@@ -1049,7 +1049,7 @@ export default function ConfigEtiquetas() {
     setLoadingProdutos(true);
     api
       .from('product')
-      .select('id, name, price, preco_custo:cost, estoque_atual:stock, code, ean, category, commercial_unit, active')
+      .select('id, name, price, cost_price:cost, estoque_atual:stock, code, ean, category, commercial_unit, active')
       .eq('company_id', companyId)
       .eq('kind', 'produto')
       .eq('active', true)
@@ -1080,11 +1080,11 @@ export default function ConfigEtiquetas() {
         id: p.id,
         name: p.name,
         preco: p.preco,
-        preco_custo: p.preco_custo,
+        cost_price: p.cost_price,
         code: p.code,
         ean: p.ean,
         categoria: p.categoria,
-        unidade_comercial: p.unidade_comercial,
+        commercial_unit: p.commercial_unit,
         quantidade: qtd,
       } satisfies ProdutoParaEtiqueta;
     }).filter(Boolean) as ProdutoParaEtiqueta[];

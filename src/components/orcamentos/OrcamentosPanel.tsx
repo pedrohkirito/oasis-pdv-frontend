@@ -24,30 +24,30 @@ type StatusOrcamento =
 
 interface OrcamentoItem {
   id: string
-  produto_nome: string
+  product_name: string
   variacao?: string
   quantidade: number
-  preco_unitario: number
-  desconto_item?: number
+  unit_price: number
+  item_discount?: number
   total: number
-  produto_id?: string
+  product_id?: string
 }
 
 interface Orcamento {
   id: string
   numero: string
   status: StatusOrcamento
-  cliente_nome?: string
-  cliente_email?: string
-  cliente_telefone?: string
+  customer_name?: string
+  customer_email?: string
+  customer_phone?: string
   validade?: string
   subtotal: number
   desconto?: number
   total: number
   observacoes?: string
-  condicao_pagamento?: string
+  payment_terms?: string
   created_at: string
-  venda_id?: string
+  sale_id?: string
   orcamento_itens?: OrcamentoItem[]
 }
 
@@ -171,12 +171,12 @@ function OrcamentoCard({ o, onDetalhes, onPDF, onAprovar, onAtualizarStatus, onE
 
         {/* Nome cliente */}
         <p style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'Gilroy', color: '#1F2937', margin: '0 0 4px' }}>
-          {o.cliente_nome || 'Sem cliente'}
+          {o.customer_name || 'Sem cliente'}
         </p>
 
         {/* Email/telefone */}
         <p style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy', margin: 0 }}>
-          {o.cliente_email || o.cliente_telefone || `Criado em ${fmtData(o.created_at)}`}
+          {o.customer_email || o.customer_phone || `Criado em ${fmtData(o.created_at)}`}
         </p>
 
         {/* Divisória */}
@@ -313,7 +313,7 @@ export function OrcamentosPanel() {
       if (filtroStatus !== 'todos' && o.status !== filtroStatus) return false
       if (busca) {
         const q = busca.toLowerCase()
-        if (!o.cliente_nome?.toLowerCase().includes(q) && !o.numero?.toLowerCase().includes(q)) return false
+        if (!o.customer_name?.toLowerCase().includes(q) && !o.numero?.toLowerCase().includes(q)) return false
       }
       if (dataInicio && o.created_at < new Date(dataInicio).toISOString()) return false
       if (dataFim    && o.created_at > new Date(dataFim + 'T23:59:59').toISOString()) return false
@@ -661,7 +661,7 @@ export function OrcamentosPanel() {
                       {aprovarOrc.numero}
                     </p>
                     <p style={{ fontWeight: 700, fontSize: '1rem', fontFamily: 'Gilroy', color: '#1F2937', margin: 0 }}>
-                      {aprovarOrc.cliente_nome || '—'}
+                      {aprovarOrc.customer_name || '—'}
                     </p>
                   </div>
                   <BadgeStatus status={aprovarOrc.status} />
@@ -754,7 +754,7 @@ export function OrcamentosPanel() {
                   <BadgeStatus status={detalhesOrc.status} />
                 </div>
                 <p style={{ fontFamily: 'Gilroy', fontWeight: 800, fontSize: '1.25rem', color: '#1F2937', margin: '0 0 16px' }}>
-                  {detalhesOrc.cliente_nome || 'Sem cliente'}
+                  {detalhesOrc.customer_name || 'Sem cliente'}
                 </p>
                 <button
                   onClick={() => { setPdfOrc(detalhesOrc); setDetalhesOrc(null) }}
@@ -780,13 +780,13 @@ export function OrcamentosPanel() {
                   <div>
                     <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontFamily: 'Gilroy', margin: '0 0 4px' }}>Cliente</p>
                     <p style={{ fontWeight: 600, fontFamily: 'Gilroy', color: '#1F2937', margin: 0, fontSize: '0.875rem' }}>
-                      {detalhesOrc.cliente_nome || '—'}
+                      {detalhesOrc.customer_name || '—'}
                     </p>
-                    {detalhesOrc.cliente_telefone && (
-                      <p style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy', margin: '2px 0 0' }}>{detalhesOrc.cliente_telefone}</p>
+                    {detalhesOrc.customer_phone && (
+                      <p style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy', margin: '2px 0 0' }}>{detalhesOrc.customer_phone}</p>
                     )}
-                    {detalhesOrc.cliente_email && (
-                      <p style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy', margin: '2px 0 0' }}>{detalhesOrc.cliente_email}</p>
+                    {detalhesOrc.customer_email && (
+                      <p style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'Gilroy', margin: '2px 0 0' }}>{detalhesOrc.customer_email}</p>
                     )}
                   </div>
                   <div>
@@ -803,11 +803,11 @@ export function OrcamentosPanel() {
                       </>
                     )}
                   </div>
-                  {detalhesOrc.condicao_pagamento && (
+                  {detalhesOrc.payment_terms && (
                     <div style={{ gridColumn: '1 / -1' }}>
                       <p style={{ fontSize: '0.72rem', color: '#9CA3AF', fontFamily: 'Gilroy', margin: '0 0 4px' }}>Condição de pagamento</p>
                       <p style={{ fontWeight: 600, fontFamily: 'Gilroy', color: '#1F2937', margin: 0, fontSize: '0.875rem' }}>
-                        {detalhesOrc.condicao_pagamento}
+                        {detalhesOrc.payment_terms}
                       </p>
                     </div>
                   )}
@@ -841,11 +841,11 @@ export function OrcamentosPanel() {
                           background: idx % 2 === 0 ? 'transparent' : 'rgba(142,95,207,0.02)',
                         }}>
                           <td style={{ padding: '10px 14px', fontFamily: 'Gilroy', color: '#374151' }}>
-                            {item.produto_nome}
+                            {item.product_name}
                             {item.variacao && <span style={{ color: '#9CA3AF', marginLeft: 4 }}>({item.variacao})</span>}
                           </td>
                           <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'Gilroy', color: '#6B7280' }}>{item.quantidade}</td>
-                          <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'Gilroy', color: '#6B7280' }}>{fmtBRL(item.preco_unitario)}</td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'Gilroy', color: '#6B7280' }}>{fmtBRL(item.unit_price)}</td>
                           <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'Gilroy', fontWeight: 600, color: '#1F2937' }}>{fmtBRL(item.total)}</td>
                         </tr>
                       ))}

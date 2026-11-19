@@ -8,36 +8,36 @@ import { useAuth } from './useAuth';
 export interface SessaoCaixa {
   id: string;
   company_id: string;
-  operador_id: string;
-  operador_nome: string | null;
-  fechado_por_id: string | null;
-  fechado_por_nome: string | null;
+  operator_id: string;
+  operator_name: string | null;
+  closed_by_id: string | null;
+  closed_by_name: string | null;
   status: 'aberto' | 'fechado';
-  valor_abertura: number;
-  valor_fechamento_fisico: number | null;
-  total_dinheiro: number;
-  total_debito: number;
-  total_credito: number;
+  opening_amount: number;
+  physical_closing_amount: number | null;
+  total_cash: number;
+  total_debit: number;
+  total_credit: number;
   total_pix: number;
-  total_vendas: number;
-  total_sangrias: number;
-  total_suprimentos: number;
-  quebra_caixa: number | null;
-  observacao_fechamento: string | null;
-  aberto_em: string;
-  fechado_em: string | null;
+  total_sales: number;
+  total_withdrawals: number;
+  total_deposits: number;
+  cash_variance: number | null;
+  closing_note: string | null;
+  opened_at: string;
+  closed_at: string | null;
   created_at: string;
 }
 
 export interface MovimentacaoCaixa {
   id: string;
-  sessao_id: string;
+  cash_session_id: string;
   company_id: string;
   kind: 'sangria' | 'suprimento';
   valor: number;
   motivo: string | null;
-  operador_id: string;
-  operador_nome: string | null;
+  operator_id: string;
+  operator_name: string | null;
   created_at: string;
 }
 
@@ -102,7 +102,7 @@ export function useCaixa() {
           event: '*',
           schema: 'public',
           table: 'sessoes_caixa',
-          filter: `empresa_id=eq.${companyId}`,
+          filter: `company_id=eq.${companyId}`,
         },
         () => {
           buscarSessaoAtiva();
@@ -124,9 +124,9 @@ export function useCaixa() {
       .from('cash_session')
       .insert({
         company_id: companyId,
-        operador_id: user.id,
-        operador_nome: user.user_metadata?.name ?? user.email ?? null,
-        valor_abertura: valorAbertura,
+        operator_id: user.id,
+        operator_name: user.user_metadata?.name ?? user.email ?? null,
+        opening_amount: valorAbertura,
         status: 'aberto',
       })
       .select()
@@ -148,13 +148,13 @@ export function useCaixa() {
     const { error } = await api
       .from('cash_movement')
       .insert({
-        sessao_id: sessaoAtiva.id,
+        cash_session_id: sessaoAtiva.id,
         company_id: companyId,
         kind,
         valor,
         motivo,
-        operador_id: user.id,
-        operador_nome: user.user_metadata?.name ?? user.email ?? null,
+        operator_id: user.id,
+        operator_name: user.user_metadata?.name ?? user.email ?? null,
       });
 
     if (!error) await buscarSessaoAtiva();
@@ -170,13 +170,13 @@ export function useCaixa() {
     if (!sessaoAtiva || !companyId) return { error: new Error('Sem sessão ativa') };
 
     // Busca vendas registradas durante a sessão (entre abertura e agora).
-    // Usa valor_final (com desconto) com fallback para valor.
+    // Usa final_amount (com desconto) com fallback para valor.
     const agoraIso = new Date().toISOString();
     const { data: vendas } = await api
       .from('sale')
-      .select('valor, valor_final, metodo_pagamento')
+      .select('valor, final_amount, payment_method')
       .eq('company_id', companyId)
-      .gte('created_at', sessaoAtiva.aberto_em)
+      .gte('created_at', sessaoAtiva.opened_at)
       .lte('created_at', agoraIso);
 
     const normalize = (s?: string | null) =>
@@ -184,9 +184,9 @@ export function useCaixa() {
 
     const totais = (vendas ?? []).reduce(
       (acc, v) => {
-        const valor = Number((v as any).valor_final ?? v.valor ?? 0);
+        const valor = Number((v as any).final_amount ?? v.valor ?? 0);
         acc.total += valor;
-        const metodo = normalize(v.metodo_pagamento);
+        const metodo = normalize(v.payment_method);
         if (metodo.includes('dinheiro') || metodo.includes('especie')) acc.dinheiro += valor;
         else if (metodo.includes('debito'))                            acc.debito   += valor;
         else if (metodo.includes('credito'))                           acc.credito  += valor;
@@ -213,7 +213,7 @@ export function useCaixa() {
     // Valor esperado no caixa físico:
     // abertura + dinheiro recebido + suprimentos − sangrias
     const esperado =
-      Number(sessaoAtiva.valor_abertura) +
+      Number(sessaoAtiva.opening_amount) +
       totais.dinheiro +
       totalSuprimentos -
       totalSangrias;
@@ -226,19 +226,19 @@ export function useCaixa() {
       .from('cash_session')
       .update({
         status: 'fechado',
-        valor_fechamento_fisico: valorFisicoContado,
-        total_dinheiro: totais.dinheiro,
-        total_debito: totais.debito,
-        total_credito: totais.credito,
+        physical_closing_amount: valorFisicoContado,
+        total_cash: totais.dinheiro,
+        total_debit: totais.debito,
+        total_credit: totais.credito,
         total_pix: totais.pix,
-        total_vendas: totais.total,
-        total_sangrias: totalSangrias,
-        total_suprimentos: totalSuprimentos,
-        quebra_caixa: quebra,
-        observacao_fechamento: observacao || null,
-        fechado_em: new Date().toISOString(),
-        fechado_por_id: user?.id ?? null,
-        fechado_por_nome: nomeUsuario,
+        total_sales: totais.total,
+        total_withdrawals: totalSangrias,
+        total_deposits: totalSuprimentos,
+        cash_variance: quebra,
+        closing_note: observacao || null,
+        closed_at: new Date().toISOString(),
+        closed_by_id: user?.id ?? null,
+        closed_by_name: nomeUsuario,
       })
       .eq('id', sessaoAtiva.id);
 

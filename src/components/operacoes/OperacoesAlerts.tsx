@@ -38,20 +38,20 @@ export function OperacoesAlerts({ operacoes }: OperacoesAlertsProps) {
 
     // Overdue
     const atrasadas = ativas.filter(o => {
-      if (!o.data_prevista) return false;
-      return isPast(parseISO(o.data_prevista)) && !isToday(parseISO(o.data_prevista));
+      if (!o.expected_on) return false;
+      return isPast(parseISO(o.expected_on)) && !isToday(parseISO(o.expected_on));
     });
     if (atrasadas.length > 0) {
       items.push({
         type: 'destructive',
         icon: AlertTriangle,
-        message: `${atrasadas.length} operação(ões) com data prevista vencida: ${atrasadas.slice(0, 3).map(o => o.cliente_nome).join(', ')}${atrasadas.length > 3 ? '...' : ''}`,
+        message: `${atrasadas.length} operação(ões) com data prevista vencida: ${atrasadas.slice(0, 3).map(o => o.customer_name).join(', ')}${atrasadas.length > 3 ? '...' : ''}`,
       });
     }
 
     // Today/Tomorrow deliveries
     const hojeTomorrow = ativas.filter(o => {
-      const date = o.data_prevista || o.data_entrega;
+      const date = o.expected_on || o.delivered_on;
       if (!date) return false;
       const d = parseISO(date);
       return isToday(d) || isTomorrow(d);
@@ -60,7 +60,7 @@ export function OperacoesAlerts({ operacoes }: OperacoesAlertsProps) {
       items.push({
         type: 'info',
         icon: CalendarCheck,
-        message: `${hojeTomorrow.length} entrega(s) programada(s) para hoje/amanhã: ${hojeTomorrow.slice(0, 3).map(o => o.cliente_nome).join(', ')}`,
+        message: `${hojeTomorrow.length} entrega(s) programada(s) para hoje/amanhã: ${hojeTomorrow.slice(0, 3).map(o => o.customer_name).join(', ')}`,
       });
     }
 

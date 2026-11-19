@@ -22,8 +22,8 @@ interface VendaDia {
   id: string;
   created_at: string;
   valor: number;
-  metodo_pagamento: string | null;
-  cliente_nome: string | null;
+  payment_method: string | null;
+  customer_name: string | null;
 }
 
 interface TotaisVendas {
@@ -161,9 +161,9 @@ export default function Caixa() {
     const [{ data: vendasData }, { data: movsData }] = await Promise.all([
       api
         .from('sale')
-        .select('id, created_at, valor, metodo_pagamento, cliente_nome')
+        .select('id, created_at, valor, payment_method, customer_name')
         .eq('company_id', companyId)
-        .gte('created_at', sessaoAtiva.aberto_em)
+        .gte('created_at', sessaoAtiva.opened_at)
         .order('created_at', { ascending: false }),
       api
         .from('cash_movement')
@@ -192,7 +192,7 @@ export default function Caixa() {
     (acc, v) => {
       const valor = Number(v.valor ?? 0);
       acc.total += valor;
-      const key = normalizaMetodo(v.metodo_pagamento);
+      const key = normalizaMetodo(v.payment_method);
       if (key && key !== 'total') acc[key] += valor;
       return acc;
     },
@@ -208,7 +208,7 @@ export default function Caixa() {
     .reduce((acc, m) => acc + Number(m.valor), 0);
 
   const saldoEstimado =
-    Number(sessaoAtiva?.valor_abertura ?? 0) +
+    Number(sessaoAtiva?.opening_amount ?? 0) +
     totais.dinheiro +
     totalSuprimentos -
     totalSangrias;
@@ -421,8 +421,8 @@ export default function Caixa() {
     ...vendas.map(v => ({
       id: v.id,
       kind: 'venda' as const,
-      descricao: v.cliente_nome ? `${v.cliente_nome}` : 'Venda',
-      sub: v.metodo_pagamento ?? '—',
+      descricao: v.customer_name ? `${v.customer_name}` : 'Venda',
+      sub: v.payment_method ?? '—',
       valor: Number(v.valor),
       hora: fmtHora(v.created_at),
       entrada: true,
@@ -554,7 +554,7 @@ export default function Caixa() {
               {
                 icon: <Wallet style={{ width: 20, height: 20, color: '#3B82F6' }} />,
                 iconBg: 'rgba(59,130,246,0.1)',
-                value: fmtBRL(Number(sessaoAtiva.valor_abertura)),
+                value: fmtBRL(Number(sessaoAtiva.opening_amount)),
                 label: 'troco inicial',
                 color: '#1F2937',
               },
@@ -604,11 +604,11 @@ export default function Caixa() {
               {fmtBRL(saldoEstimado)}
             </p>
             <p style={{ fontSize: '0.75rem', color: '#6B7280', fontFamily: 'Gilroy', marginTop: 8, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>
-              Abertura {fmtBRL(Number(sessaoAtiva.valor_abertura))} + Vendas em Dinheiro {fmtBRL(totais.dinheiro)} + Suprimentos {fmtBRL(totalSuprimentos)} − Sangrias {fmtBRL(totalSangrias)}
+              Abertura {fmtBRL(Number(sessaoAtiva.opening_amount))} + Vendas em Dinheiro {fmtBRL(totais.dinheiro)} + Suprimentos {fmtBRL(totalSuprimentos)} − Sangrias {fmtBRL(totalSangrias)}
             </p>
             <p style={{ fontSize: '0.8rem', color: '#9CA3AF', fontFamily: 'Gilroy', marginTop: 6 }}>
-              Aberto em {new Date(sessaoAtiva.aberto_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às {fmtHora(sessaoAtiva.aberto_em)}
-              {sessaoAtiva.operador_nome ? ` — ${sessaoAtiva.operador_nome}` : ''}
+              Aberto em {new Date(sessaoAtiva.opened_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às {fmtHora(sessaoAtiva.opened_at)}
+              {sessaoAtiva.operator_name ? ` — ${sessaoAtiva.operator_name}` : ''}
             </p>
           </div>
         </div>
@@ -925,7 +925,7 @@ export default function Caixa() {
             {/* Resumo em grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
-                { label: 'Saldo Inicial', value: fmtBRL(Number(sessaoAtiva.valor_abertura)), color: '#3B82F6' },
+                { label: 'Saldo Inicial', value: fmtBRL(Number(sessaoAtiva.opening_amount)), color: '#3B82F6' },
                 { label: 'Entradas',      value: fmtBRL(totais.total + totalSuprimentos),  color: '#10B981' },
                 { label: 'Saídas',        value: fmtBRL(totalSangrias),                    color: '#EF4444' },
                 { label: 'Saldo Esperado',value: fmtBRL(valorEsperado),                    color: '#8E5FCF' },

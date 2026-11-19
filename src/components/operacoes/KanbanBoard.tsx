@@ -32,11 +32,11 @@ export function KanbanBoard({ operacoes, onStatusChange, onCardClick, filters }:
 
   const filtered = useMemo(() => {
     return operacoes.filter(op => {
-      if (filters.search && !op.cliente_nome.toLowerCase().includes(filters.search.toLowerCase()) && !op.produtos.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      if (filters.search && !op.customer_name.toLowerCase().includes(filters.search.toLowerCase()) && !op.produtos.toLowerCase().includes(filters.search.toLowerCase())) return false;
       if (filters.kind && filters.kind !== 'todos' && op.kind !== filters.kind) return false;
-      if (filters.fornecedor && op.fornecedor_nome !== filters.fornecedor) return false;
-      if (filters.pagamento === 'pendente' && op.status_pagamento !== 'pendente') return false;
-      if (filters.pagamento === 'pago' && op.status_pagamento !== 'pago') return false;
+      if (filters.fornecedor && op.supplier_name !== filters.fornecedor) return false;
+      if (filters.pagamento === 'pendente' && op.payment_status !== 'pendente') return false;
+      if (filters.pagamento === 'pago' && op.payment_status !== 'pago') return false;
       return true;
     });
   }, [operacoes, filters]);

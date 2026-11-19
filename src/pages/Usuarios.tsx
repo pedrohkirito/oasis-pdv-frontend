@@ -179,7 +179,7 @@ const Usuarios = () => {
 
   // Empresa management state
   interface EmpresaInfo { id: string; name: string; }
-  interface UserEmpresaLink { id: string; user_id: string; company_id: string; role: AppRole; nivel_acesso_id?: string | null; }
+  interface UserEmpresaLink { id: string; user_id: string; company_id: string; role: AppRole; access_level_id?: string | null; }
   const [allEmpresas, setAllEmpresas] = useState<EmpresaInfo[]>([]);
   const [userEmpresaLinks, setUserEmpresaLinks] = useState<UserEmpresaLink[]>([]);
   const [empresaDialogOpen, setEmpresaDialogOpen] = useState(false);
@@ -210,10 +210,10 @@ const Usuarios = () => {
 
   const fetchRegrasComissao = async () => {
     if (!companyId) return;
-    const { data, error } = await api.from('commission_rule').select('*').eq('company_id', companyId).order('data_inicio_vigencia', { ascending: false });
+    const { data, error } = await api.from('commission_rule').select('*').eq('company_id', companyId).order('valid_from', { ascending: false });
     if (!error && data) {
       const grouped: Record<string, any[]> = {};
-      data.forEach((r: any) => { if (!grouped[r.usuario_id]) grouped[r.usuario_id] = []; grouped[r.usuario_id].push(r); });
+      data.forEach((r: any) => { if (!grouped[r.user_id]) grouped[r.user_id] = []; grouped[r.user_id].push(r); });
       setRegrasComissao(grouped);
     }
   };
@@ -225,7 +225,7 @@ const Usuarios = () => {
 
   const fetchUserEmpresaLinks = async () => {
     if (!companyId) { setUserEmpresaLinks([]); return; }
-    const { data: currentEmpresaLinks } = await api.from('company_user').select('id, user_id, empresa_id, role, nivel_acesso_id').eq('company_id', companyId);
+    const { data: currentEmpresaLinks } = await api.from('company_user').select('id, user_id, company_id, role, access_level_id').eq('company_id', companyId);
     if (currentEmpresaLinks) setUserEmpresaLinks(currentEmpresaLinks as UserEmpresaLink[]);
   };
 
@@ -233,7 +233,7 @@ const Usuarios = () => {
     const regras = regrasComissao[userId];
     if (!regras || regras.length === 0) return 1;
     const hoje = new Date().toISOString().split('T')[0];
-    const ativa = regras.find((r: any) => r.data_inicio_vigencia <= hoje && (!r.data_fim_vigencia || r.data_fim_vigencia >= hoje));
+    const ativa = regras.find((r: any) => r.valid_from <= hoje && (!r.valid_until || r.valid_until >= hoje));
     return ativa ? Number(ativa.percentual) : 1;
   };
 
@@ -301,7 +301,7 @@ const Usuarios = () => {
     setUserToEdit(userItem); setEditingEmpresaRole(getUserEmpresaRole(userItem.id) || userItem.role);
     setEditingNome(userItem.name || '');
     const link = getUserEmpresaLink(userItem.id);
-    setEditingNivelAcessoId(link?.nivel_acesso_id || '');
+    setEditingNivelAcessoId(link?.access_level_id || '');
     setEditDialogOpen(true);
   };
 
@@ -311,7 +311,7 @@ const Usuarios = () => {
     try {
       const link = getUserEmpresaLink(userToEdit.id);
       if (link) {
-        const { error } = await api.from('company_user').update({ role: editingEmpresaRole, nivel_acesso_id: editingNivelAcessoId || null }).eq('id', link.id);
+        const { error } = await api.from('company_user').update({ role: editingEmpresaRole, access_level_id: editingNivelAcessoId || null }).eq('id', link.id);
         if (error) throw error;
       }
       if (editingNome !== (userToEdit.name || '')) { await api.functions.invoke('update-user', { body: { userId: userToEdit.id, name: editingNome, company_id: companyId } }); }
@@ -353,13 +353,13 @@ const Usuarios = () => {
     try {
       const dataInicio = format(dataInicioVigencia, 'yyyy-MM-dd');
       const regrasAtuais = regrasComissao[comissaoUser.id] || [];
-      const regraAtiva = regrasAtuais.find((r: any) => !r.data_fim_vigencia);
+      const regraAtiva = regrasAtuais.find((r: any) => !r.valid_until);
       if (regraAtiva) {
         const fimDate = new Date(dataInicioVigencia);
         fimDate.setDate(fimDate.getDate() - 1);
-        await api.from('commission_rule').update({ data_fim_vigencia: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
+        await api.from('commission_rule').update({ valid_until: format(fimDate, 'yyyy-MM-dd') } as any).eq('id', regraAtiva.id);
       }
-      const { error } = await api.from('commission_rule').insert({ usuario_id: comissaoUser.id, company_id: companyId, percentual, data_inicio_vigencia: dataInicio, criado_por: user.id } as any);
+      const { error } = await api.from('commission_rule').insert({ user_id: comissaoUser.id, company_id: companyId, percentual, valid_from: dataInicio, created_by_name: user.id } as any);
       if (error) throw error;
       toast.success(`Comissão de ${percentual}% definida para ${comissaoUser.name || comissaoUser.email}`);
       setComissaoDialogOpen(false); setComissaoUser(null); fetchRegrasComissao();
@@ -370,7 +370,7 @@ const Usuarios = () => {
   const openEmpresaDialog = (userItem: UserWithRole) => { setEmpresaDialogUser(userItem); setSelectedEmpresaId(''); setSelectedEmpresaRole('seller'); setEmpresaDialogOpen(true); };
 
   const getUserEmpresas = (userId: string) =>
-    userEmpresaLinks.filter(link => link.user_id === userId).map(link => ({ ...link, empresaNome: allEmpresas.find(e => e.id === link.empresa_id)?.name || 'Desconhecida' }));
+    userEmpresaLinks.filter(link => link.user_id === userId).map(link => ({ ...link, empresaNome: allEmpresas.find(e => e.id === link.company_id)?.name || 'Desconhecida' }));
 
   const handleVincularEmpresa = async () => {
     if (!empresaDialogUser || !selectedEmpresaId) { toast.error('Selecione uma empresa'); return; }
@@ -586,13 +586,13 @@ const Usuarios = () => {
                       {userItem.name && <p style={{ fontSize: '0.8rem', color: '#6B7280', fontFamily: 'Gilroy, sans-serif', textAlign: 'center', margin: 0 }}>{userItem.email}</p>}
                       <div style={{ marginTop: 8 }}>
                         {(() => {
-                          if (link?.nivel_acesso_id === '__no_access__') return (
+                          if (link?.access_level_id === '__no_access__') return (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(239,68,68,0.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)', fontFamily: 'Gilroy, sans-serif' }}>
                               <ShieldOff style={{ width: 12, height: 12 }} /> Sem Acesso
                             </span>
                           );
-                          if (link?.nivel_acesso_id) {
-                            const nivel = niveisAcesso.find(n => n.id === link.nivel_acesso_id);
+                          if (link?.access_level_id) {
+                            const nivel = niveisAcesso.find(n => n.id === link.access_level_id);
                             if (nivel) return (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(142,95,207,0.1)', color: '#8E5FCF', border: '1px solid rgba(142,95,207,0.2)', fontFamily: 'Gilroy, sans-serif' }}>
                                 <Shield style={{ width: 12, height: 12 }} /> {nivel.name}
@@ -835,12 +835,12 @@ const Usuarios = () => {
               </div>
               {regrasComissao[historicoUser.id].map((regra: any) => {
                 const hoje = new Date().toISOString().split('T')[0];
-                const ativa = regra.data_inicio_vigencia <= hoje && (!regra.data_fim_vigencia || regra.data_fim_vigencia >= hoje);
+                const ativa = regra.valid_from <= hoje && (!regra.valid_until || regra.valid_until >= hoje);
                 return (
                   <div key={regra.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 80px', gap: 0, padding: '10px 16px', borderBottom: '1px solid rgba(142,95,207,0.06)', alignItems: 'center' }}>
                     <span style={{ fontWeight: 700, color: '#8E5FCF', fontFamily: 'Gilroy, sans-serif', fontVariantNumeric: 'tabular-nums' }}>{regra.percentual}%</span>
-                    <span style={{ fontSize: 13, color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{new Date(regra.data_inicio_vigencia).toLocaleDateString('pt-BR')}</span>
-                    <span style={{ fontSize: 13, color: '#6B7280', fontFamily: 'Gilroy, sans-serif' }}>{regra.data_fim_vigencia ? new Date(regra.data_fim_vigencia).toLocaleDateString('pt-BR') : '—'}</span>
+                    <span style={{ fontSize: 13, color: '#1F2937', fontFamily: 'Gilroy, sans-serif' }}>{new Date(regra.valid_from).toLocaleDateString('pt-BR')}</span>
+                    <span style={{ fontSize: 13, color: '#6B7280', fontFamily: 'Gilroy, sans-serif' }}>{regra.valid_until ? new Date(regra.valid_until).toLocaleDateString('pt-BR') : '—'}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 99, fontFamily: 'Gilroy, sans-serif', background: ativa ? 'rgba(16,185,129,0.1)' : 'rgba(107,114,128,0.1)', color: ativa ? '#10B981' : '#6B7280' }}>{ativa ? 'Ativa' : 'Enc.'}</span>
                   </div>
                 );
@@ -884,7 +884,7 @@ const Usuarios = () => {
               <Select value={selectedEmpresaId} onValueChange={setSelectedEmpresaId}>
                 <SelectTrigger style={{ flex: 1, height: 40, borderRadius: 12, border: '1px solid rgba(142,95,207,0.2)', background: 'rgba(255,255,255,0.8)', fontFamily: 'Gilroy, sans-serif' }}><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
                 <SelectContent>
-                  {allEmpresas.filter(e => empresaDialogUser && !getUserEmpresas(empresaDialogUser.id).some(ue => ue.empresa_id === e.id)).map(empresa => (
+                  {allEmpresas.filter(e => empresaDialogUser && !getUserEmpresas(empresaDialogUser.id).some(ue => ue.company_id === e.id)).map(empresa => (
                     <SelectItem key={empresa.id} value={empresa.id}>{empresa.name}</SelectItem>
                   ))}
                 </SelectContent>

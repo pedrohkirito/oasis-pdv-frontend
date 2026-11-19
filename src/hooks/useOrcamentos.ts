@@ -30,7 +30,7 @@ export function useOrcamentos() {
   const criarOrcamento = async (orcamento: any, itens: any[]) => {
     const numero = gerarNumero()
     const subtotal = itens.reduce(
-      (acc, i) => acc + (i.quantidade * i.preco_unitario), 0
+      (acc, i) => acc + (i.quantidade * i.unit_price), 0
     )
     const total = subtotal - (orcamento.desconto || 0)
 
@@ -49,9 +49,9 @@ export function useOrcamentos() {
       await api.from('quote_item').insert(
         itens.map(i => ({
           ...i,
-          orcamento_id: data.id,
+          quote_id: data.id,
           company_id: companyId,
-          total: i.quantidade * i.preco_unitario - (i.desconto_item || 0)
+          total: i.quantidade * i.unit_price - (i.item_discount || 0)
         }))
       )
       buscarOrcamentos()
@@ -75,30 +75,30 @@ export function useOrcamentos() {
       .from('sale')
       .insert({
         company_id: companyId,
-        cliente_nome: orcamento.cliente_nome || 'Cliente',
-        cliente_email: orcamento.cliente_email,
-        cliente_telefone: orcamento.cliente_telefone,
+        customer_name: orcamento.customer_name || 'Cliente',
+        customer_email: orcamento.customer_email,
+        customer_phone: orcamento.customer_phone,
         valor: orcamento.total,
         desconto: orcamento.desconto,
         observacoes: `Convertido do orçamento ${orcamento.numero}`,
-        metodo_pagamento: orcamento.condicao_pagamento || 'A definir',
+        payment_method: orcamento.payment_terms || 'A definir',
         bandeira: '',
-        data_venda: new Date().toISOString().split('T')[0],
+        sold_on: new Date().toISOString().split('T')[0],
       } as any)
       .select().single() as any)
 
     if (!error && venda) {
       // Cria os itens da venda com os campos corretos de itens_venda
       const itens: any[] = orcamento.orcamento_itens || []
-      const itensValidos = itens.filter(i => i.produto_id)
+      const itensValidos = itens.filter(i => i.product_id)
       if (itensValidos.length > 0) {
         await api.from('sale_item').insert(
           itensValidos.map(i => ({
-            venda_id: venda.id,
-            produto_id: i.produto_id,
+            sale_id: venda.id,
+            product_id: i.product_id,
             quantidade: i.quantidade,
-            preco_unitario: i.preco_unitario,
-            subtotal: i.total ?? i.quantidade * i.preco_unitario,
+            unit_price: i.unit_price,
+            subtotal: i.total ?? i.quantidade * i.unit_price,
           }))
         )
       }
@@ -107,7 +107,7 @@ export function useOrcamentos() {
       await api.from('quote')
         .update({
           status: 'convertido',
-          venda_id: venda.id,
+          sale_id: venda.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', orcamentoId)

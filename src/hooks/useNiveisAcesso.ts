@@ -55,7 +55,7 @@ export interface NivelAcesso {
   company_id: string;
   name: string;
   descricao: string | null;
-  is_sistema: boolean;
+  is_system: boolean;
   created_at: string;
   updated_at: string;
   permissoes: PermissaoModulo[];
@@ -84,7 +84,7 @@ export function useNiveisAcesso() {
         .from('access_level')
         .select('*')
         .eq('company_id', companyId)
-        .order('is_sistema', { ascending: false })
+        .order('is_system', { ascending: false })
         .order('name');
 
       if (niveisError) throw niveisError;
@@ -106,7 +106,7 @@ export function useNiveisAcesso() {
       const niveisComPermissoes: NivelAcesso[] = niveisData.map(nivel => ({
         ...nivel,
         permissoes: (permData || [])
-          .filter(p => p.nivel_acesso_id === nivel.id)
+          .filter(p => p.access_level_id === nivel.id)
           .map(p => ({
             module: p.module,
             can_view: p.can_view,
@@ -149,7 +149,7 @@ export function useNiveisAcesso() {
       const permissoes = input.permissoes
         .filter(p => p.can_view || p.can_create || p.can_edit || p.can_delete)
         .map(p => ({
-          nivel_acesso_id: nivel.id,
+          access_level_id: nivel.id,
           module: p.module,
           can_view: p.can_view,
           can_create: p.can_create,
@@ -195,7 +195,7 @@ export function useNiveisAcesso() {
       const permissoes = input.permissoes
         .filter(p => p.can_view || p.can_create || p.can_edit || p.can_delete)
         .map(p => ({
-          nivel_acesso_id: id,
+          access_level_id: id,
           module: p.module,
           can_view: p.can_view,
           can_create: p.can_create,

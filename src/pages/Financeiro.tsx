@@ -22,8 +22,10 @@ import {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const fmtBRL = (v: number) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const fmtBRL = (v: unknown) => {
+  const n = Number(v ?? 0)
+  return (Number.isFinite(n) ? n : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
 
 const fmtK = (v: number) => {
   if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(1)}k`
@@ -499,9 +501,9 @@ export default function Financeiro() {
                       ? <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy' }}>Nenhuma saída prevista</p>
                       : (visao.proximasSaidas || []).map((c: any, i: number) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #EF4444', background: 'transparent', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.04)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.descricao || 'Conta'}</span>
+                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description || 'Conta'}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                            <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#EF4444', fontSize: '0.875rem' }}>{fmtBRL(c.valor)}</span>
+                            <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#EF4444', fontSize: '0.875rem' }}>{fmtBRL(c.amount)}</span>
                             <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.due_on}</span>
                           </div>
                         </div>
@@ -523,9 +525,9 @@ export default function Financeiro() {
                       ? <p style={{ fontSize: '0.75rem', color: '#9CA3AF', fontFamily: 'Gilroy' }}>Nenhuma entrada prevista</p>
                       : (visao.proximasEntradas || []).map((c: any, i: number) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #10B981', background: 'transparent', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.04)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.descricao || c.customer_name || 'Recebível'}</span>
+                          <span style={{ fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description || c.customer_name || 'Recebível'}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                            <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#10B981', fontSize: '0.875rem' }}>{fmtBRL(c.valor)}</span>
+                            <span style={{ fontFamily: 'Gilroy', fontWeight: 700, color: '#10B981', fontSize: '0.875rem' }}>{fmtBRL(c.amount)}</span>
                             <span style={{ fontFamily: 'Gilroy', fontSize: '0.75rem', color: '#9CA3AF' }}>{c.due_on}</span>
                           </div>
                         </div>
@@ -666,14 +668,14 @@ export default function Financeiro() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {pagarSem.map((c: any, j: number) => (
                               <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#EF4444', padding: '4px 0' }}>
-                                <span>{c.descricao || 'Conta a pagar'}</span>
-                                <span>{fmtBRL(c.valor)} — {c.due_on}</span>
+                                <span>{c.description || 'Conta a pagar'}</span>
+                                <span>{fmtBRL(c.amount)} — {c.due_on}</span>
                               </div>
                             ))}
                             {receberSem.map((c: any, j: number) => (
                               <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Gilroy', fontSize: '0.875rem', color: '#10B981', padding: '4px 0' }}>
-                                <span>{c.descricao || c.customer_name || 'Conta a receber'}</span>
-                                <span>{fmtBRL(c.valor)} — {c.due_on}</span>
+                                <span>{c.description || c.customer_name || 'Conta a receber'}</span>
+                                <span>{fmtBRL(c.amount)} — {c.due_on}</span>
                               </div>
                             ))}
                           </div>

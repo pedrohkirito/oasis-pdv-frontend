@@ -13,9 +13,9 @@ import { useNavigate } from 'react-router-dom';
 
 interface ContaAlerta {
   id: string;
-  descricao: string;
+  description: string;
   supplier_name: string;
-  valor: number;
+  amount: number;
   due_on: string;
   status: string;
   diasRestantes: number;
@@ -86,16 +86,17 @@ export const AlertasVencimento = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const formatCurrency = (value: unknown) => {
+    const n = Number(value ?? 0);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number.isFinite(n) ? n : 0);
   };
 
   if (dismissed || (contasVencidas.length === 0 && contasProximas.length === 0)) {
     return null;
   }
 
-  const totalVencido = contasVencidas.reduce((sum, c) => sum + Number(c.valor), 0);
-  const totalProximo = contasProximas.reduce((sum, c) => sum + Number(c.valor), 0);
+  const totalVencido = contasVencidas.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const totalProximo = contasProximas.reduce((sum, c) => sum + Number(c.amount || 0), 0);
 
   return (
     <div className="space-y-3">
@@ -131,7 +132,7 @@ export const AlertasVencimento = () => {
                     {contasVencidas.slice(0, 3).map(conta => (
                       <Badge key={conta.id} variant="outline"
                         className="bg-destructive/10 border-destructive/25 text-destructive text-[11px]">
-                        {conta.descricao} · {formatCurrency(Number(conta.valor))} ({Math.abs(conta.diasRestantes)}d atraso)
+                        {conta.description} · {formatCurrency(conta.amount)} ({Math.abs(conta.diasRestantes)}d atraso)
                       </Badge>
                     ))}
                     {contasVencidas.length > 3 && (
@@ -187,7 +188,7 @@ export const AlertasVencimento = () => {
                     {contasProximas.slice(0, 5).map(conta => (
                       <Badge key={conta.id} variant="outline"
                         className="bg-warning/10 border-warning/25 text-warning text-[11px]">
-                        {conta.descricao} · {formatCurrency(Number(conta.valor))} (
+                        {conta.description} · {formatCurrency(conta.amount)} (
                         {conta.diasRestantes === 0 ? 'Hoje' : `${conta.diasRestantes}d`})
                       </Badge>
                     ))}

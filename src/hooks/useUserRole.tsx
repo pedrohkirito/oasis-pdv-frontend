@@ -46,7 +46,7 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canViewRelatorios: true,
     canManageUsers: true,
   },
-  gerente: {
+  manager: {
     canViewDashboard: true,
     canViewVendas: true,
     canCreateVendas: true,
@@ -65,7 +65,7 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canViewRelatorios: true,
     canManageUsers: false,
   },
-  vendedor: {
+  seller: {
     canViewDashboard: true,
     canViewVendas: true,
     canCreateVendas: true,
@@ -84,7 +84,7 @@ const rolePermissions: Record<AppRole, RolePermissions> = {
     canViewRelatorios: false,
     canManageUsers: false,
   },
-  visualizador: {
+  viewer: {
     canViewDashboard: true,
     canViewVendas: true,
     canCreateVendas: false,
@@ -268,7 +268,7 @@ export const UserRoleProvider = ({ children }: { children: React.ReactNode }) =>
   // Use custom permissions if available, otherwise use role-based defaults
   const permissions = customPerms
     ? mapCustomToLegacy(customPerms)
-    : (role ? rolePermissions[role] : defaultPermissions);
+    : (role ? rolePermissions[role] ?? defaultPermissions : defaultPermissions);
 
   const hasPermission = (permission: keyof RolePermissions): boolean => {
     return permissions[permission] ?? false;

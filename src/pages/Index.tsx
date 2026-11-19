@@ -82,8 +82,10 @@ function WidgetSaudeFinanceira() {
     })
   }, [])
 
-  const fmtBRL2 = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const fmtBRL2 = (v: unknown) => {
+    const n = Number(v ?? 0)
+    return (Number.isFinite(n) ? n : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
 
   // Mini barras últimos 7 dias a partir dos dados do mês
   const miniBarras = visao
@@ -170,7 +172,7 @@ function WidgetSaudeFinanceira() {
             {fmtBRL2(
               (fluxo?.pagarFuturas || [])
                 .slice(0, 7)
-                .reduce((s: number, c: any) => s + (c.valor || 0), 0)
+                .reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0)
             )}
           </p>
 
@@ -178,10 +180,10 @@ function WidgetSaudeFinanceira() {
             {(fluxo?.pagarFuturas || []).slice(0, 3).map((c: any, i: number) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="truncate text-muted-foreground max-w-[120px]">
-                  {c.descricao || 'Conta'}
+                  {c.description || 'Conta'}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-red-600">{fmtBRL2(c.valor)}</span>
+                  <span className="font-semibold text-red-600">{fmtBRL2(c.amount)}</span>
                   <span className="text-muted-foreground/60">{c.due_on?.slice(5).replace('-', '/')}</span>
                 </div>
               </div>
@@ -492,7 +494,7 @@ const Index = () => {
     const hoje = new Date().toISOString().split('T')[0];
     const { data } = await api
       .from('receivable')
-      .select('id, descricao, customer_name, valor, received_amount, due_on')
+      .select('id, description, customer_name, amount, received_amount, due_on')
       .eq('company_id', companyId)
       .eq('status', 'vencido')
       .order('due_on', { ascending: true });
@@ -954,7 +956,7 @@ const Index = () => {
                   ) : operacoesPendentes.length > 0 ? (
                     <>
                       {operacoesPendentes.slice(0, 4).map((op) => {
-                        const dataPrevista = op.expected_on ? new Date(op.expected_on) : null;
+                        const dataPrevista = diaCalendario(op.expected_on);
                         const vencida = dataPrevista && dataPrevista < hoje;
                         return (
                           <button
@@ -1032,7 +1034,7 @@ const Index = () => {
                               className="flex items-center justify-between w-full py-2 px-2 rounded-xl hover:bg-destructive/5 transition-colors text-left"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">{conta.descricao}</p>
+                                <p className="text-sm font-medium truncate">{conta.description}</p>
                                 <p className="text-xs text-text-secondary truncate">{conta.supplier_name}</p>
                               </div>
                               <div className="text-right ml-3 shrink-0">
@@ -1044,7 +1046,7 @@ const Index = () => {
                                   borderRadius: '100px', padding: '2px 8px',
                                   fontSize: '0.68rem', fontWeight: 600,
                                 }}>
-                                  {vencida ? 'Vencida' : format(venc, 'dd/MM', { locale: ptBR })}
+                                  {!venc ? '—' : vencida ? 'Vencida' : format(venc, 'dd/MM', { locale: ptBR })}
                                 </span>
                               </div>
                             </button>
@@ -1084,7 +1086,7 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="space-y-0.5">
                     {contasReceberVencidas.slice(0, 4).map((conta) => {
-                      const saldo = Number(conta.valor) - Number(conta.received_amount || 0);
+                      const saldo = Number(conta.amount) - Number(conta.received_amount || 0);
                       return (
                         <button
                           key={conta.id}
@@ -1092,7 +1094,7 @@ const Index = () => {
                           className="flex items-center justify-between w-full py-2 px-2 rounded-xl hover:bg-emerald-500/5 transition-colors text-left"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{conta.descricao}</p>
+                            <p className="text-sm font-medium truncate">{conta.description}</p>
                             <p className="text-xs text-text-secondary truncate">{conta.customer_name || '—'}</p>
                           </div>
                           <div className="text-right ml-3 shrink-0">

@@ -8,6 +8,11 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+function moeda(value: unknown) {
+  const n = Number(value ?? 0)
+  return Number.isFinite(n) ? n : 0
+}
+
 export function useFinanceiro() {
   const { companyId } = useEmpresa()
   const [loading, setLoading] = useState(false)
@@ -30,7 +35,7 @@ export function useFinanceiro() {
     // Contas a pagar do mês
     const { data: contasPagar } = await api
       .from('payable')
-      .select('valor, status, due_on, paid_on')
+      .select('amount, status, due_on, paid_on')
       .eq('company_id', companyId)
       .gte('due_on', inicio)
       .lte('due_on', fim)
@@ -38,7 +43,7 @@ export function useFinanceiro() {
     // Contas a receber do mês
     const { data: contasReceber } = await api
       .from('receivable')
-      .select('valor, received_amount, status, due_on')
+      .select('amount, received_amount, status, due_on')
       .eq('company_id', companyId)
       .gte('due_on', inicio)
       .lte('due_on', fim)
@@ -49,11 +54,11 @@ export function useFinanceiro() {
 
     const despesasPagas = contasPagar
       ?.filter(c => c.status === 'pago')
-      .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+      .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
     const despesasPendentes = contasPagar
       ?.filter(c => c.status !== 'pago' && c.status !== 'cancelado')
-      .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+      .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
     const despesasVencidas = contasPagar
       ?.filter(c =>
@@ -61,11 +66,11 @@ export function useFinanceiro() {
         c.status !== 'cancelado' &&
         c.due_on < hoje
       )
-      .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+      .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
     const receitasPendentes = contasReceber
       ?.filter(c => c.status === 'pendente')
-      .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+      .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
     const saldoOperacional = receitaRealizada - despesasPagas
     const saldoProjetado = saldoOperacional +
@@ -87,7 +92,7 @@ export function useFinanceiro() {
 
       const saidas = contasPagar
         ?.filter(c => c.paid_on === dia && c.status === 'pago')
-        .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+        .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
       return { dia, entradas, saidas, saldo: entradas - saidas }
     })
@@ -119,7 +124,7 @@ export function useFinanceiro() {
     // Contas a pagar futuras
     const { data: pagarFuturas } = await api
       .from('payable')
-      .select('valor, due_on, descricao, categoria')
+      .select('amount, due_on, description, category')
       .eq('company_id', companyId)
       .in('status', ['pendente', 'vencido'])
       .gte('due_on', hojeStr)
@@ -129,7 +134,7 @@ export function useFinanceiro() {
     // Contas a receber futuras
     const { data: receberFuturas } = await api
       .from('receivable')
-      .select('valor, due_on, descricao, customer_name')
+      .select('amount, due_on, description, customer_name')
       .eq('company_id', companyId)
       .in('status', ['pendente'])
       .gte('due_on', hojeStr)
@@ -164,7 +169,7 @@ export function useFinanceiro() {
           c.due_on >= inicioSemana &&
           c.due_on <= fimSemana
         )
-        .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+        .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
       const entradasEstimadas = mediaDiariaVendas * 7
 
@@ -173,7 +178,7 @@ export function useFinanceiro() {
           c.due_on >= inicioSemana &&
           c.due_on <= fimSemana
         )
-        .reduce((acc, c) => acc + (c.valor || 0), 0) || 0
+        .reduce((acc, c) => acc + moeda(c.amount), 0) || 0
 
       semanas.push({
         semana: format(dataAtual, "'Sem' w", { locale: ptBR }),
@@ -197,9 +202,9 @@ export function useFinanceiro() {
       semanas,
       pontosCriticos,
       totalEntradasPrevistas: receberFuturas?.reduce(
-        (acc, c) => acc + (c.valor || 0), 0) || 0,
+        (acc, c) => acc + moeda(c.amount), 0) || 0,
       totalSaidasPrevistas: pagarFuturas?.reduce(
-        (acc, c) => acc + (c.valor || 0), 0) || 0,
+        (acc, c) => acc + moeda(c.amount), 0) || 0,
       mediaDiariaVendas,
       pagarFuturas: pagarFuturas || [],
       receberFuturas: receberFuturas || []
